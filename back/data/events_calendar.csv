@@ -1,0 +1,25 @@
+date,event_name,event_type,impact_category,impact_percent,description
+2024-01-01,New Year,holiday,all,+15,New Year celebrations boost general shopping
+2024-01-15,MLK Day,holiday,all,+5,Long weekend shopping boost
+2024-02-14,Valentine's Day,holiday,gifts,+40,Jewelry clothing flowers chocolates
+2024-02-19,Presidents Day,holiday,electronics,+20,Electronics sales major discounts
+2024-03-17,St Patrick's Day,holiday,food,+10,Food and beverage boost
+2024-03-31,Easter,holiday,food,+25,Food clothing spring items
+2024-05-12,Mother's Day,holiday,gifts,+35,Jewelry flowers clothing accessories
+2024-05-27,Memorial Day,holiday,all,+25,Summer kickoff major sales
+2024-06-16,Father's Day,holiday,electronics,+30,Electronics tools clothing
+2024-07-04,Independence Day,holiday,outdoor,+20,Outdoor items BBQ summer goods
+2024-07-15,Prime Day,sale,electronics,+50,Amazon Prime Day electronics deals
+2024-08-15,Back to School,season,school,+45,Electronics clothing supplies
+2024-09-02,Labor Day,holiday,all,+25,End of summer sales
+2024-10-31,Halloween,holiday,costumes,+60,Costumes candy decorations
+2024-11-28,Thanksgiving,holiday,food,+35,Food kitchen items
+2024-11-29,Black Friday,sale,all,+80,Biggest shopping day major discounts
+2024-12-02,Cyber Monday,sale,electronics,+70,Online electronics deals
+2024-12-25,Christmas,holiday,all,+100,Peak shopping season gifts
+2024-12-26,Boxing Day,sale,all,+40,Post-Christmas clearance
+2024-12-31,New Year Eve,holiday,party,+20,Party supplies beverages
+2025-01-01,New Year 2025,holiday,all,+15,New Year celebrations
+2025-02-14,Valentine's Day,holiday,gifts,+40,Jewelry clothing flowers
+2025-11-28,Black Friday 2025,sale,all,+80,Biggest shopping day
+2025-12-25,Christmas 2025,holiday,all,+100,Peak shopping season

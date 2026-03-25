@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# Build outputs
+dist/
+build/
+*.egg
+
+# Data files (can be large)
+back/data/amazon/*.csv
+back/data/ecommerce/*.csv
+back/models_cache/
+
+# Logs
+*.log
+logs/
+
+# Flutter
+prodbot_ai/build/
+prodbot_ai/.dart_tool/
+prodbot_ai/.packages
+
+# Claude cache
+.claude/

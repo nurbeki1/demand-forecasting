@@ -1,0 +1,101 @@
+product_id,name,brand,category,subcategory,price,description,tags
+P0001,iPhone 15 Pro Max,Apple,Electronics,Smartphones,1199,Flagship smartphone with A17 Pro chip titanium design and 48MP camera system,premium flagship 5G camera
+P0002,Samsung Galaxy S24 Ultra,Samsung,Electronics,Smartphones,1299,Android flagship with AI features S Pen and 200MP camera,premium flagship android AI
+P0003,MacBook Pro 14 M3,Apple,Electronics,Laptops,1999,Professional laptop with M3 Pro chip 18h battery and Liquid Retina XDR display,premium professional creative
+P0004,Dell XPS 15,Dell,Electronics,Laptops,1599,Windows laptop with 13th Gen Intel Core i7 OLED display,professional business windows
+P0005,Sony WH-1000XM5,Sony,Electronics,Headphones,399,Premium noise-cancelling wireless headphones with 30h battery,premium audio wireless ANC
+P0006,AirPods Pro 2,Apple,Electronics,Headphones,249,Active noise cancellation spatial audio and adaptive transparency,premium wireless ANC apple
+P0007,iPad Pro 12.9,Apple,Electronics,Tablets,1099,M2 chip Liquid Retina XDR display Apple Pencil support,premium tablet creative
+P0008,Samsung Galaxy Tab S9,Samsung,Electronics,Tablets,849,Android tablet with AMOLED display S Pen included,premium tablet android
+P0009,PlayStation 5,Sony,Electronics,Gaming,499,Next-gen gaming console with 4K graphics and haptic feedback,gaming console entertainment
+P0010,Xbox Series X,Microsoft,Electronics,Gaming,499,Powerful gaming console with Game Pass compatibility,gaming console entertainment
+P0011,Nintendo Switch OLED,Nintendo,Electronics,Gaming,349,Hybrid gaming console with 7-inch OLED screen,gaming portable family
+P0012,LG C3 OLED 65,LG,Electronics,TVs,1799,65 inch OLED TV with Dolby Vision and gaming features,premium TV entertainment 4K
+P0013,Samsung QN85B 55,Samsung,Electronics,TVs,1299,55 inch Neo QLED 4K smart TV with gaming hub,premium TV entertainment 4K
+P0014,Sony A7 IV,Sony,Electronics,Cameras,2499,Full-frame mirrorless camera 33MP sensor 4K video,professional camera photography
+P0015,Canon EOS R6 II,Canon,Electronics,Cameras,2299,Mirrorless camera with 24MP sensor and 40fps shooting,professional camera photography
+P0016,GoPro Hero 12,GoPro,Electronics,Cameras,399,Action camera with 5.3K video and HyperSmooth stabilization,action sports waterproof
+P0017,DJI Mini 3 Pro,DJI,Electronics,Drones,759,Lightweight drone with 4K camera and obstacle avoidance,drone photography travel
+P0018,Apple Watch Ultra 2,Apple,Electronics,Wearables,799,Rugged smartwatch with GPS diving and 36h battery,premium fitness outdoor apple
+P0019,Samsung Galaxy Watch 6,Samsung,Electronics,Wearables,329,Android smartwatch with health tracking and sleep coaching,fitness health android
+P0020,Fitbit Charge 6,Fitbit,Electronics,Wearables,159,Fitness tracker with heart rate GPS and stress management,fitness health budget
+P0021,Bose SoundLink Max,Bose,Electronics,Speakers,399,Portable Bluetooth speaker with 20h battery and deep bass,audio portable outdoor
+P0022,JBL Flip 6,JBL,Electronics,Speakers,129,Waterproof portable speaker with 12h playtime,audio portable waterproof budget
+P0023,Sonos Era 300,Sonos,Electronics,Speakers,449,Spatial audio smart speaker with Dolby Atmos,premium audio smart home
+P0024,Logitech MX Master 3S,Logitech,Electronics,Accessories,99,Wireless ergonomic mouse with 8K DPI sensor,office productivity ergonomic
+P0025,Razer BlackWidow V4,Razer,Electronics,Accessories,179,Mechanical gaming keyboard with RGB and media keys,gaming RGB mechanical
+P0026,Nike Air Max 90,Nike,Clothing,Shoes,130,Classic running shoes with Air cushioning and retro design,casual retro lifestyle
+P0027,Adidas Ultraboost 23,Adidas,Clothing,Shoes,190,Premium running shoes with Boost midsole technology,running performance comfort
+P0028,New Balance 990v6,New Balance,Clothing,Shoes,199,Made in USA premium lifestyle sneakers,premium casual lifestyle
+P0029,Nike Air Jordan 1,Nike,Clothing,Shoes,180,Iconic basketball sneakers with classic design,basketball retro streetwear
+P0030,Converse Chuck Taylor,Converse,Clothing,Shoes,65,Classic canvas sneakers timeless style,casual classic budget
+P0031,Levi's 501 Original,Levi's,Clothing,Pants,89,Original fit straight leg jeans classic style,classic denim casual
+P0032,Levi's 511 Slim,Levi's,Clothing,Pants,79,Slim fit jeans with stretch comfort,slim denim modern
+P0033,Nike Tech Fleece Joggers,Nike,Clothing,Pants,115,Premium fleece joggers with tapered fit,athletic comfort premium
+P0034,Adidas Tiro Track Pants,Adidas,Clothing,Pants,55,Classic soccer training pants with 3 stripes,athletic training sport
+P0035,Carhartt WIP Cargo,Carhartt,Clothing,Pants,129,Durable cargo pants workwear style,workwear durable streetwear
+P0036,North Face Puffer Jacket,The North Face,Clothing,Outerwear,299,700-fill down insulated jacket for cold weather,winter warm outdoor
+P0037,Patagonia Nano Puff,Patagonia,Clothing,Outerwear,229,Lightweight insulated jacket recycled materials,outdoor sustainable lightweight
+P0038,Canada Goose Expedition,Canada Goose,Clothing,Outerwear,1395,Extreme cold weather parka Arctic-tested,premium winter extreme
+P0039,Nike Windrunner,Nike,Clothing,Outerwear,110,Classic windbreaker with chevron design,athletic casual lightweight
+P0040,Uniqlo Ultra Light Down,Uniqlo,Clothing,Outerwear,79,Compact packable down jacket budget friendly,lightweight travel budget
+P0041,Ralph Lauren Polo Shirt,Ralph Lauren,Clothing,Tops,98,Classic cotton polo shirt with pony logo,classic preppy smart
+P0042,Nike Dri-FIT T-Shirt,Nike,Clothing,Tops,35,Moisture-wicking athletic t-shirt,athletic training sport
+P0043,Carhartt Pocket Tee,Carhartt,Clothing,Tops,29,Heavyweight cotton t-shirt durable,workwear casual durable
+P0044,Champion Reverse Weave Hoodie,Champion,Clothing,Tops,75,Classic heavyweight hoodie streetwear staple,streetwear casual classic
+P0045,Patagonia Better Sweater,Patagonia,Clothing,Tops,139,Fleece jacket recycled polyester,outdoor sustainable comfort
+P0046,Ray-Ban Aviator,Ray-Ban,Clothing,Accessories,169,Classic aviator sunglasses metal frame,classic premium eyewear
+P0047,Gucci GG Belt,Gucci,Clothing,Accessories,450,Luxury leather belt with GG buckle,luxury premium designer
+P0048,Herschel Little America,Herschel,Clothing,Accessories,99,Classic backpack laptop sleeve,travel school everyday
+P0049,Nike Elite Socks,Nike,Clothing,Accessories,18,Cushioned basketball socks moisture wicking,athletic basketball sport
+P0050,The North Face Borealis,The North Face,Clothing,Accessories,99,Durable backpack with laptop compartment,outdoor school travel
+P0051,Nespresso Vertuo Next,Nespresso,Home,Kitchen,179,Coffee machine with centrifusion technology,coffee kitchen appliance
+P0052,KitchenAid Stand Mixer,KitchenAid,Home,Kitchen,449,Professional stand mixer 10 speeds,baking kitchen premium
+P0053,Ninja Air Fryer Max,Ninja,Home,Kitchen,169,Large capacity air fryer healthy cooking,cooking kitchen healthy
+P0054,Vitamix E310,Vitamix,Home,Kitchen,349,Professional blender powerful motor,blending kitchen premium
+P0055,Instant Pot Duo 7-in-1,Instant Pot,Home,Kitchen,89,Multi-cooker pressure cooker slow cooker,cooking kitchen versatile
+P0056,Dyson V15 Detect,Dyson,Home,Cleaning,749,Cordless vacuum with laser dust detection,cleaning premium technology
+P0057,iRobot Roomba j7+,iRobot,Home,Cleaning,799,Robot vacuum with obstacle avoidance self-emptying,cleaning smart automated
+P0058,Shark Navigator,Shark,Home,Cleaning,199,Upright vacuum powerful suction,cleaning budget powerful
+P0059,Bissell CrossWave,Bissell,Home,Cleaning,299,Wet dry vacuum for hard floors,cleaning versatile floors
+P0060,Swiffer WetJet,Swiffer,Home,Cleaning,35,Spray mop starter kit for hard floors,cleaning budget easy
+P0061,Philips Hue Starter Kit,Philips,Home,Smart Home,199,Smart LED bulbs with hub color changing,smart home lighting automation
+P0062,Ring Video Doorbell 4,Ring,Home,Smart Home,199,Video doorbell with motion detection,smart home security camera
+P0063,Nest Learning Thermostat,Google,Home,Smart Home,249,Smart thermostat auto-schedule energy saving,smart home climate automation
+P0064,Amazon Echo Dot 5,Amazon,Home,Smart Home,49,Compact smart speaker Alexa built-in,smart home assistant budget
+P0065,Arlo Pro 4,Arlo,Home,Smart Home,199,Wireless security camera 2K HDR,smart home security outdoor
+P0066,Casper Original Mattress,Casper,Home,Bedroom,1095,Memory foam mattress in a box queen size,sleep comfort bedroom
+P0067,Purple Harmony Pillow,Purple,Home,Bedroom,179,Gel grid pillow temperature neutral,sleep comfort premium
+P0068,Brooklinen Luxe Sheet Set,Brooklinen,Home,Bedroom,169,480 thread count cotton sheets,sleep comfort premium
+P0069,Weighted Blanket 15lb,YnM,Home,Bedroom,59,Cooling weighted blanket for anxiety,sleep relaxation budget
+P0070,Tempur-Pedic Neck Pillow,Tempur-Pedic,Home,Bedroom,129,Ergonomic memory foam pillow,sleep support comfort
+P0071,Optimum Nutrition Gold Standard,Optimum Nutrition,Health,Supplements,62,Whey protein powder 24g protein,fitness protein muscle
+P0072,Creatine Monohydrate,Thorne,Health,Supplements,32,Pure creatine powder for strength,fitness strength muscle
+P0073,Vitamin D3 5000IU,Nature Made,Health,Supplements,15,Vitamin D supplement bone health,health vitamin budget
+P0074,Fish Oil Omega-3,Nordic Naturals,Health,Supplements,27,High potency omega-3 supplement,health heart brain
+P0075,Multivitamin for Men,Garden of Life,Health,Supplements,44,Whole food multivitamin organic,health vitamin daily
+P0076,Theragun Prime,Therabody,Health,Fitness,299,Percussion massage device muscle recovery,fitness recovery massage
+P0077,Yoga Mat Premium,Manduka,Health,Fitness,89,Professional yoga mat 6mm thick,yoga fitness premium
+P0078,Resistance Bands Set,Fit Simplify,Health,Fitness,19,5 loop bands varying resistance,fitness home workout budget
+P0079,Adjustable Dumbbells,Bowflex,Health,Fitness,399,SelectTech adjustable 5-52.5 lbs,fitness strength home
+P0080,Foam Roller,TriggerPoint,Health,Fitness,39,High density foam roller recovery,fitness recovery budget
+P0081,Organic Avocados 6pk,Whole Foods,Food,Fresh,8,Organic Hass avocados ripe,organic healthy fresh
+P0082,Grass-Fed Ground Beef,Butcher Box,Food,Fresh,12,100% grass-fed beef 1lb,organic protein quality
+P0083,Organic Eggs Free Range,Vital Farms,Food,Fresh,9,Pasture-raised eggs dozen,organic protein breakfast
+P0084,Organic Baby Spinach,Earthbound,Food,Fresh,5,Pre-washed organic spinach 5oz,organic healthy salad
+P0085,Wild Caught Salmon,Wild Alaskan,Food,Fresh,24,Sockeye salmon fillet 1lb,protein healthy omega
+P0086,Coca-Cola Classic 12pk,Coca-Cola,Food,Beverages,7,Classic cola 12oz cans,beverage classic popular
+P0087,Red Bull Energy 4pk,Red Bull,Food,Beverages,10,Energy drink original flavor,energy beverage popular
+P0088,Liquid Death Water 12pk,Liquid Death,Food,Beverages,18,Mountain water aluminum cans,water trendy sustainable
+P0089,Oatly Oat Milk,Oatly,Food,Beverages,5,Oat milk barista edition,dairy-free plant vegan
+P0090,Athletic Greens AG1,Athletic Greens,Food,Beverages,99,Greens powder daily supplement,health supplement premium
+P0091,KIND Bars Variety 12pk,KIND,Food,Snacks,18,Nut bars healthy snacking,healthy snack protein
+P0092,RXBar Protein 12pk,RXBar,Food,Snacks,29,Clean protein bars no BS,protein healthy clean
+P0093,Hippeas Chickpea Puffs,Hippeas,Food,Snacks,4,Organic chickpea snacks,organic vegan healthy
+P0094,Justin's Almond Butter,Justin's,Food,Snacks,12,Organic almond butter squeeze packs,organic protein healthy
+P0095,Siete Tortilla Chips,Siete,Food,Snacks,6,Grain-free tortilla chips,grain-free healthy paleo
+P0096,LEGO Star Wars Set,LEGO,Toys,Building,159,Millennium Falcon building set 1351 pieces,building creative kids
+P0097,Barbie Dreamhouse,Barbie,Toys,Dolls,199,3-story dollhouse with accessories,dolls imaginative kids
+P0098,Hot Wheels Track Set,Hot Wheels,Toys,Vehicles,49,Ultimate garage playset,cars racing kids
+P0099,Nintendo Pokemon Cards,Pokemon,Toys,Games,25,Booster pack trading cards,collectible gaming popular
+P0100,Monopoly Classic,Hasbro,Toys,Games,24,Classic board game family night,board game family classic

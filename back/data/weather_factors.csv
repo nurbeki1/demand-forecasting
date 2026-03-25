@@ -1,0 +1,18 @@
+weather_condition,category,impact_percent,description
+sunny,outdoor,+15,More outdoor activities and shopping
+sunny,clothing,+10,Summer clothes and accessories
+sunny,electronics,+5,People out shopping
+rainy,electronics,+20,People stay home order online
+rainy,home,+15,Home improvement and entertainment
+rainy,outdoor,-25,Less outdoor gear purchases
+cold,outerwear,+40,Winter jackets and warm clothing
+cold,home,+20,Heating blankets indoor items
+cold,outdoor,-30,Less outdoor activities
+hot,beverages,+35,Cold drinks and refreshments
+hot,outdoor,+25,Summer outdoor gear
+hot,outerwear,-40,No need for warm clothing
+snowy,outerwear,+50,Winter gear essentials
+snowy,home,+25,Staying home entertainment
+snowy,outdoor,-40,No outdoor shopping
+windy,home,+10,People prefer staying indoors
+cloudy,all,0,Neutral weather no significant impact
