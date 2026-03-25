@@ -11,9 +11,54 @@ from datetime import datetime, timedelta
 # Get absolute path relative to this file
 _DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(_DIR, "retail_store_inventory.csv")
+CATALOG_PATH = os.path.join(_DIR, "data", "products_catalog.csv")
 
 # Cache for DataFrame
 _df_cache: Optional[pd.DataFrame] = None
+_catalog_cache: Optional[pd.DataFrame] = None
+
+
+def _get_catalog() -> pd.DataFrame:
+    """Load and cache the products catalog with names"""
+    global _catalog_cache
+    if _catalog_cache is None:
+        if os.path.exists(CATALOG_PATH):
+            _catalog_cache = pd.read_csv(CATALOG_PATH)
+        else:
+            _catalog_cache = pd.DataFrame()
+    return _catalog_cache
+
+
+def get_product_name(product_id: str) -> str:
+    """Get product name by ID"""
+    catalog = _get_catalog()
+    if catalog.empty:
+        return product_id
+    match = catalog[catalog["product_id"] == product_id]
+    if not match.empty:
+        return match.iloc[0]["name"]
+    return product_id
+
+
+def get_product_by_name(name: str) -> Optional[str]:
+    """Find product ID by name (partial match)"""
+    catalog = _get_catalog()
+    if catalog.empty:
+        return None
+    name_lower = name.lower()
+    for _, row in catalog.iterrows():
+        if name_lower in row["name"].lower() or name_lower in row.get("brand", "").lower():
+            return row["product_id"]
+    return None
+
+
+def get_all_products_with_names() -> List[Dict[str, str]]:
+    """Get all products with their names"""
+    catalog = _get_catalog()
+    if catalog.empty:
+        df = _get_df()
+        return [{"product_id": pid, "name": pid} for pid in df["product_id"].unique()]
+    return catalog[["product_id", "name", "brand", "category"]].to_dict("records")
 
 
 def _get_df() -> pd.DataFrame:
@@ -92,6 +137,7 @@ def get_product_summary(product_id: str) -> Optional[Dict[str, Any]]:
 
     return {
         "product_id": product_id,
+        "name": get_product_name(product_id),
         "category": str(latest.get("category", "Unknown")),
         "price": float(latest.get("price", 0)),
         "avg_demand": round(avg_demand, 2),
@@ -346,19 +392,38 @@ def get_low_performers(n: int = 5) -> List[Dict[str, Any]]:
 
 def search_products(query: str) -> List[Dict[str, Any]]:
     """
-    Search products by ID, category, or region
+    Search products by ID, name, brand, category, or region
     """
     df = _get_df()
+    catalog = _get_catalog()
     query_lower = query.lower()
 
     results = []
+    found_ids = set()
+
+    # Search by product name/brand in catalog
+    if not catalog.empty:
+        for _, row in catalog.iterrows():
+            if (query_lower in row["name"].lower() or
+                query_lower in str(row.get("brand", "")).lower() or
+                query_lower in str(row.get("tags", "")).lower()):
+                pid = row["product_id"]
+                if pid not in found_ids:
+                    summary = get_product_summary(pid)
+                    if summary:
+                        results.append(summary)
+                        found_ids.add(pid)
+                if len(results) >= 10:
+                    break
 
     # Search by product ID
     matching_products = df[df["product_id"].str.lower().str.contains(query_lower, na=False)]["product_id"].unique()
     for pid in matching_products[:10]:
-        summary = get_product_summary(pid)
-        if summary:
-            results.append(summary)
+        if pid not in found_ids:
+            summary = get_product_summary(pid)
+            if summary:
+                results.append(summary)
+                found_ids.add(pid)
 
     # Search by category
     if "category" in df.columns:
