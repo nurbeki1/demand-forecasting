@@ -33,9 +33,9 @@ dist/
 build/
 *.egg
 
-# Data files (can be large)
-back/data/amazon/*.csv
-back/data/ecommerce/*.csv
+# Data files (keep amazon data for production)
+# back/data/amazon/*.csv  # Removed - need for production
+# back/data/ecommerce/*.csv  # Removed - need for production
 back/models_cache/
 
 # Logs
