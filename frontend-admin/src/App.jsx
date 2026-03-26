@@ -8,6 +8,7 @@ import ChartsPage from "./pages/ChartsPage";
 import TablePage from "./pages/TablePage";
 import UploadPage from "./pages/UploadPage";
 import ChatPage from "./pages/ChatPage";
+import ModelVisualizationPage from "./pages/ModelVisualizationPage";
 
 import "./styles/dashboard.css";
 
@@ -73,6 +74,10 @@ function AppRoutes() {
             <ChatPage />
           </PrivateRoute>
         }
+      />
+      <Route
+        path="/model"
+        element={<ModelVisualizationPage />}
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

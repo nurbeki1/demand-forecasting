@@ -186,19 +186,19 @@ export default function UploadPage() {
             <div className="cardHeader">
               <div className="cardTitle">CSV Format Requirements</div>
             </div>
-            <div style={{ color: "#7a7f87", lineHeight: 1.8 }}>
-              <p>Your CSV file should contain the following columns:</p>
-              <ul>
-                <li><strong>Date</strong> - Date in YYYY-MM-DD format</li>
-                <li><strong>Product ID</strong> - Product identifier (e.g., P0001)</li>
-                <li><strong>Store ID</strong> - Store identifier (optional)</li>
-                <li><strong>Demand Forecast</strong> - Forecasted demand (target variable)</li>
-                <li><strong>Category</strong> - Product category</li>
-                <li><strong>Region</strong> - Geographic region</li>
-                <li><strong>Price</strong> - Product price</li>
-                <li><strong>Inventory Level</strong> - Current inventory</li>
-                <li><strong>Weather Condition</strong> - Weather (Sunny, Rainy, etc.)</li>
-                <li><strong>Seasonality</strong> - Season (Spring, Summer, etc.)</li>
+            <div style={{ color: "#4a6580", lineHeight: 1.8, fontFamily: "'Space Mono', monospace", fontSize: "13px" }}>
+              <p style={{ color: "#e8f4fc", marginBottom: "12px" }}>Your CSV file should contain the following columns:</p>
+              <ul style={{ paddingLeft: "20px" }}>
+                <li><span style={{ color: "#00e5ff" }}>Date</span> - Date in YYYY-MM-DD format</li>
+                <li><span style={{ color: "#00e5ff" }}>Product ID</span> - Product identifier (e.g., P0001)</li>
+                <li><span style={{ color: "#00e5ff" }}>Store ID</span> - Store identifier (optional)</li>
+                <li><span style={{ color: "#00e5ff" }}>Demand Forecast</span> - Forecasted demand (target variable)</li>
+                <li><span style={{ color: "#00e5ff" }}>Category</span> - Product category</li>
+                <li><span style={{ color: "#00e5ff" }}>Region</span> - Geographic region</li>
+                <li><span style={{ color: "#00e5ff" }}>Price</span> - Product price</li>
+                <li><span style={{ color: "#00e5ff" }}>Inventory Level</span> - Current inventory</li>
+                <li><span style={{ color: "#00e5ff" }}>Weather Condition</span> - Weather (Sunny, Rainy, etc.)</li>
+                <li><span style={{ color: "#00e5ff" }}>Seasonality</span> - Season (Spring, Summer, etc.)</li>
               </ul>
             </div>
           </div>

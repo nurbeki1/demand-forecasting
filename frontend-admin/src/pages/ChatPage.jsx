@@ -798,16 +798,17 @@ export default function ChatPage() {
       </div>
 
       <style>{`
-        /* New Chat Styles */
+        /* Neural Chat Styles */
         .chatContainerNew {
           display: flex;
           flex-direction: column;
           height: calc(100vh - 180px);
           min-height: 500px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #0a1628 0%, #050d1a 100%);
           border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+          border: 1px solid rgba(0, 229, 255, 0.15);
+          box-shadow: 0 0 40px rgba(0, 229, 255, 0.1);
         }
 
         .chatMessagesNew {
@@ -817,7 +818,7 @@ export default function ChatPage() {
           display: flex;
           flex-direction: column;
           gap: 16px;
-          background: linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(255,255,255,0.98));
+          background: linear-gradient(to bottom, rgba(5, 13, 26, 0.95), rgba(2, 4, 8, 0.98));
         }
 
         .chatLoading {
@@ -827,14 +828,15 @@ export default function ChatPage() {
           justify-content: center;
           height: 100%;
           gap: 12px;
-          color: #6b7280;
+          color: #4a6580;
+          font-family: 'Space Mono', monospace;
         }
 
         .loadingSpinner {
           width: 32px;
           height: 32px;
-          border: 3px solid #e5e7eb;
-          border-top-color: #6366f1;
+          border: 3px solid rgba(0, 229, 255, 0.2);
+          border-top-color: #00e5ff;
           border-radius: 50%;
           animation: spin 1s linear infinite;
         }
@@ -879,12 +881,13 @@ export default function ChatPage() {
           justify-content: center;
           font-size: 20px;
           flex-shrink: 0;
-          background: white;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          background: rgba(0, 229, 255, 0.1);
+          border: 1px solid rgba(0, 229, 255, 0.2);
         }
 
         .userMessageNew .messageAvatarNew {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #00e5ff 0%, #a855f7 100%);
+          border: none;
         }
 
         .messageContentNew {
@@ -901,34 +904,37 @@ export default function ChatPage() {
         }
 
         .userMessageNew .messageTextNew {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
+          background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+          border: 1px solid rgba(0, 229, 255, 0.25);
+          color: #e8f4fc;
           border-bottom-right-radius: 4px;
         }
 
         .assistantMessageNew .messageTextNew {
-          background: white;
-          color: #374151;
+          background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%);
+          border: 1px solid rgba(0, 229, 255, 0.12);
+          color: #e8f4fc;
           border-bottom-left-radius: 4px;
-          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         }
 
         /* Markdown Styles */
         .mdH1, .mdH2, .mdH3 {
           margin: 8px 0;
-          color: #1f2937;
+          color: #e8f4fc;
         }
         .mdH1 { font-size: 18px; }
         .mdH2 { font-size: 16px; }
-        .mdH3 { font-size: 14px; font-weight: 600; color: #6366f1; }
+        .mdH3 { font-size: 14px; font-weight: 600; color: #00e5ff; }
 
         .mdP {
           margin: 4px 0;
+          color: #e8f4fc;
         }
 
         .mdList {
           margin: 8px 0;
           padding-left: 20px;
+          color: #e8f4fc;
         }
 
         .mdList li {
@@ -937,10 +943,10 @@ export default function ChatPage() {
 
         /* Product Card */
         .productCarousel {
-          background: white;
+          background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%);
           border-radius: 12px;
           padding: 16px;
-          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+          border: 1px solid rgba(0, 229, 255, 0.15);
         }
 
         .carouselHeader {
@@ -949,13 +955,14 @@ export default function ChatPage() {
           align-items: center;
           margin-bottom: 12px;
           padding-bottom: 8px;
-          border-bottom: 1px solid #f3f4f6;
+          border-bottom: 1px solid rgba(0, 229, 255, 0.12);
         }
 
         .carouselTitle {
           font-weight: 600;
           font-size: 13px;
-          color: #374151;
+          color: #e8f4fc;
+          font-family: 'Space Mono', monospace;
         }
 
         .carouselNav {
@@ -968,8 +975,9 @@ export default function ChatPage() {
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          border: 1px solid #e5e7eb;
-          background: white;
+          border: 1px solid rgba(0, 229, 255, 0.25);
+          background: rgba(0, 229, 255, 0.05);
+          color: #00e5ff;
           cursor: pointer;
           font-size: 16px;
           display: flex;
@@ -979,22 +987,24 @@ export default function ChatPage() {
         }
 
         .carouselBtn:hover {
-          background: #6366f1;
-          color: white;
-          border-color: #6366f1;
+          background: rgba(0, 229, 255, 0.2);
+          border-color: #00e5ff;
+          box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
         }
 
         .carouselCounter {
           font-size: 12px;
-          color: #6b7280;
+          color: #4a6580;
+          font-family: 'Space Mono', monospace;
         }
 
         .productCard {
           display: flex;
           gap: 16px;
           padding: 12px;
-          background: #fafafa;
+          background: rgba(0, 229, 255, 0.03);
           border-radius: 8px;
+          border: 1px solid rgba(0, 229, 255, 0.1);
         }
 
         .productImageContainer {
@@ -1003,7 +1013,7 @@ export default function ChatPage() {
           border-radius: 8px;
           overflow: hidden;
           flex-shrink: 0;
-          background: white;
+          background: rgba(0, 229, 255, 0.05);
         }
 
         .productImage {
@@ -1019,7 +1029,7 @@ export default function ChatPage() {
           align-items: center;
           justify-content: center;
           font-size: 32px;
-          background: #f3f4f6;
+          background: rgba(0, 229, 255, 0.05);
         }
 
         .productInfo {
@@ -1032,7 +1042,7 @@ export default function ChatPage() {
         .productName {
           font-size: 14px;
           font-weight: 500;
-          color: #1f2937;
+          color: #e8f4fc;
           line-height: 1.3;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -1043,7 +1053,7 @@ export default function ChatPage() {
         .productPrice {
           font-size: 18px;
           font-weight: 700;
-          color: #059669;
+          color: #00ff88;
         }
 
         .productRating {
@@ -1054,11 +1064,11 @@ export default function ChatPage() {
         }
 
         .stars {
-          color: #f59e0b;
+          color: #ffaa00;
         }
 
         .ratingValue {
-          color: #6b7280;
+          color: #4a6580;
         }
 
         .carouselDots {
@@ -1073,23 +1083,23 @@ export default function ChatPage() {
           height: 8px;
           border-radius: 50%;
           border: none;
-          background: #e5e7eb;
+          background: rgba(0, 229, 255, 0.2);
           cursor: pointer;
           transition: all 0.2s;
         }
 
         .carouselDot.active {
-          background: #6366f1;
+          background: #00e5ff;
           transform: scale(1.2);
+          box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
         }
 
         /* Mini Chart */
         .miniChart {
-          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%);
           border-radius: 12px;
           padding: 16px;
-          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-          border: 1px solid #e2e8f0;
+          border: 1px solid rgba(0, 229, 255, 0.15);
           margin-top: 12px;
         }
 
@@ -1099,8 +1109,9 @@ export default function ChatPage() {
           align-items: center;
           font-size: 13px;
           font-weight: 600;
-          color: #374151;
+          color: #e8f4fc;
           margin-bottom: 12px;
+          font-family: 'Space Mono', monospace;
         }
 
         .trendBadge {
@@ -1108,16 +1119,19 @@ export default function ChatPage() {
           padding: 4px 10px;
           border-radius: 20px;
           font-weight: 600;
+          font-family: 'Space Mono', monospace;
         }
 
         .trendBadge.up {
-          background: #dcfce7;
-          color: #16a34a;
+          background: rgba(0, 255, 136, 0.2);
+          color: #00ff88;
+          border: 1px solid rgba(0, 255, 136, 0.3);
         }
 
         .trendBadge.down {
-          background: #fee2e2;
-          color: #dc2626;
+          background: rgba(255, 71, 87, 0.2);
+          color: #ff4757;
+          border: 1px solid rgba(255, 71, 87, 0.3);
         }
 
         /* Message Meta */
@@ -1129,15 +1143,18 @@ export default function ChatPage() {
 
         .messageTime {
           font-size: 11px;
-          color: #9ca3af;
+          color: #4a6580;
+          font-family: 'Space Mono', monospace;
         }
 
         .messageIntent {
           font-size: 10px;
           padding: 2px 8px;
-          background: #f3f4f6;
+          background: rgba(0, 229, 255, 0.1);
+          border: 1px solid rgba(0, 229, 255, 0.2);
           border-radius: 10px;
-          color: #6b7280;
+          color: #00e5ff;
+          font-family: 'Space Mono', monospace;
         }
 
         /* Typing Indicator */
@@ -1146,8 +1163,9 @@ export default function ChatPage() {
           align-items: center;
           gap: 8px;
           padding: 8px 0;
-          color: #6b7280;
+          color: #4a6580;
           font-size: 13px;
+          font-family: 'Space Mono', monospace;
         }
 
         .typingDots {
@@ -1158,7 +1176,7 @@ export default function ChatPage() {
         .typingDots span {
           width: 6px;
           height: 6px;
-          background: #6366f1;
+          background: #00e5ff;
           border-radius: 50%;
           animation: bounce 1.4s infinite ease-in-out both;
         }
@@ -1177,25 +1195,26 @@ export default function ChatPage() {
           flex-wrap: wrap;
           gap: 8px;
           padding: 12px 24px;
-          background: rgba(255, 255, 255, 0.9);
-          border-top: 1px solid rgba(0, 0, 0, 0.05);
+          background: rgba(5, 13, 26, 0.95);
+          border-top: 1px solid rgba(0, 229, 255, 0.1);
         }
 
         .suggestionChipNew {
           padding: 8px 16px;
-          background: white;
-          border: 1px solid #e5e7eb;
+          background: rgba(0, 229, 255, 0.05);
+          border: 1px solid rgba(0, 229, 255, 0.2);
           border-radius: 20px;
           font-size: 13px;
-          color: #374151;
+          color: #e8f4fc;
           cursor: pointer;
           transition: all 0.2s;
+          font-family: 'Space Mono', monospace;
         }
 
         .suggestionChipNew:hover:not(:disabled) {
-          background: #6366f1;
-          border-color: #6366f1;
-          color: white;
+          background: rgba(0, 229, 255, 0.15);
+          border-color: #00e5ff;
+          box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
           transform: translateY(-1px);
         }
 
@@ -1209,27 +1228,34 @@ export default function ChatPage() {
           display: flex;
           gap: 12px;
           padding: 16px 24px;
-          background: white;
-          border-top: 1px solid #e5e7eb;
+          background: linear-gradient(90deg, #050d1a 0%, #0a1628 100%);
+          border-top: 1px solid rgba(0, 229, 255, 0.12);
         }
 
         .chatInputNew {
           flex: 1;
           padding: 14px 20px;
-          border: 2px solid #e5e7eb;
+          border: 1px solid rgba(0, 229, 255, 0.2);
           border-radius: 25px;
           font-size: 14px;
           outline: none;
           transition: all 0.2s;
+          background: rgba(0, 229, 255, 0.03);
+          color: #e8f4fc;
+          font-family: 'Space Mono', monospace;
+        }
+
+        .chatInputNew::placeholder {
+          color: #4a6580;
         }
 
         .chatInputNew:focus {
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+          border-color: #00e5ff;
+          box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
         }
 
         .chatInputNew:disabled {
-          background: #f9fafb;
+          background: rgba(0, 229, 255, 0.02);
         }
 
         .sendButtonNew {
@@ -1237,19 +1263,20 @@ export default function ChatPage() {
           height: 50px;
           border-radius: 50%;
           border: none;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
+          background: linear-gradient(135deg, #00e5ff 0%, #00ff88 100%);
+          color: #020408;
           font-size: 20px;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
+          box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
         }
 
         .sendButtonNew:hover:not(:disabled) {
           transform: scale(1.05);
-          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+          box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
         }
 
         .sendButtonNew:disabled {
@@ -1261,8 +1288,8 @@ export default function ChatPage() {
           width: 50px;
           height: 50px;
           border-radius: 50%;
-          border: 2px solid #e5e7eb;
-          background: white;
+          border: 1px solid rgba(0, 229, 255, 0.25);
+          background: rgba(0, 229, 255, 0.05);
           font-size: 20px;
           cursor: pointer;
           display: flex;
@@ -1272,19 +1299,19 @@ export default function ChatPage() {
         }
 
         .voiceButtonNew:hover:not(:disabled) {
-          border-color: #667eea;
-          background: #f0f1ff;
+          border-color: #00e5ff;
+          background: rgba(0, 229, 255, 0.15);
         }
 
         .voiceButtonNew.recording {
-          border-color: #ef4444;
-          background: #fef2f2;
+          border-color: #ff4757;
+          background: rgba(255, 71, 87, 0.15);
           animation: pulse 1.5s infinite;
         }
 
         @keyframes pulse {
-          0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-          50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+          0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); }
+          50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
         }
 
         .voiceButtonNew:disabled {
@@ -1295,8 +1322,8 @@ export default function ChatPage() {
         .sendSpinner {
           width: 20px;
           height: 20px;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-top-color: white;
+          border: 2px solid rgba(2, 4, 8, 0.3);
+          border-top-color: #020408;
           border-radius: 50%;
           animation: spin 1s linear infinite;
         }
@@ -1333,8 +1360,8 @@ export default function ChatPage() {
           width: 40px;
           height: 40px;
           border-radius: 10px;
-          border: 1px solid #e5e7eb;
-          background: white;
+          border: 1px solid rgba(0, 229, 255, 0.2);
+          background: rgba(0, 229, 255, 0.05);
           font-size: 18px;
           cursor: pointer;
           display: flex;
@@ -1344,8 +1371,26 @@ export default function ChatPage() {
         }
 
         .btnIcon:hover {
-          background: #f3f4f6;
-          border-color: #d1d5db;
+          background: rgba(0, 229, 255, 0.15);
+          border-color: #00e5ff;
+        }
+
+        .btnSecondary {
+          padding: 8px 16px;
+          border-radius: 10px;
+          border: 1px solid rgba(0, 229, 255, 0.2);
+          background: rgba(0, 229, 255, 0.05);
+          color: #e8f4fc;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-family: 'Space Mono', monospace;
+        }
+
+        .btnSecondary:hover {
+          background: rgba(255, 71, 87, 0.15);
+          border-color: rgba(255, 71, 87, 0.3);
+          color: #ff4757;
         }
 
         /* Export Dropdown */
@@ -1358,10 +1403,10 @@ export default function ChatPage() {
           top: 100%;
           right: 0;
           margin-top: 8px;
-          background: white;
+          background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%);
           border-radius: 12px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-          border: 1px solid #e5e7eb;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+          border: 1px solid rgba(0, 229, 255, 0.2);
           overflow: hidden;
           z-index: 100;
           min-width: 180px;
@@ -1373,34 +1418,37 @@ export default function ChatPage() {
           padding: 12px 16px;
           text-align: left;
           border: none;
-          background: white;
+          background: transparent;
           cursor: pointer;
           font-size: 14px;
+          color: #e8f4fc;
           transition: background 0.2s;
+          font-family: 'Space Mono', monospace;
         }
 
         .exportMenu button:hover {
-          background: #f3f4f6;
+          background: rgba(0, 229, 255, 0.1);
         }
 
         .exportMenu button:not(:last-child) {
-          border-bottom: 1px solid #e5e7eb;
+          border-bottom: 1px solid rgba(0, 229, 255, 0.1);
         }
 
-        /* Product Comparison */
+        /* Product Comparison Neural */
         .comparisonContainer {
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%);
           border-radius: 16px;
           padding: 16px;
           margin-top: 12px;
-          border: 1px solid #fbbf24;
+          border: 1px solid rgba(0, 229, 255, 0.15);
         }
 
         .comparisonHeader {
           font-size: 14px;
           font-weight: 600;
-          color: #92400e;
+          color: #00e5ff;
           margin-bottom: 12px;
+          font-family: 'Space Mono', monospace;
         }
 
         .comparisonGrid {
@@ -1410,11 +1458,17 @@ export default function ChatPage() {
         }
 
         .comparisonCard {
-          background: white;
+          background: rgba(0, 229, 255, 0.03);
           border-radius: 12px;
           padding: 12px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          border: 1px solid rgba(0, 229, 255, 0.1);
           text-align: center;
+          transition: all 0.2s;
+        }
+
+        .comparisonCard:hover {
+          border-color: rgba(0, 229, 255, 0.3);
+          box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
         }
 
         .comparisonImage {
@@ -1424,7 +1478,7 @@ export default function ChatPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #f9fafb;
+          background: rgba(0, 229, 255, 0.05);
           border-radius: 8px;
           overflow: hidden;
         }
@@ -1442,7 +1496,7 @@ export default function ChatPage() {
         .comparisonName {
           font-size: 12px;
           font-weight: 500;
-          color: #374151;
+          color: #e8f4fc;
           margin-bottom: 8px;
           height: 32px;
           overflow: hidden;
@@ -1460,31 +1514,31 @@ export default function ChatPage() {
         .comparisonPrice {
           font-size: 14px;
           font-weight: 700;
-          color: #059669;
+          color: #00ff88;
         }
 
         .comparisonPrice.best {
-          color: #16a34a;
-          background: #dcfce7;
+          color: #00ff88;
+          background: rgba(0, 255, 136, 0.15);
           padding: 4px 8px;
           border-radius: 6px;
         }
 
         .comparisonRating {
           font-size: 13px;
-          color: #f59e0b;
+          color: #ffaa00;
         }
 
         .comparisonRating.best {
-          color: #d97706;
-          background: #fef3c7;
+          color: #ffaa00;
+          background: rgba(255, 170, 0, 0.15);
           padding: 4px 8px;
           border-radius: 6px;
         }
 
         .comparisonReviews {
           font-size: 11px;
-          color: #6b7280;
+          color: #4a6580;
         }
 
         .bestBadge {
@@ -1492,99 +1546,7 @@ export default function ChatPage() {
           font-size: 9px;
           margin-top: 2px;
           font-weight: 600;
-        }
-
-        /* Dark Mode Styles */
-        body.dark-mode .chatContainerNew {
-          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-        }
-
-        body.dark-mode .chatMessagesNew {
-          background: linear-gradient(to bottom, #1f2937, #111827);
-        }
-
-        body.dark-mode .chatLoading {
-          color: #9ca3af;
-        }
-
-        body.dark-mode .messageContentNew {
-          background: #374151;
-          color: #f3f4f6;
-        }
-
-        body.dark-mode .userMessageNew .messageContentNew {
-          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-          color: white;
-        }
-
-        body.dark-mode .messageTextNew,
-        body.dark-mode .mdP,
-        body.dark-mode .mdList {
-          color: #e5e7eb;
-        }
-
-        body.dark-mode .mdH1,
-        body.dark-mode .mdH2,
-        body.dark-mode .mdH3 {
-          color: #f9fafb;
-        }
-
-        body.dark-mode .chatSuggestionsNew {
-          background: #1f2937;
-          border-top-color: #374151;
-        }
-
-        body.dark-mode .suggestionChipNew {
-          background: #374151;
-          color: #e5e7eb;
-          border-color: #4b5563;
-        }
-
-        body.dark-mode .suggestionChipNew:hover {
-          background: #4b5563;
-          border-color: #6366f1;
-        }
-
-        body.dark-mode .chatInputContainerNew {
-          background: #1f2937;
-          border-top-color: #374151;
-        }
-
-        body.dark-mode .chatInputNew {
-          background: #374151;
-          border-color: #4b5563;
-          color: #f3f4f6;
-        }
-
-        body.dark-mode .chatInputNew::placeholder {
-          color: #9ca3af;
-        }
-
-        body.dark-mode .voiceButtonNew {
-          background: #374151;
-          border-color: #4b5563;
-        }
-
-        body.dark-mode .miniChart {
-          background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-          border-color: #4b5563;
-        }
-
-        body.dark-mode .miniChartHeader {
-          color: #e5e7eb;
-        }
-
-        body.dark-mode .productCard {
-          background: #374151;
-          border-color: #4b5563;
-        }
-
-        body.dark-mode .productName {
-          color: #f3f4f6;
-        }
-
-        body.dark-mode .carouselHeader {
-          color: #e5e7eb;
+          font-family: 'Space Mono', monospace;
         }
       `}</style>
     </div>

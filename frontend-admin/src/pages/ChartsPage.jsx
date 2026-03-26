@@ -9,6 +9,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js";
 
 import Sidebar from "../components/layout/Sidebar";
@@ -22,7 +23,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 export default function ChartsPage() {
@@ -87,9 +89,15 @@ export default function ChartsPage() {
           ...(historyData?.records?.slice(-30).map((r) => r.units_sold) || []),
           ...Array(forecastData?.predictions?.length || 0).fill(null),
         ],
-        borderColor: "#3b82f6",
-        backgroundColor: "rgba(59, 130, 246, 0.1)",
-        tension: 0.3,
+        borderColor: "#00e5ff",
+        backgroundColor: "rgba(0, 229, 255, 0.1)",
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: "#00e5ff",
+        pointBorderColor: "#00e5ff",
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        borderWidth: 2,
       },
       {
         label: "Forecast",
@@ -97,10 +105,16 @@ export default function ChartsPage() {
           ...Array(historyData?.records?.slice(-30).length || 0).fill(null),
           ...(forecastData?.predictions?.map((p) => p.predicted_units_sold) || []),
         ],
-        borderColor: "#3ad17b",
-        backgroundColor: "rgba(58, 209, 123, 0.1)",
+        borderColor: "#00ff88",
+        backgroundColor: "rgba(0, 255, 136, 0.1)",
+        fill: true,
         borderDash: [5, 5],
-        tension: 0.3,
+        tension: 0.4,
+        pointBackgroundColor: "#00ff88",
+        pointBorderColor: "#00ff88",
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        borderWidth: 2,
       },
     ],
   };
@@ -109,16 +123,76 @@ export default function ChartsPage() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "top" },
+      legend: {
+        position: "top",
+        labels: {
+          color: "#4a6580",
+          font: {
+            family: "'Space Mono', monospace",
+            size: 11,
+          },
+        },
+      },
       title: {
         display: true,
         text: `Sales & Forecast - ${selectedProduct}`,
+        color: "#e8f4fc",
+        font: {
+          family: "'Space Mono', monospace",
+          size: 14,
+          weight: "bold",
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(5, 13, 26, 0.95)",
+        titleColor: "#00e5ff",
+        bodyColor: "#e8f4fc",
+        borderColor: "rgba(0, 229, 255, 0.3)",
+        borderWidth: 1,
+        titleFont: {
+          family: "'Space Mono', monospace",
+        },
+        bodyFont: {
+          family: "'Space Mono', monospace",
+        },
+        padding: 12,
+        cornerRadius: 8,
       },
     },
     scales: {
+      x: {
+        grid: {
+          color: "rgba(0, 229, 255, 0.08)",
+        },
+        ticks: {
+          color: "#4a6580",
+          font: {
+            family: "'Space Mono', monospace",
+            size: 10,
+          },
+        },
+      },
       y: {
         beginAtZero: true,
-        title: { display: true, text: "Units Sold" },
+        title: {
+          display: true,
+          text: "Units Sold",
+          color: "#4a6580",
+          font: {
+            family: "'Space Mono', monospace",
+            size: 11,
+          },
+        },
+        grid: {
+          color: "rgba(0, 229, 255, 0.08)",
+        },
+        ticks: {
+          color: "#4a6580",
+          font: {
+            family: "'Space Mono', monospace",
+            size: 10,
+          },
+        },
       },
     },
   };
@@ -143,13 +217,6 @@ export default function ChartsPage() {
                 <select
                   value={selectedProduct}
                   onChange={(e) => setSelectedProduct(e.target.value)}
-                  style={{
-                    height: 38,
-                    minWidth: 180,
-                    border: "1px solid #e7eaee",
-                    borderRadius: 12,
-                    padding: "0 12px",
-                  }}
                 >
                   {products.map((p) => (
                     <option key={p.product_id} value={p.product_id}>
