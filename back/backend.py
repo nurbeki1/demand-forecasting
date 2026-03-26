@@ -27,6 +27,8 @@ from services.model_service import (
     predict,
     clear_cache,
     get_cache_info,
+    get_feature_importance,
+    get_model_structure,
     CAT_COLS,
     DATE_COL,
     TARGET_COL,
@@ -43,9 +45,17 @@ Base.metadata.create_all(bind=engine)
 app.include_router(auth_router)
 
 # CORS (для Flutter/веб)
+# CORS - allow frontend domains
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://demand-forecasting-orcin.vercel.app",
+    "https://demand-forecasting.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -384,4 +394,42 @@ def retrain_model(
         "store_id": store_id,
         "metrics": trained["metrics"],
         "trained_at": str(trained["trained_at"]),
+    }
+
+
+# =========================================================
+# MODEL VISUALIZATION
+# =========================================================
+
+@app.get("/models/structure")
+def model_structure():
+    """Получить структуру модели для визуализации (публичный)"""
+    return get_model_structure()
+
+
+@app.get("/models/features/{product_id}")
+def model_features(
+    product_id: str,
+    store_id: Optional[str] = Query(None),
+    user=Depends(get_current_user),
+):
+    """Получить важность признаков для продукта"""
+    return get_feature_importance(product_id, store_id)
+
+
+@app.get("/models/visualize/{product_id}")
+def model_visualize(
+    product_id: str,
+    store_id: Optional[str] = Query(None),
+    user=Depends(get_current_user),
+):
+    """Полная визуализация модели: структура + features + метрики"""
+    structure = get_model_structure()
+    features = get_feature_importance(product_id, store_id)
+
+    return {
+        "structure": structure,
+        "feature_importance": features.get("features", []),
+        "metrics": features.get("metrics", {}),
+        "product_id": product_id,
     }
