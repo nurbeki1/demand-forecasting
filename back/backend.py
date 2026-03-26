@@ -57,7 +57,7 @@ app.add_middleware(
 
 DEFAULT_CSV_PATH = os.environ.get(
     "DATASET_PATH",
-    os.path.join(os.path.dirname(__file__), "retail_store_inventory.csv"),
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "retail_store_inventory.csv"),
 )
 
 
@@ -105,7 +105,10 @@ _df_cache: Optional[pd.DataFrame] = None
 
 def load_dataset(csv_path: str) -> pd.DataFrame:
     if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"Dataset not found: {csv_path}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Dataset unavailable. Expected at: {csv_path}"
+        )
 
     df = pd.read_csv(csv_path)
 
