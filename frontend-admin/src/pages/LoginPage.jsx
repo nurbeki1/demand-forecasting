@@ -4,13 +4,12 @@ import { useAuth } from "../context/AuthContext";
 import "../styles/dashboard.css";
 
 export default function LoginPage() {
-  const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -19,11 +18,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (isRegister) {
-        await register(email, password);
-      } else {
-        await login(email, password);
-      }
+      await login(email, password);
       navigate("/");
     } catch (err) {
       setError(err.message || "Authentication failed");
@@ -36,8 +31,23 @@ export default function LoginPage() {
     <div className="loginPage">
       <div className="loginCard">
         <div className="loginHeader">
-          <h1>Demand Forecasting</h1>
-          <p>{isRegister ? "Create an account" : "Sign in to continue"}</p>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            margin: "0 auto 16px",
+            background: "linear-gradient(135deg, var(--pulse) 0%, var(--signal) 100%)",
+            borderRadius: "12px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "20px",
+            fontWeight: "bold",
+            color: "var(--void)"
+          }}>
+            DF
+          </div>
+          <h1>Admin Panel</h1>
+          <p>Sign in with admin credentials</p>
         </div>
 
         <form onSubmit={handleSubmit} className="loginForm">
@@ -50,7 +60,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              placeholder="admin@example.com"
               required
               disabled={loading}
             />
@@ -63,7 +73,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder="Enter password"
               required
               disabled={loading}
               minLength={4}
@@ -71,20 +81,18 @@ export default function LoginPage() {
           </div>
 
           <button type="submit" className="btnPrimary" disabled={loading}>
-            {loading ? "Loading..." : isRegister ? "Register" : "Sign In"}
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
         <div className="loginFooter">
-          <button
-            type="button"
-            className="linkBtn"
-            onClick={() => setIsRegister(!isRegister)}
-          >
-            {isRegister
-              ? "Already have an account? Sign in"
-              : "Don't have an account? Register"}
-          </button>
+          <p style={{
+            color: "var(--text-secondary)",
+            fontSize: "12px",
+            fontFamily: "var(--font-mono)"
+          }}>
+            Admin access only. Contact administrator for access.
+          </p>
         </div>
       </div>
     </div>
