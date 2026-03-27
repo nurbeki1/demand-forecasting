@@ -23,6 +23,7 @@ def mock_user():
     return user
 
 
+
 @pytest.fixture
 def client(mock_user):
     """Create test client with mocked auth"""

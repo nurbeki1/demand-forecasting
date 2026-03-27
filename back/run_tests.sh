@@ -1,3 +1,5 @@
+
+
 #!/bin/bash
 
 # Run all tests
@@ -14,8 +16,12 @@ python -m pytest tests/ -v --cov=services --cov=memory --cov-report=term-missing
 # python -m pytest tests/test_data_service.py -v
 # python -m pytest tests/test_intent_classifier.py -v
 # python -m pytest tests/test_chat_memory.py -v
+
 # python -m pytest tests/test_ai_chat_service.py -v
 # python -m pytest tests/test_api_chat.py -v
 
 echo ""
 echo "Test run complete!"
+
+
+

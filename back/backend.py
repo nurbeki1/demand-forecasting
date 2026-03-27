@@ -11,7 +11,7 @@ from pydantic import BaseModel
 # ===== DB + AUTH =====
 from app.database import engine, Base
 from app.auth_routes import router as auth_router
-from app.deps import get_current_user
+from app.deps import get_current_user, get_admin_user
 
 # ===== SERVICES =====
 from services.ai_chat_service import (
@@ -48,9 +48,11 @@ app.include_router(auth_router)
 # CORS - allow frontend domains
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://localhost:5174",
     "http://localhost:3000",
     "https://demand-forecasting-orcin.vercel.app",
     "https://demand-forecasting.vercel.app",
+    "https://demand-forecasting-chat.vercel.app",  # AI Chat frontend
 ]
 
 app.add_middleware(
@@ -165,8 +167,8 @@ def root():
 # =========================================================
 
 @app.get("/products", response_model=List[ProductInfo])
-def get_products(user=Depends(get_current_user)):
-    """Получить список всех продуктов"""
+def get_products(user=Depends(get_admin_user)):
+    """Получить список всех продуктов (Admin only)"""
     df = get_df()
 
     products = []
@@ -190,9 +192,9 @@ def get_history(
     store_id: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    user=Depends(get_current_user),
+    user=Depends(get_admin_user),
 ):
-    """Получить исторические данные по продукту"""
+    """Получить исторические данные по продукту (Admin only)"""
     df = get_df()
 
     sub = df[df["Product ID"] == product_id]
@@ -236,9 +238,9 @@ def forecast(
     product_id: str = Query(...),
     store_id: Optional[str] = Query(None),
     horizon_days: int = Query(7, ge=1, le=30),
-    user=Depends(get_current_user),
+    user=Depends(get_admin_user),
 ):
-    """Получить прогноз спроса на продукт"""
+    """Получить прогноз спроса на продукт (Admin only)"""
     df = get_df()
 
     sub = df[df["Product ID"] == product_id]
@@ -299,14 +301,14 @@ def delete_chat_history(user=Depends(get_current_user)):
 # =========================================================
 
 @app.get("/analytics/summary")
-def analytics_summary(user=Depends(get_current_user)):
-    """Сводная аналитика по датасету"""
+def analytics_summary(user=Depends(get_admin_user)):
+    """Сводная аналитика по датасету (Admin only)"""
     return get_analytics_summary()
 
 
 @app.get("/analytics/trends")
-def analytics_trends(user=Depends(get_current_user)):
-    """Тренды: растущие и падающие продукты"""
+def analytics_trends(user=Depends(get_admin_user)):
+    """Тренды: растущие и падающие продукты (Admin only)"""
     return get_analytics_trends()
 
 
@@ -315,8 +317,8 @@ def analytics_trends(user=Depends(get_current_user)):
 # =========================================================
 
 @app.get("/forecast/chart/{product_id}")
-def forecast_chart(product_id: str, horizon: int = 7, user=Depends(get_current_user)):
-    """Получить данные для графика (история + прогноз)"""
+def forecast_chart(product_id: str, horizon: int = 7, user=Depends(get_admin_user)):
+    """Получить данные для графика (Admin only)"""
     return get_forecast_chart(product_id, horizon)
 
 
@@ -327,9 +329,9 @@ def forecast_chart(product_id: str, horizon: int = 7, user=Depends(get_current_u
 @app.post("/upload")
 async def upload_csv(
     file: UploadFile = File(...),
-    user=Depends(get_current_user),
+    user=Depends(get_admin_user),
 ):
-    """Загрузить новый CSV датасет"""
+    """Загрузить новый CSV датасет (Admin only)"""
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed")
 
@@ -358,14 +360,14 @@ async def upload_csv(
 # =========================================================
 
 @app.get("/models/cache")
-def get_model_cache_info(user=Depends(get_current_user)):
-    """Получить информацию о кэше моделей"""
+def get_model_cache_info(user=Depends(get_admin_user)):
+    """Получить информацию о кэше моделей (Admin only)"""
     return get_cache_info()
 
 
 @app.delete("/models/cache")
-def clear_model_cache(user=Depends(get_current_user)):
-    """Очистить кэш моделей"""
+def clear_model_cache(user=Depends(get_admin_user)):
+    """Очистить кэш моделей (Admin only)"""
     cleared = clear_cache()
     return {"message": "Cache cleared", "models_cleared": cleared}
 
@@ -374,9 +376,9 @@ def clear_model_cache(user=Depends(get_current_user)):
 def retrain_model(
     product_id: str,
     store_id: Optional[str] = Query(None),
-    user=Depends(get_current_user),
+    user=Depends(get_admin_user),
 ):
-    """Принудительно переобучить модель для продукта"""
+    """Принудительно переобучить модель для продукта (Admin only)"""
     df = get_df()
 
     sub = df[df["Product ID"] == product_id]
@@ -411,9 +413,9 @@ def model_structure():
 def model_features(
     product_id: str,
     store_id: Optional[str] = Query(None),
-    user=Depends(get_current_user),
+    user=Depends(get_admin_user),
 ):
-    """Получить важность признаков для продукта"""
+    """Получить важность признаков для продукта (Admin only)"""
     return get_feature_importance(product_id, store_id)
 
 
@@ -421,9 +423,9 @@ def model_features(
 def model_visualize(
     product_id: str,
     store_id: Optional[str] = Query(None),
-    user=Depends(get_current_user),
+    user=Depends(get_admin_user),
 ):
-    """Полная визуализация модели: структура + features + метрики"""
+    """Полная визуализация модели (Admin only)"""
     structure = get_model_structure()
     features = get_feature_importance(product_id, store_id)
 
