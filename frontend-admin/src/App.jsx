@@ -1,95 +1,275 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+/**
+ * App.jsx - Main Application with Role-Based Routing
+ *
+ * Architecture:
+ * - AuthGuard: Blocks rendering until auth state is determined
+ * - AdminRoute: Only allows admin users
+ * - UserRoute: Only allows regular users
+ * - PublicRoute: Only allows unauthenticated users
+ *
+ * Routes:
+ * - /login - Public only
+ * - /admin/* - Admin only
+ * - /user - Regular users only
+ * - / - Redirects based on role
+ */
+
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 
+// Pages
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
+import ChatPage from "./pages/ChatPage";
 import AdminDashboard from "./pages/AdminDashboard";
-import ChartsPage from "./pages/ChartsPage";
+import ExecutiveDashboardPage from "./pages/ExecutiveDashboardPage";
 import TablePage from "./pages/TablePage";
 import UploadPage from "./pages/UploadPage";
-import ChatPage from "./pages/ChatPage";
 import ModelVisualizationPage from "./pages/ModelVisualizationPage";
 
+// Styles
 import "./styles/dashboard.css";
 
-function PrivateRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+// =============================================================================
+// LOADING COMPONENT
+// =============================================================================
 
-  if (loading) {
-    return <div className="loading">Loading...</div>;
-  }
+function LoadingScreen() {
+  return (
+    <div className="loading-screen" style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100vh',
+      background: 'var(--bg-primary, #0a0a0f)',
+      color: 'var(--text-secondary, #888)',
+      fontSize: '14px',
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div className="loading-spinner" style={{
+          width: '32px',
+          height: '32px',
+          border: '3px solid rgba(255,255,255,0.1)',
+          borderTopColor: 'var(--accent, #6366f1)',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto 16px',
+        }} />
+        <div>Loading...</div>
+      </div>
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+// =============================================================================
+// ROUTE GUARDS
+// =============================================================================
+
+/**
+ * AuthGuard - Blocks all rendering until auth state is determined
+ * This prevents flash of wrong content
+ */
+function AuthGuard({ children }) {
+  const { isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingScreen />;
   }
 
   return children;
 }
 
-function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+/**
+ * PublicRoute - Only accessible when NOT authenticated
+ * Redirects authenticated users to their appropriate dashboard
+ */
+function PublicRoute({ children }) {
+  const { isAuthenticated, isAdmin } = useAuth();
+  const location = useLocation();
 
+  if (isAuthenticated) {
+    // Redirect to appropriate dashboard
+    const redirectTo = isAdmin ? '/admin' : '/user';
+    return <Navigate to={redirectTo} replace state={{ from: location }} />;
+  }
+
+  return children;
+}
+
+/**
+ * AdminRoute - Only accessible by admin users
+ * Redirects non-admins to user area, unauthenticated to login
+ */
+function AdminRoute({ children }) {
+  const { isAuthenticated, isAdmin } = useAuth();
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (!isAdmin) {
+    // Regular users go to user area
+    return <Navigate to="/user" replace />;
+  }
+
+  return children;
+}
+
+/**
+ * UserRoute - Only accessible by regular (non-admin) users
+ * Redirects admins to admin area, unauthenticated to login
+ */
+function UserRoute({ children }) {
+  const { isAuthenticated, isAdmin } = useAuth();
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (isAdmin) {
+    // Admins go to admin area
+    return <Navigate to="/admin" replace />;
+  }
+
+  return children;
+}
+
+/**
+ * RoleBasedRedirect - Redirects to appropriate area based on role
+ * Used for catch-all routes
+ */
+function RoleBasedRedirect() {
+  const { isAuthenticated, isAdmin } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return <Navigate to="/user" replace />;
+}
+
+// =============================================================================
+// ROUTES
+// =============================================================================
+
+function AppRoutes() {
   return (
     <Routes>
+      {/* ============================================
+          LANDING PAGE - Public (with auth modal)
+          ============================================ */}
+      <Route path="/" element={<LandingPage />} />
+
+      {/* ============================================
+          PUBLIC ROUTES
+          ============================================ */}
       <Route
         path="/login"
-        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
-      />
-      <Route
-        path="/"
         element={
-          <PrivateRoute>
-            <AdminDashboard />
-          </PrivateRoute>
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
         }
       />
+
+      {/* ============================================
+          USER ROUTES - AI Chat
+          ============================================ */}
       <Route
-        path="/charts"
+        path="/user"
         element={
-          <PrivateRoute>
-            <ChartsPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/table"
-        element={
-          <PrivateRoute>
-            <TablePage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/upload"
-        element={
-          <PrivateRoute>
-            <UploadPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/chat"
-        element={
-          <PrivateRoute>
+          <UserRoute>
             <ChatPage />
-          </PrivateRoute>
+          </UserRoute>
+        }
+      />
+
+      {/* ============================================
+          ADMIN ROUTES
+          ============================================ */}
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <ExecutiveDashboardPage />
+          </AdminRoute>
         }
       />
       <Route
-        path="/model"
-        element={<ModelVisualizationPage />}
+        path="/admin/forecast"
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+        path="/admin/table"
+        element={
+          <AdminRoute>
+            <TablePage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/upload"
+        element={
+          <AdminRoute>
+            <UploadPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/model"
+        element={
+          <AdminRoute>
+            <ModelVisualizationPage />
+          </AdminRoute>
+        }
+      />
+
+      {/* ============================================
+          LEGACY ROUTES - Redirect to new paths
+          These ensure old bookmarks/links still work
+          ============================================ */}
+      <Route path="/forecast" element={<Navigate to="/admin/forecast" replace />} />
+      <Route path="/table" element={<Navigate to="/admin/table" replace />} />
+      <Route path="/upload" element={<Navigate to="/admin/upload" replace />} />
+      <Route path="/model" element={<Navigate to="/admin/model" replace />} />
+      <Route path="/chat" element={<RoleBasedRedirect />} />
+
+      {/* ============================================
+          CATCH-ALL - Redirect based on role
+          ============================================ */}
+      <Route path="*" element={<RoleBasedRedirect />} />
     </Routes>
   );
 }
+
+// =============================================================================
+// MAIN APP
+// =============================================================================
 
 export default function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <AppRoutes />
+          <AuthGuard>
+            <AppRoutes />
+          </AuthGuard>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

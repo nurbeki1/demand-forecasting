@@ -111,3 +111,65 @@ export async function retrainModel(productId, storeId) {
   }
   return res.json();
 }
+
+// =============================================================================
+// EXECUTIVE DASHBOARD APIs
+// =============================================================================
+
+export async function getExecutiveDashboard() {
+  const res = await fetch(`${BASE_URL}/dashboard/executive`, {
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch executive dashboard (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function getDataOperationsStatus() {
+  const res = await fetch(`${BASE_URL}/dashboard/data-operations`, {
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch data operations status (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function getAlerts({ severity, alertType, limit = 20 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (severity) params.set("severity", severity);
+  if (alertType) params.set("alert_type", alertType);
+
+  const res = await fetch(`${BASE_URL}/dashboard/alerts?${params}`, {
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch alerts (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function runScenarioAnalysis(scenario) {
+  const res = await fetch(`${BASE_URL}/dashboard/scenario`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(scenario),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to run scenario analysis (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function exploreForecast(request) {
+  const res = await fetch(`${BASE_URL}/dashboard/forecast-explorer`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to explore forecasts (${res.status})`);
+  }
+  return res.json();
+}

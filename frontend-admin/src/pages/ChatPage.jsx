@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   LineChart,
   Line,
@@ -10,101 +10,152 @@ import {
   Legend,
 } from "recharts";
 
-import Sidebar from "../components/layout/Sidebar";
-import Topbar from "../components/layout/Topbar";
-import { useTheme } from "../context/ThemeContext";
-
+import { useAuth } from "../context/AuthContext";
 import {
   sendChatMessage,
   getChatHistory,
   clearChatHistory,
 } from "../api/chatApi";
 
-import "../styles/dashboard.css";
+import "../styles/chat.css";
 
-// Simple Markdown-like renderer
+// ============================================
+// TYPEWRITER ANIMATION COMPONENT
+// ============================================
+const TYPEWRITER_PHRASES = [
+  "How can I help you today?",
+  "Ask anything, I'm ready.",
+  "Let's build something great.",
+  "Search, write, analyze, create.",
+  "Your AI workspace starts here.",
+];
+
+function TypewriterText() {
+  const [displayText, setDisplayText] = useState("");
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    const currentPhrase = TYPEWRITER_PHRASES[phraseIndex];
+
+    if (isPaused) {
+      const pauseTimer = setTimeout(() => {
+        setIsPaused(false);
+        setIsDeleting(true);
+      }, 2000);
+      return () => clearTimeout(pauseTimer);
+    }
+
+    const typeSpeed = isDeleting ? 30 : 50;
+
+    const timer = setTimeout(() => {
+      if (!isDeleting) {
+        // Typing
+        if (displayText.length < currentPhrase.length) {
+          setDisplayText(currentPhrase.slice(0, displayText.length + 1));
+        } else {
+          setIsPaused(true);
+        }
+      } else {
+        // Deleting
+        if (displayText.length > 0) {
+          setDisplayText(displayText.slice(0, -1));
+        } else {
+          setIsDeleting(false);
+          setPhraseIndex((prev) => (prev + 1) % TYPEWRITER_PHRASES.length);
+        }
+      }
+    }, typeSpeed);
+
+    return () => clearTimeout(timer);
+  }, [displayText, phraseIndex, isDeleting, isPaused]);
+
+  return (
+    <div className="typewriter">
+      <span className="typewriter-text">{displayText}</span>
+      <span className="typewriter-cursor">|</span>
+    </div>
+  );
+}
+
+// ============================================
+// MARKDOWN RENDERER
+// ============================================
 function renderMarkdown(text) {
   if (!text) return null;
 
-  // Split by lines and process
   const lines = text.split('\n');
   const elements = [];
   let inList = false;
   let listItems = [];
 
   lines.forEach((line, idx) => {
-    // Headers
     if (line.startsWith('### ')) {
       if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="mdList">{listItems}</ul>);
+        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
         listItems = [];
         inList = false;
       }
-      elements.push(<h4 key={idx} className="mdH3">{processInline(line.slice(4))}</h4>);
+      elements.push(<h4 key={idx} className="md-h3">{processInline(line.slice(4))}</h4>);
     } else if (line.startsWith('## ')) {
       if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="mdList">{listItems}</ul>);
+        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
         listItems = [];
         inList = false;
       }
-      elements.push(<h3 key={idx} className="mdH2">{processInline(line.slice(3))}</h3>);
+      elements.push(<h3 key={idx} className="md-h2">{processInline(line.slice(3))}</h3>);
     } else if (line.startsWith('# ')) {
       if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="mdList">{listItems}</ul>);
+        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
         listItems = [];
         inList = false;
       }
-      elements.push(<h2 key={idx} className="mdH1">{processInline(line.slice(2))}</h2>);
-    }
-    // List items
-    else if (line.match(/^[-*•]\s/)) {
+      elements.push(<h2 key={idx} className="md-h1">{processInline(line.slice(2))}</h2>);
+    } else if (line.match(/^[-*]\s/)) {
       inList = true;
       listItems.push(<li key={idx}>{processInline(line.slice(2))}</li>);
     } else if (line.match(/^\d+\.\s/)) {
       inList = true;
       listItems.push(<li key={idx}>{processInline(line.replace(/^\d+\.\s/, ''))}</li>);
-    }
-    // Empty line
-    else if (line.trim() === '') {
+    } else if (line === '---') {
       if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="mdList">{listItems}</ul>);
+        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
         listItems = [];
         inList = false;
       }
-      elements.push(<br key={idx} />);
-    }
-    // Regular paragraph
-    else {
+      elements.push(<hr key={idx} className="md-divider" />);
+    } else if (line.trim() === '') {
       if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="mdList">{listItems}</ul>);
+        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
         listItems = [];
         inList = false;
       }
-      elements.push(<p key={idx} className="mdP">{processInline(line)}</p>);
+    } else {
+      if (inList) {
+        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
+        listItems = [];
+        inList = false;
+      }
+      elements.push(<p key={idx} className="md-p">{processInline(line)}</p>);
     }
   });
 
-  // Flush remaining list
   if (inList && listItems.length > 0) {
-    elements.push(<ul key="list-final" className="mdList">{listItems}</ul>);
+    elements.push(<ul key="list-final" className="md-list">{listItems}</ul>);
   }
 
   return elements;
 }
 
-// Process inline markdown (bold, italic, code)
 function processInline(text) {
   if (!text) return text;
 
-  // Split by bold markers and process
   const parts = [];
-  let remaining = text;
-  let key = 0;
-
-  // Process **bold**
   const boldRegex = /\*\*(.+?)\*\*/g;
   let lastIndex = 0;
   let match;
+  let key = 0;
 
   while ((match = boldRegex.exec(text)) !== null) {
     if (match.index > lastIndex) {
@@ -121,72 +172,37 @@ function processInline(text) {
   return parts.length > 0 ? parts : text;
 }
 
-// Trend Badge Component
-function TrendBadge({ trend }) {
-  if (!trend) return null;
-
-  const { direction, percent, alert } = trend;
-
-  const getTrendColor = () => {
-    if (alert === 'hot') return 'hot';
-    if (alert === 'critical') return 'critical';
-    if (alert === 'warning') return 'warning';
-    if (direction === 'rising') return 'rising';
-    if (direction === 'declining' || direction === 'critical') return 'declining';
-    return 'stable';
-  };
-
-  const getTrendIcon = () => {
-    if (alert === 'hot') return '🔥';
-    if (alert === 'critical') return '🚨';
-    if (alert === 'warning') return '⚠️';
-    if (direction === 'rising') return '📈';
-    if (direction === 'declining') return '📉';
-    return '➖';
-  };
-
-  return (
-    <div className={`trendBadgeProduct ${getTrendColor()}`}>
-      <span className="trendIcon">{getTrendIcon()}</span>
-      <span className="trendPercent">
-        {percent > 0 ? '+' : ''}{percent?.toFixed(1)}%
-      </span>
-    </div>
-  );
-}
-
-// Product Card Component
+// ============================================
+// PRODUCT COMPONENTS
+// ============================================
 function ProductCard({ product }) {
   return (
-    <div className="productCard">
-      {/* Trend Badge if available */}
-      {product.trend && <TrendBadge trend={product.trend} />}
-
-      <div className="productImageContainer">
+    <div className="product-card">
+      <div className="product-image-container">
         {product.image_url ? (
           <img
             src={product.image_url}
             alt={product.name}
-            className="productImage"
+            className="product-image"
             onError={(e) => {
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'flex';
             }}
           />
         ) : null}
-        <div className="productImagePlaceholder" style={{ display: product.image_url ? 'none' : 'flex' }}>
+        <div className="product-image-placeholder" style={{ display: product.image_url ? 'none' : 'flex' }}>
           <span>📦</span>
         </div>
       </div>
-      <div className="productInfo">
-        <div className="productName">{product.name}</div>
-        <div className="productPrice">
+      <div className="product-info">
+        <div className="product-name">{product.name}</div>
+        <div className="product-price">
           {product.price > 0 ? `₹${product.price.toLocaleString()}` : 'Price N/A'}
         </div>
         {product.rating > 0 && (
-          <div className="productRating">
+          <div className="product-rating">
             <span className="stars">{'★'.repeat(Math.round(product.rating))}</span>
-            <span className="ratingValue">{product.rating.toFixed(1)}</span>
+            <span className="rating-value">{product.rating.toFixed(1)}</span>
           </div>
         )}
       </div>
@@ -194,55 +210,39 @@ function ProductCard({ product }) {
   );
 }
 
-// Product Carousel Component
 function ProductCarousel({ images }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!images || images.length === 0) return null;
 
-  const goTo = (index) => {
-    setCurrentIndex(index);
-  };
-
-  const goPrev = () => {
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
-
-  const goNext = () => {
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
-
   return (
-    <div className="productCarousel">
-      <div className="carouselHeader">
-        <span className="carouselTitle">📦 Найденные товары ({images.length})</span>
-        <div className="carouselNav">
-          <button onClick={goPrev} className="carouselBtn">‹</button>
-          <span className="carouselCounter">{currentIndex + 1} / {images.length}</span>
-          <button onClick={goNext} className="carouselBtn">›</button>
+    <div className="product-carousel">
+      <div className="carousel-header">
+        <span className="carousel-title">Products ({images.length})</span>
+        <div className="carousel-nav">
+          <button
+            className="carousel-btn"
+            onClick={() => setCurrentIndex(prev => prev === 0 ? images.length - 1 : prev - 1)}
+          >
+            ‹
+          </button>
+          <span className="carousel-counter">{currentIndex + 1} / {images.length}</span>
+          <button
+            className="carousel-btn"
+            onClick={() => setCurrentIndex(prev => prev === images.length - 1 ? 0 : prev + 1)}
+          >
+            ›
+          </button>
         </div>
       </div>
-      <div className="carouselContent">
-        <ProductCard product={images[currentIndex]} />
-      </div>
-      <div className="carouselDots">
-        {images.map((_, idx) => (
-          <button
-            key={idx}
-            className={`carouselDot ${idx === currentIndex ? 'active' : ''}`}
-            onClick={() => goTo(idx)}
-          />
-        ))}
-      </div>
+      <ProductCard product={images[currentIndex]} />
     </div>
   );
 }
 
-// Mini Chart Component for inline display
 function MiniChart({ data }) {
   if (!data?.history && !data?.forecast) return null;
 
-  // Prepare data with separate columns for history and forecast
   const historyData = (data.history || []).slice(-7).map((h) => ({
     name: h.date?.split('-').slice(1).join('/') || '',
     history: h.demand,
@@ -253,17 +253,14 @@ function MiniChart({ data }) {
     forecast: f.predicted_demand,
   }));
 
-  // Combine with last history point connecting to forecast
   const combined = [...historyData];
   if (historyData.length > 0 && forecastData.length > 0) {
-    // Add forecast start point to last history entry
     combined[combined.length - 1].forecast = combined[combined.length - 1].history;
   }
   forecastData.forEach(f => combined.push(f));
 
   if (combined.length === 0) return null;
 
-  // Calculate trend
   const avgHistory = historyData.length > 0
     ? historyData.reduce((a, b) => a + (b.history || 0), 0) / historyData.length
     : 0;
@@ -274,213 +271,239 @@ function MiniChart({ data }) {
   const trendUp = avgForecast >= avgHistory;
 
   return (
-    <div className="miniChart">
-      <div className="miniChartHeader">
-        <span>📈 Прогноз спроса</span>
-        <span className={`trendBadge ${trendUp ? 'up' : 'down'}`}>
+    <div className="mini-chart">
+      <div className="mini-chart-header">
+        <span>Demand Forecast</span>
+        <span className={`trend-badge ${trendUp ? 'up' : 'down'}`}>
           {trendUp ? '↑' : '↓'} {Math.abs(trendPercent)}%
         </span>
       </div>
-      <ResponsiveContainer width="100%" height={140}>
+      <ResponsiveContainer width="100%" height={160}>
         <LineChart data={combined} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-          <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-          <YAxis tick={{ fontSize: 10 }} width={35} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} />
+          <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} width={40} />
           <Tooltip
-            contentStyle={{ fontSize: 12, borderRadius: 8 }}
-            formatter={(value, name) => [value?.toFixed(0), name === 'history' ? 'История' : 'Прогноз']}
+            contentStyle={{
+              background: '#1e1e2e',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              fontSize: 12
+            }}
           />
-          <Legend
-            wrapperStyle={{ fontSize: 11 }}
-            formatter={(value) => value === 'history' ? 'История' : 'Прогноз'}
-          />
-          <Line
-            type="monotone"
-            dataKey="history"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            dot={{ r: 3 }}
-            name="history"
-          />
-          <Line
-            type="monotone"
-            dataKey="forecast"
-            stroke="#8b5cf6"
-            strokeWidth={2}
-            strokeDasharray="5 5"
-            dot={{ r: 3 }}
-            name="forecast"
-          />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Line type="monotone" dataKey="history" stroke="#60a5fa" strokeWidth={2} dot={{ r: 3 }} name="History" />
+          <Line type="monotone" dataKey="forecast" stroke="#34d399" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name="Forecast" />
         </LineChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
-// Product Comparison Component (side-by-side)
-function ProductComparison({ products }) {
-  if (!products || products.length < 2) return null;
+// ============================================
+// CONVERSATION HELPERS
+// ============================================
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
 
-  // Find best values for highlighting
-  const prices = products.map(p => p.price || 0).filter(p => p > 0);
-  const ratings = products.map(p => p.rating || 0).filter(r => r > 0);
-  const minPrice = Math.min(...prices);
-  const maxRating = Math.max(...ratings);
+function getConversations() {
+  try {
+    return JSON.parse(localStorage.getItem('chat_conversations') || '[]');
+  } catch {
+    return [];
+  }
+}
 
+function saveConversations(conversations) {
+  localStorage.setItem('chat_conversations', JSON.stringify(conversations));
+}
+
+function getCurrentConversationId() {
+  return localStorage.getItem('current_conversation_id');
+}
+
+function setCurrentConversationId(id) {
+  if (id) {
+    localStorage.setItem('current_conversation_id', id);
+  } else {
+    localStorage.removeItem('current_conversation_id');
+  }
+}
+
+// ============================================
+// CHAT SIDEBAR COMPONENT (Conversation History)
+// ============================================
+function ChatSidebar({
+  isOpen,
+  onClose,
+  conversations,
+  currentConversationId,
+  onNewChat,
+  onSelectConversation,
+  onDeleteConversation,
+  user,
+  onLogout
+}) {
   return (
-    <div className="comparisonContainer">
-      <div className="comparisonHeader">
-        <span>⚖️ Сравнение товаров ({products.length})</span>
-      </div>
-      <div className="comparisonGrid">
-        {products.slice(0, 4).map((product, idx) => (
-          <div key={idx} className="comparisonCard">
-            <div className="comparisonImage">
-              {product.image_url ? (
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
-              ) : (
-                <span>📦</span>
-              )}
+    <>
+      {/* Mobile Overlay */}
+      <div
+        className={`chat-sidebar-overlay ${isOpen ? 'visible' : ''}`}
+        onClick={onClose}
+      />
+
+      {/* Chat Sidebar */}
+      <aside className={`chat-sidebar ${isOpen ? 'open' : ''}`}>
+        {/* Logo Section */}
+        <div className="chat-sidebar-header">
+          <div className="chat-sidebar-logo">
+            <div className="logo-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
             </div>
-            <div className="comparisonName">{product.name}</div>
-            <div className="comparisonStats">
-              <div className={`comparisonPrice ${product.price === minPrice ? 'best' : ''}`}>
-                ₹{(product.price || 0).toLocaleString()}
-                {product.price === minPrice && <span className="bestBadge">Лучшая цена</span>}
-              </div>
-              {product.rating > 0 && (
-                <div className={`comparisonRating ${product.rating === maxRating ? 'best' : ''}`}>
-                  ★ {product.rating.toFixed(1)}
-                  {product.rating === maxRating && <span className="bestBadge">Лучший рейтинг</span>}
-                </div>
-              )}
-              {product.num_ratings > 0 && (
-                <div className="comparisonReviews">
-                  {product.num_ratings.toLocaleString()} отзывов
-                </div>
-              )}
-            </div>
+            <span className="logo-text">Chat History</span>
           </div>
-        ))}
-      </div>
-    </div>
+          <button className="chat-sidebar-close-btn" onClick={onClose}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* New Chat Button */}
+        <button className="new-chat-btn" onClick={onNewChat}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>New Chat</span>
+        </button>
+
+        {/* Recent Chats */}
+        <div className="chat-sidebar-section">
+          <div className="section-title">Recent Chats</div>
+          <div className="chat-list">
+            {conversations.length === 0 ? (
+              <div className="empty-chats">
+                <span>No conversations yet</span>
+              </div>
+            ) : (
+              conversations.slice(0, 10).map(conv => (
+                <div
+                  key={conv.id}
+                  className={`chat-item ${conv.id === currentConversationId ? 'active' : ''}`}
+                >
+                  <button
+                    className="chat-item-btn"
+                    onClick={() => onSelectConversation(conv.id)}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span className="chat-item-title">{conv.title || 'New Chat'}</span>
+                  </button>
+                  <button
+                    className="chat-item-delete"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteConversation(conv.id);
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Spacer */}
+        <div className="chat-sidebar-spacer" />
+
+        {/* Settings */}
+        <div className="chat-sidebar-section">
+          <button className="chat-sidebar-menu-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span>Settings</span>
+          </button>
+        </div>
+
+        {/* User info - simplified */}
+        <div className="chat-sidebar-user">
+          <div className="user-avatar">
+            {user?.email?.[0]?.toUpperCase() || 'U'}
+          </div>
+          <div className="user-info">
+            <span className="user-email">{user?.email || 'User'}</span>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }
 
+// ============================================
+// MAIN CHAT PAGE COMPONENT
+// ============================================
 export default function ChatPage() {
+  const { user, logout } = useAuth();
+
+  // Chat state
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [suggestions, setSuggestions] = useState([]);
-  const [error, setError] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(false);
 
-  // Use global theme context
-  const { darkMode } = useTheme();
+  // UI state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [currentConversationId, setCurrentConversationIdState] = useState(null);
+
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(true);
+  const recognitionRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const recognitionRef = useRef(null);
 
-  // Check if speech recognition is supported
+  // Determine if we're in "empty state" (no messages yet)
+  const isEmptyState = messages.length === 0;
+
+  // Initialize
   useEffect(() => {
+    const savedConversations = getConversations();
+    setConversations(savedConversations);
+
+    const currentId = getCurrentConversationId();
+    if (currentId && savedConversations.find(c => c.id === currentId)) {
+      loadConversation(currentId, savedConversations);
+    }
+
+    // Open sidebar by default on desktop
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(true);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    // Check for speech recognition support
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      setVoiceSupported(true);
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'ru-RU'; // Russian, will also understand English
-
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0].transcript)
-          .join('');
-        setInputValue(transcript);
-      };
-
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsRecording(false);
-        if (event.error === 'not-allowed') {
-          setError('Доступ к микрофону запрещён. Разрешите доступ в настройках браузера.');
-        }
-      };
-
-      recognitionRef.current = recognition;
+    if (!SpeechRecognition) {
+      setSpeechSupported(false);
     }
+
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const toggleVoiceRecording = () => {
-    if (!recognitionRef.current) return;
-
-    if (isRecording) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-    } else {
-      setInputValue('');
-      recognitionRef.current.start();
-      setIsRecording(true);
-    }
-  };
-
-  // Export chat to text file
-  const exportToText = () => {
-    const text = messages.map(msg => {
-      const role = msg.role === 'user' ? 'Вы' : 'AI';
-      const time = msg.timestamp ? new Date(msg.timestamp).toLocaleString() : '';
-      return `[${time}] ${role}:\n${msg.content}\n`;
-    }).join('\n---\n\n');
-
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `chat-export-${new Date().toISOString().slice(0,10)}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Export chat to CSV (Excel compatible)
-  const exportToCSV = () => {
-    const headers = ['Время', 'Роль', 'Сообщение', 'Intent'];
-    const rows = messages.map(msg => [
-      msg.timestamp ? new Date(msg.timestamp).toLocaleString() : '',
-      msg.role === 'user' ? 'Пользователь' : 'AI Ассистент',
-      `"${(msg.content || '').replace(/"/g, '""')}"`,
-      msg.intent || ''
-    ]);
-
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const bom = '\uFEFF'; // UTF-8 BOM for Excel
-    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `chat-export-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Export state for dropdown
-  const [showExportMenu, setShowExportMenu] = useState(false);
-
-  // Load history on mount
-  useEffect(() => {
-    loadHistory();
-  }, []);
-
-  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -489,36 +512,72 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const loadHistory = async () => {
+  const loadConversation = useCallback((conversationId, convList = conversations) => {
+    const conv = convList.find(c => c.id === conversationId);
+    if (conv) {
+      setMessages(conv.messages || []);
+      setCurrentConversationIdState(conversationId);
+      setCurrentConversationId(conversationId);
+    }
+  }, [conversations]);
+
+  const saveCurrentConversation = useCallback((newMessages, title = null) => {
+    const convId = currentConversationId || generateId();
+
+    const updatedConversations = [...conversations];
+    const existingIndex = updatedConversations.findIndex(c => c.id === convId);
+
+    const conversationData = {
+      id: convId,
+      title: title || (newMessages.find(m => m.role === 'user')?.content?.slice(0, 40) || 'New Chat'),
+      messages: newMessages,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (existingIndex >= 0) {
+      updatedConversations[existingIndex] = conversationData;
+    } else {
+      updatedConversations.unshift(conversationData);
+    }
+
+    setConversations(updatedConversations);
+    saveConversations(updatedConversations);
+    setCurrentConversationIdState(convId);
+    setCurrentConversationId(convId);
+  }, [currentConversationId, conversations]);
+
+  const handleNewChat = async () => {
     try {
-      const history = await getChatHistory(20);
-      if (history.length === 0) {
-        setMessages([
-          {
-            role: "assistant",
-            content:
-              "Привет! Я ваш AI-ассистент по прогнозированию спроса. Спрашивайте о товарах, трендах или прогнозах.\n\n**Примеры запросов:**\n- iPhone 14 Pro\n- Nike кроссовки\n- Прогноз для P0001\n- Топ-5 продуктов",
-          },
-        ]);
-        setSuggestions([
-          "iPhone 14 Pro",
-          "Samsung Galaxy",
-          "Nike кроссовки",
-          "Топ-5 продуктов",
-        ]);
-      } else {
-        setMessages(history);
-      }
+      await clearChatHistory();
     } catch (e) {
-      console.error("Failed to load history:", e);
-      setMessages([
-        {
-          role: "assistant",
-          content: "Привет! Я ваш AI-ассистент по прогнозированию спроса.",
-        },
-      ]);
-    } finally {
-      setLoadingHistory(false);
+      console.error("Failed to clear backend history");
+    }
+
+    setMessages([]);
+    setCurrentConversationIdState(null);
+    setCurrentConversationId(null);
+    inputRef.current?.focus();
+
+    // Close sidebar on mobile
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleSelectConversation = (conversationId) => {
+    loadConversation(conversationId);
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleDeleteConversation = (conversationId) => {
+    const updated = conversations.filter(c => c.id !== conversationId);
+    setConversations(updated);
+    saveConversations(updated);
+
+    if (conversationId === currentConversationId) {
+      handleNewChat();
     }
   };
 
@@ -526,17 +585,14 @@ export default function ChatPage() {
     const text = inputValue.trim();
     if (!text || loading) return;
 
-    // Add user message
     const userMessage = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInputValue("");
     setLoading(true);
-    setError("");
 
     try {
       const response = await sendChatMessage(text);
-
-      // Add assistant message with images and data
       const assistantMessage = {
         role: "assistant",
         content: response.reply,
@@ -544,21 +600,15 @@ export default function ChatPage() {
         images: response.images,
         data: response.data,
       };
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      // Update suggestions
-      if (response.suggestions?.length > 0) {
-        setSuggestions(response.suggestions);
-      }
+      const finalMessages = [...newMessages, assistantMessage];
+      setMessages(finalMessages);
+      saveCurrentConversation(finalMessages);
     } catch (e) {
-      setError(e.message || "Failed to send message");
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Извините, произошла ошибка. Попробуйте ещё раз.",
-        },
-      ]);
+      const errorMessages = [...newMessages, {
+        role: "assistant",
+        content: "Sorry, something went wrong. Please try again.",
+      }];
+      setMessages(errorMessages);
     } finally {
       setLoading(false);
       inputRef.current?.focus();
@@ -572,983 +622,315 @@ export default function ChatPage() {
     }
   };
 
-  const handleSuggestionClick = (suggestion) => {
-    setInputValue(suggestion);
-    setTimeout(() => {
-      handleSend();
-    }, 50);
+  // Voice recording functions
+  const startRecording = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in your browser. Please use Chrome or Edge.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'ru-RU'; // Default to Russian, can be changed
+
+    let finalTranscript = inputValue;
+
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      setInputValue(finalTranscript + interimTranscript);
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+      if (event.error === 'not-allowed') {
+        alert("Microphone access denied. Please allow microphone access in your browser settings.");
+      }
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
   };
 
-  const handleClearHistory = async () => {
-    try {
-      await clearChatHistory();
-      setMessages([
-        {
-          role: "assistant",
-          content: "История очищена. Чем могу помочь?",
-        },
-      ]);
-      setSuggestions([
-        "iPhone 14 Pro",
-        "Samsung Galaxy",
-        "Nike кроссовки",
-        "Топ-5 продуктов",
-      ]);
-    } catch (e) {
-      setError("Failed to clear history");
+  const stopRecording = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsRecording(false);
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
     }
   };
 
-  const formatTime = (timestamp) => {
-    if (!timestamp) return "";
-    try {
-      return new Date(timestamp).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return "";
-    }
+  const toggleSidebar = () => {
+    setSidebarOpen(prev => !prev);
   };
 
   return (
-    <div className="appShell">
-      <Sidebar />
+    <div className="chat-app-container">
+      {/* Chat Area - No global sidebar for regular users */}
+      <div className="chat-app">
+        <ChatSidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onNewChat={handleNewChat}
+          onSelectConversation={handleSelectConversation}
+          onDeleteConversation={handleDeleteConversation}
+          user={user}
+          onLogout={logout}
+        />
 
-      <div className="main">
-        <Topbar />
-
-        <div className="content">
-          {/* Header */}
-          <div className="headerRow">
-            <div>
-              <div className="title">🤖 AI Chat</div>
-              <div className="subtitle">Demand Forecasting Assistant • 551K товаров</div>
+        <main className="chat-main">
+        {/* Header - Only show in chat mode */}
+        {!isEmptyState && (
+          <header className="chat-header">
+            <div className="header-left">
+              <button className="menu-toggle" onClick={toggleSidebar}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="3" y1="12" x2="21" y2="12"/>
+                  <line x1="3" y1="6" x2="21" y2="6"/>
+                  <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+              </button>
+              <span className="header-title">AI Assistant</span>
             </div>
+          </header>
+        )}
 
-            <div className="headerActions">
-              {/* Export Dropdown */}
-              <div className="exportDropdown">
-                <button
-                  className="btnIcon"
-                  type="button"
-                  onClick={() => setShowExportMenu(!showExportMenu)}
-                  title="Экспорт"
-                >
-                  📥
-                </button>
-                {showExportMenu && (
-                  <div className="exportMenu">
-                    <button onClick={() => { exportToText(); setShowExportMenu(false); }}>
-                      📄 Экспорт TXT
-                    </button>
-                    <button onClick={() => { exportToCSV(); setShowExportMenu(false); }}>
-                      📊 Экспорт CSV (Excel)
+        {/* Content Area */}
+        <div className={`chat-content ${isEmptyState ? 'empty-state' : ''}`}>
+          {isEmptyState ? (
+            /* ============================================
+               EMPTY STATE - Centered Layout
+               ============================================ */
+            <div className="empty-container">
+              {/* Menu toggle for empty state */}
+              <button className="empty-menu-toggle" onClick={toggleSidebar}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="3" y1="12" x2="21" y2="12"/>
+                  <line x1="3" y1="6" x2="21" y2="6"/>
+                  <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+              </button>
+
+              <div className="empty-content">
+                {/* Logo */}
+                <div className="empty-logo">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                  </svg>
+                </div>
+
+                {/* Typewriter Animation */}
+                <TypewriterText />
+
+                {/* Centered Input */}
+                <div className="empty-input-wrapper">
+                  <div className="empty-input-box">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      className="empty-input"
+                      placeholder="Ask anything..."
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={loading || isRecording}
+                      autoFocus
+                    />
+                    {/* Microphone Button */}
+                    {speechSupported && (
+                      <button
+                        className={`mic-btn ${isRecording ? 'recording' : ''}`}
+                        onClick={toggleRecording}
+                        disabled={loading}
+                        title={isRecording ? "Stop recording" : "Start voice input"}
+                      >
+                        {isRecording ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="6" width="12" height="12" rx="2" />
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                          </svg>
+                        )}
+                      </button>
+                    )}
+                    <button
+                      className="empty-send-btn"
+                      onClick={handleSend}
+                      disabled={loading || !inputValue.trim()}
+                    >
+                      {loading ? (
+                        <div className="send-spinner" />
+                      ) : (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="22" y1="2" x2="11" y2="13"/>
+                          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                      )}
                     </button>
                   </div>
-                )}
-              </div>
-
-              <button
-                className="btnSecondary"
-                type="button"
-                onClick={handleClearHistory}
-              >
-                🗑️ Очистить
-              </button>
-            </div>
-          </div>
-
-          {error && <div className="errorBox">{error}</div>}
-
-          {/* Chat Container */}
-          <div className="chatContainerNew">
-            {/* Messages */}
-            <div className="chatMessagesNew">
-              {loadingHistory ? (
-                <div className="chatLoading">
-                  <div className="loadingSpinner"></div>
-                  <span>Загрузка истории...</span>
+                  <p className="empty-disclaimer">AI can make mistakes. Verify important information.</p>
                 </div>
-              ) : (
-                <>
-                  {messages.map((msg, idx) => (
-                    <div
+
+                {/* Quick suggestions */}
+                <div className="empty-suggestions">
+                  {["Top products", "Sales forecast", "Trending items", "Compare products"].map((s, idx) => (
+                    <button
                       key={idx}
-                      className={`chatMessageNew ${
-                        msg.role === "user" ? "userMessageNew" : "assistantMessageNew"
-                      }`}
+                      className="suggestion-chip"
+                      onClick={() => {
+                        setInputValue(s);
+                        inputRef.current?.focus();
+                      }}
                     >
-                      <div className="messageAvatarNew">
-                        {msg.role === "user" ? "👤" : "🤖"}
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ============================================
+               CHAT STATE - Messages Layout
+               ============================================ */
+            <>
+              <div className="messages-container">
+                <div className="messages-inner">
+                  {messages.map((msg, idx) => (
+                    <div key={idx} className={`message ${msg.role}`}>
+                      <div className="message-avatar">
+                        {msg.role === "user" ? (
+                          <span>{user?.email?.[0]?.toUpperCase() || 'U'}</span>
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                          </svg>
+                        )}
                       </div>
-                      <div className="messageContentNew">
-                        {/* Markdown rendered text */}
-                        <div className="messageTextNew">
+                      <div className="message-content">
+                        <div className="message-role">
+                          {msg.role === "user" ? "You" : "AI Assistant"}
+                        </div>
+                        <div className="message-text">
                           {renderMarkdown(msg.content)}
                         </div>
-
-                        {/* Product Images Carousel */}
-                        {msg.images && msg.images.length > 0 && msg.intent !== 'comparison' && (
+                        {msg.images && msg.images.length > 0 && (
                           <ProductCarousel images={msg.images} />
                         )}
-
-                        {/* Product Comparison (side-by-side) */}
-                        {msg.images && msg.images.length >= 2 && msg.intent === 'comparison' && (
-                          <ProductComparison products={msg.images} />
-                        )}
-
-                        {/* Inline Chart */}
-                        {msg.data && (
-                          <MiniChart data={msg.data} />
-                        )}
-
-                        {/* Meta info */}
-                        <div className="messageMeta">
-                          {msg.timestamp && (
-                            <span className="messageTime">
-                              {formatTime(msg.timestamp)}
-                            </span>
-                          )}
-                          {msg.intent && (
-                            <span className="messageIntent">
-                              {msg.intent}
-                            </span>
-                          )}
-                        </div>
+                        {msg.data && <MiniChart data={msg.data} />}
                       </div>
                     </div>
                   ))}
 
-                  {/* Typing Indicator */}
+                  {/* Loading indicator */}
                   {loading && (
-                    <div className="chatMessageNew assistantMessageNew">
-                      <div className="messageAvatarNew">🤖</div>
-                      <div className="messageContentNew">
-                        <div className="typingIndicatorNew">
-                          <span>AI думает</span>
-                          <div className="typingDots">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                          </div>
+                    <div className="message assistant">
+                      <div className="message-avatar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                      </div>
+                      <div className="message-content">
+                        <div className="typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
                         </div>
                       </div>
                     </div>
                   )}
 
                   <div ref={messagesEndRef} />
-                </>
-              )}
-            </div>
-
-            {/* Suggestions */}
-            {suggestions.length > 0 && !loading && (
-              <div className="chatSuggestionsNew">
-                {suggestions.map((s, idx) => (
-                  <button
-                    key={idx}
-                    className="suggestionChipNew"
-                    onClick={() => handleSuggestionClick(s)}
-                    disabled={loading}
-                  >
-                    {s}
-                  </button>
-                ))}
+                </div>
               </div>
-            )}
 
-            {/* Input */}
-            <div className="chatInputContainerNew">
-              <input
-                ref={inputRef}
-                type="text"
-                className="chatInputNew"
-                placeholder={isRecording ? "🎤 Говорите..." : "Спросите о товарах, прогнозах, трендах..."}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={loading || isRecording}
-              />
-              {/* Voice Button */}
-              {voiceSupported && (
-                <button
-                  className={`voiceButtonNew ${isRecording ? 'recording' : ''}`}
-                  onClick={toggleVoiceRecording}
-                  disabled={loading}
-                  title={isRecording ? "Остановить запись" : "Голосовой ввод"}
-                >
-                  {isRecording ? "⏹️" : "🎤"}
-                </button>
-              )}
-              <button
-                className="sendButtonNew"
-                onClick={handleSend}
-                disabled={loading || !inputValue.trim()}
-              >
-                {loading ? (
-                  <span className="sendSpinner"></span>
-                ) : (
-                  "➤"
-                )}
-              </button>
-            </div>
-          </div>
+              {/* Bottom Input */}
+              <div className="chat-input-area">
+                <div className="chat-input-wrapper">
+                  <div className="chat-input-box">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      className="chat-input"
+                      placeholder="Type a message..."
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={loading || isRecording}
+                    />
+                    {/* Microphone Button */}
+                    {speechSupported && (
+                      <button
+                        className={`mic-btn ${isRecording ? 'recording' : ''}`}
+                        onClick={toggleRecording}
+                        disabled={loading}
+                        title={isRecording ? "Stop recording" : "Start voice input"}
+                      >
+                        {isRecording ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="6" width="12" height="12" rx="2" />
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                          </svg>
+                        )}
+                      </button>
+                    )}
+                    <button
+                      className="send-btn"
+                      onClick={handleSend}
+                      disabled={loading || !inputValue.trim()}
+                    >
+                      {loading ? (
+                        <div className="send-spinner" />
+                      ) : (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="22" y1="2" x2="11" y2="13"/>
+                          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
+      </main>
       </div>
-
-      <style>{`
-        /* Neural Chat Styles */
-        .chatContainerNew {
-          display: flex;
-          flex-direction: column;
-          height: calc(100vh - 180px);
-          min-height: 500px;
-          background: linear-gradient(135deg, #0a1628 0%, #050d1a 100%);
-          border-radius: 16px;
-          overflow: hidden;
-          border: 1px solid rgba(0, 229, 255, 0.15);
-          box-shadow: 0 0 40px rgba(0, 229, 255, 0.1);
-        }
-
-        .chatMessagesNew {
-          flex: 1;
-          overflow-y: auto;
-          padding: 24px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          background: linear-gradient(to bottom, rgba(5, 13, 26, 0.95), rgba(2, 4, 8, 0.98));
-        }
-
-        .chatLoading {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          height: 100%;
-          gap: 12px;
-          color: #4a6580;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .loadingSpinner {
-          width: 32px;
-          height: 32px;
-          border: 3px solid rgba(0, 229, 255, 0.2);
-          border-top-color: #00e5ff;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        .chatMessageNew {
-          display: flex;
-          gap: 12px;
-          max-width: 85%;
-          animation: messageIn 0.3s ease-out;
-        }
-
-        @keyframes messageIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .userMessageNew {
-          align-self: flex-end;
-          flex-direction: row-reverse;
-        }
-
-        .assistantMessageNew {
-          align-self: flex-start;
-        }
-
-        .messageAvatarNew {
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 20px;
-          flex-shrink: 0;
-          background: rgba(0, 229, 255, 0.1);
-          border: 1px solid rgba(0, 229, 255, 0.2);
-        }
-
-        .userMessageNew .messageAvatarNew {
-          background: linear-gradient(135deg, #00e5ff 0%, #a855f7 100%);
-          border: none;
-        }
-
-        .messageContentNew {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .messageTextNew {
-          padding: 16px 20px;
-          border-radius: 16px;
-          line-height: 1.6;
-          font-size: 14px;
-        }
-
-        .userMessageNew .messageTextNew {
-          background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
-          border: 1px solid rgba(0, 229, 255, 0.25);
-          color: #e8f4fc;
-          border-bottom-right-radius: 4px;
-        }
-
-        .assistantMessageNew .messageTextNew {
-          background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%);
-          border: 1px solid rgba(0, 229, 255, 0.12);
-          color: #e8f4fc;
-          border-bottom-left-radius: 4px;
-        }
-
-        /* Markdown Styles */
-        .mdH1, .mdH2, .mdH3 {
-          margin: 8px 0;
-          color: #e8f4fc;
-        }
-        .mdH1 { font-size: 18px; }
-        .mdH2 { font-size: 16px; }
-        .mdH3 { font-size: 14px; font-weight: 600; color: #00e5ff; }
-
-        .mdP {
-          margin: 4px 0;
-          color: #e8f4fc;
-        }
-
-        .mdList {
-          margin: 8px 0;
-          padding-left: 20px;
-          color: #e8f4fc;
-        }
-
-        .mdList li {
-          margin: 4px 0;
-        }
-
-        /* Product Card */
-        .productCarousel {
-          background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%);
-          border-radius: 12px;
-          padding: 16px;
-          border: 1px solid rgba(0, 229, 255, 0.15);
-        }
-
-        .carouselHeader {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 12px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid rgba(0, 229, 255, 0.12);
-        }
-
-        .carouselTitle {
-          font-weight: 600;
-          font-size: 13px;
-          color: #e8f4fc;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .carouselNav {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .carouselBtn {
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          border: 1px solid rgba(0, 229, 255, 0.25);
-          background: rgba(0, 229, 255, 0.05);
-          color: #00e5ff;
-          cursor: pointer;
-          font-size: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-
-        .carouselBtn:hover {
-          background: rgba(0, 229, 255, 0.2);
-          border-color: #00e5ff;
-          box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
-        }
-
-        .carouselCounter {
-          font-size: 12px;
-          color: #4a6580;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .productCard {
-          display: flex;
-          gap: 16px;
-          padding: 12px;
-          background: rgba(0, 229, 255, 0.03);
-          border-radius: 8px;
-          border: 1px solid rgba(0, 229, 255, 0.1);
-        }
-
-        .productImageContainer {
-          width: 100px;
-          height: 100px;
-          border-radius: 8px;
-          overflow: hidden;
-          flex-shrink: 0;
-          background: rgba(0, 229, 255, 0.05);
-        }
-
-        .productImage {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-
-        .productImagePlaceholder {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 32px;
-          background: rgba(0, 229, 255, 0.05);
-        }
-
-        .productInfo {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .productName {
-          font-size: 14px;
-          font-weight: 500;
-          color: #e8f4fc;
-          line-height: 1.3;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .productPrice {
-          font-size: 18px;
-          font-weight: 700;
-          color: #00ff88;
-        }
-
-        .productRating {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 13px;
-        }
-
-        .stars {
-          color: #ffaa00;
-        }
-
-        .ratingValue {
-          color: #4a6580;
-        }
-
-        .carouselDots {
-          display: flex;
-          justify-content: center;
-          gap: 6px;
-          margin-top: 12px;
-        }
-
-        .carouselDot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          border: none;
-          background: rgba(0, 229, 255, 0.2);
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .carouselDot.active {
-          background: #00e5ff;
-          transform: scale(1.2);
-          box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
-        }
-
-        /* Mini Chart */
-        .miniChart {
-          background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%);
-          border-radius: 12px;
-          padding: 16px;
-          border: 1px solid rgba(0, 229, 255, 0.15);
-          margin-top: 12px;
-        }
-
-        .miniChartHeader {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 13px;
-          font-weight: 600;
-          color: #e8f4fc;
-          margin-bottom: 12px;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .trendBadge {
-          font-size: 12px;
-          padding: 4px 10px;
-          border-radius: 20px;
-          font-weight: 600;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .trendBadge.up {
-          background: rgba(0, 255, 136, 0.2);
-          color: #00ff88;
-          border: 1px solid rgba(0, 255, 136, 0.3);
-        }
-
-        .trendBadge.down {
-          background: rgba(255, 71, 87, 0.2);
-          color: #ff4757;
-          border: 1px solid rgba(255, 71, 87, 0.3);
-        }
-
-        /* Message Meta */
-        .messageMeta {
-          display: flex;
-          gap: 8px;
-          padding-top: 4px;
-        }
-
-        .messageTime {
-          font-size: 11px;
-          color: #4a6580;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .messageIntent {
-          font-size: 10px;
-          padding: 2px 8px;
-          background: rgba(0, 229, 255, 0.1);
-          border: 1px solid rgba(0, 229, 255, 0.2);
-          border-radius: 10px;
-          color: #00e5ff;
-          font-family: 'Space Mono', monospace;
-        }
-
-        /* Typing Indicator */
-        .typingIndicatorNew {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 0;
-          color: #4a6580;
-          font-size: 13px;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .typingDots {
-          display: flex;
-          gap: 4px;
-        }
-
-        .typingDots span {
-          width: 6px;
-          height: 6px;
-          background: #00e5ff;
-          border-radius: 50%;
-          animation: bounce 1.4s infinite ease-in-out both;
-        }
-
-        .typingDots span:nth-child(1) { animation-delay: -0.32s; }
-        .typingDots span:nth-child(2) { animation-delay: -0.16s; }
-
-        @keyframes bounce {
-          0%, 80%, 100% { transform: scale(0); }
-          40% { transform: scale(1); }
-        }
-
-        /* Suggestions */
-        .chatSuggestionsNew {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          padding: 12px 24px;
-          background: rgba(5, 13, 26, 0.95);
-          border-top: 1px solid rgba(0, 229, 255, 0.1);
-        }
-
-        .suggestionChipNew {
-          padding: 8px 16px;
-          background: rgba(0, 229, 255, 0.05);
-          border: 1px solid rgba(0, 229, 255, 0.2);
-          border-radius: 20px;
-          font-size: 13px;
-          color: #e8f4fc;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .suggestionChipNew:hover:not(:disabled) {
-          background: rgba(0, 229, 255, 0.15);
-          border-color: #00e5ff;
-          box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
-          transform: translateY(-1px);
-        }
-
-        .suggestionChipNew:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        /* Input */
-        .chatInputContainerNew {
-          display: flex;
-          gap: 12px;
-          padding: 16px 24px;
-          background: linear-gradient(90deg, #050d1a 0%, #0a1628 100%);
-          border-top: 1px solid rgba(0, 229, 255, 0.12);
-        }
-
-        .chatInputNew {
-          flex: 1;
-          padding: 14px 20px;
-          border: 1px solid rgba(0, 229, 255, 0.2);
-          border-radius: 25px;
-          font-size: 14px;
-          outline: none;
-          transition: all 0.2s;
-          background: rgba(0, 229, 255, 0.03);
-          color: #e8f4fc;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .chatInputNew::placeholder {
-          color: #4a6580;
-        }
-
-        .chatInputNew:focus {
-          border-color: #00e5ff;
-          box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
-        }
-
-        .chatInputNew:disabled {
-          background: rgba(0, 229, 255, 0.02);
-        }
-
-        .sendButtonNew {
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          border: none;
-          background: linear-gradient(135deg, #00e5ff 0%, #00ff88 100%);
-          color: #020408;
-          font-size: 20px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-          box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
-        }
-
-        .sendButtonNew:hover:not(:disabled) {
-          transform: scale(1.05);
-          box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
-        }
-
-        .sendButtonNew:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .voiceButtonNew {
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          border: 1px solid rgba(0, 229, 255, 0.25);
-          background: rgba(0, 229, 255, 0.05);
-          font-size: 20px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-
-        .voiceButtonNew:hover:not(:disabled) {
-          border-color: #00e5ff;
-          background: rgba(0, 229, 255, 0.15);
-        }
-
-        .voiceButtonNew.recording {
-          border-color: #ff4757;
-          background: rgba(255, 71, 87, 0.15);
-          animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); }
-          50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
-        }
-
-        .voiceButtonNew:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .sendSpinner {
-          width: 20px;
-          height: 20px;
-          border: 2px solid rgba(2, 4, 8, 0.3);
-          border-top-color: #020408;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .chatContainerNew {
-            height: calc(100vh - 150px);
-            border-radius: 0;
-          }
-
-          .chatMessageNew {
-            max-width: 95%;
-          }
-
-          .productCard {
-            flex-direction: column;
-          }
-
-          .productImageContainer {
-            width: 100%;
-            height: 150px;
-          }
-        }
-
-        /* Header Actions */
-        .headerActions {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-        }
-
-        .btnIcon {
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
-          border: 1px solid rgba(0, 229, 255, 0.2);
-          background: rgba(0, 229, 255, 0.05);
-          font-size: 18px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-
-        .btnIcon:hover {
-          background: rgba(0, 229, 255, 0.15);
-          border-color: #00e5ff;
-        }
-
-        .btnSecondary {
-          padding: 8px 16px;
-          border-radius: 10px;
-          border: 1px solid rgba(0, 229, 255, 0.2);
-          background: rgba(0, 229, 255, 0.05);
-          color: #e8f4fc;
-          font-size: 13px;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .btnSecondary:hover {
-          background: rgba(255, 71, 87, 0.15);
-          border-color: rgba(255, 71, 87, 0.3);
-          color: #ff4757;
-        }
-
-        /* Export Dropdown */
-        .exportDropdown {
-          position: relative;
-        }
-
-        .exportMenu {
-          position: absolute;
-          top: 100%;
-          right: 0;
-          margin-top: 8px;
-          background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%);
-          border-radius: 12px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-          border: 1px solid rgba(0, 229, 255, 0.2);
-          overflow: hidden;
-          z-index: 100;
-          min-width: 180px;
-        }
-
-        .exportMenu button {
-          display: block;
-          width: 100%;
-          padding: 12px 16px;
-          text-align: left;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          font-size: 14px;
-          color: #e8f4fc;
-          transition: background 0.2s;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .exportMenu button:hover {
-          background: rgba(0, 229, 255, 0.1);
-        }
-
-        .exportMenu button:not(:last-child) {
-          border-bottom: 1px solid rgba(0, 229, 255, 0.1);
-        }
-
-        /* Product Comparison Neural */
-        .comparisonContainer {
-          background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%);
-          border-radius: 16px;
-          padding: 16px;
-          margin-top: 12px;
-          border: 1px solid rgba(0, 229, 255, 0.15);
-        }
-
-        .comparisonHeader {
-          font-size: 14px;
-          font-weight: 600;
-          color: #00e5ff;
-          margin-bottom: 12px;
-          font-family: 'Space Mono', monospace;
-        }
-
-        .comparisonGrid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-          gap: 12px;
-        }
-
-        .comparisonCard {
-          background: rgba(0, 229, 255, 0.03);
-          border-radius: 12px;
-          padding: 12px;
-          border: 1px solid rgba(0, 229, 255, 0.1);
-          text-align: center;
-          transition: all 0.2s;
-        }
-
-        .comparisonCard:hover {
-          border-color: rgba(0, 229, 255, 0.3);
-          box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
-        }
-
-        .comparisonImage {
-          width: 80px;
-          height: 80px;
-          margin: 0 auto 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(0, 229, 255, 0.05);
-          border-radius: 8px;
-          overflow: hidden;
-        }
-
-        .comparisonImage img {
-          max-width: 100%;
-          max-height: 100%;
-          object-fit: contain;
-        }
-
-        .comparisonImage span {
-          font-size: 32px;
-        }
-
-        .comparisonName {
-          font-size: 12px;
-          font-weight: 500;
-          color: #e8f4fc;
-          margin-bottom: 8px;
-          height: 32px;
-          overflow: hidden;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-        }
-
-        .comparisonStats {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .comparisonPrice {
-          font-size: 14px;
-          font-weight: 700;
-          color: #00ff88;
-        }
-
-        .comparisonPrice.best {
-          color: #00ff88;
-          background: rgba(0, 255, 136, 0.15);
-          padding: 4px 8px;
-          border-radius: 6px;
-        }
-
-        .comparisonRating {
-          font-size: 13px;
-          color: #ffaa00;
-        }
-
-        .comparisonRating.best {
-          color: #ffaa00;
-          background: rgba(255, 170, 0, 0.15);
-          padding: 4px 8px;
-          border-radius: 6px;
-        }
-
-        .comparisonReviews {
-          font-size: 11px;
-          color: #4a6580;
-        }
-
-        .bestBadge {
-          display: block;
-          font-size: 9px;
-          margin-top: 2px;
-          font-weight: 600;
-          font-family: 'Space Mono', monospace;
-        }
-      `}</style>
     </div>
   );
 }

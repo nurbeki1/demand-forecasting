@@ -1,0 +1,991 @@
+/**
+ * Landing Page - Immersive 3D Scroll Experience
+ * Inspired by HAPE.io - Central 3D object with scroll-triggered content
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* =====================================================
+   CSS VARIABLES
+   ===================================================== */
+:root {
+  --bg-deep: #030305;
+  --bg-dark: #0a0a0f;
+
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.4);
+
+  --accent: #10b981;
+  --accent-bright: #34d399;
+  --accent-glow: rgba(16, 185, 129, 0.5);
+  --accent-secondary: #06b6d4;
+  --accent-purple: #8b5cf6;
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* =====================================================
+   BASE RESET
+   ===================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* =====================================================
+   IMMERSIVE LANDING CONTAINER
+   ===================================================== */
+.landing-immersive {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Background gradient */
+.landing-immersive::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 20% 30%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+    radial-gradient(ellipse 60% 40% at 80% 70%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* =====================================================
+   FIXED NAVBAR
+   ===================================================== */
+.nav-immersive {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  background: rgba(3, 3, 5, 0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nav__logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.nav__logo svg {
+  color: var(--accent);
+}
+
+.nav__progress {
+  flex: 1;
+  max-width: 200px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin: 0 40px;
+  overflow: hidden;
+}
+
+.nav__progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+  transform-origin: left;
+  transition: transform 0.1s ease-out;
+}
+
+.nav__cta {
+  padding: 12px 28px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+  border: none;
+  border-radius: 100px;
+  color: #000;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav__cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px var(--accent-glow);
+}
+
+/* =====================================================
+   FIXED SCENE CONTAINER
+   ===================================================== */
+.scene-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+  /* Push robot down so feet are cut off at bottom */
+  padding-bottom: 0;
+}
+
+.scene-container > * {
+  pointer-events: auto;
+}
+
+/* =====================================================
+   SPLINE 3D SCENE
+   ===================================================== */
+.spline-scene {
+  position: relative;
+  width: 1800px;
+  height: 1800px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Move robot down so feet are cut off */
+  margin-bottom: -400px;
+}
+
+.spline-scene canvas {
+  width: 100% !important;
+  height: 100% !important;
+  /* Remove any canvas background */
+  background: transparent !important;
+}
+
+/* Spline iframe/container fix for transparency */
+.spline-scene > div {
+  background: transparent !important;
+}
+
+/* Multiple layered glows for better blending */
+.spline-glow {
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2000px;
+  height: 2000px;
+  background: radial-gradient(circle,
+    rgba(16, 185, 129, 0.35) 0%,
+    rgba(16, 185, 129, 0.2) 20%,
+    rgba(6, 182, 212, 0.12) 40%,
+    rgba(139, 92, 246, 0.06) 60%,
+    transparent 75%);
+  filter: blur(120px);
+  animation: splineGlow 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Secondary inner glow for depth */
+.spline-glow::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1000px;
+  height: 1000px;
+  background: radial-gradient(circle,
+    rgba(52, 211, 153, 0.4) 0%,
+    rgba(16, 185, 129, 0.25) 30%,
+    transparent 60%);
+  filter: blur(60px);
+  animation: innerGlow 3s ease-in-out infinite;
+}
+
+@keyframes splineGlow {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+@keyframes innerGlow {
+  0%, 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+}
+
+/* Floor reflection effect */
+.spline-floor-glow {
+  position: absolute;
+  bottom: 300px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1000px;
+  height: 250px;
+  background: radial-gradient(ellipse at center,
+    rgba(16, 185, 129, 0.5) 0%,
+    rgba(16, 185, 129, 0.2) 40%,
+    transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
+}
+
+/* Loading state */
+.spline-scene > div:first-child {
+  position: relative;
+  z-index: 1;
+}
+
+/* Spline loader */
+.spline-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 400px;
+  height: 400px;
+}
+
+.spline-loader__spinner {
+  width: 60px;
+  height: 60px;
+  border: 3px solid rgba(16, 185, 129, 0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spinLoader 1s linear infinite;
+}
+
+@keyframes spinLoader {
+  to { transform: rotate(360deg); }
+}
+
+.spline-loader p {
+  font-size: 14px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+/* =====================================================
+   AI BRAIN FALLBACK - 3D VISUAL
+   ===================================================== */
+.ai-brain {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transition: transform 0.1s ease-out;
+}
+
+/* Core sphere */
+.brain-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%,
+    rgba(52, 211, 153, 0.9) 0%,
+    var(--accent) 40%,
+    rgba(16, 185, 129, 0.6) 70%,
+    transparent 100%);
+  box-shadow:
+    0 0 60px var(--accent-glow),
+    0 0 120px var(--accent-glow),
+    inset 0 0 60px rgba(255, 255, 255, 0.2);
+}
+
+.brain-core-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--accent-bright) 50%, transparent 100%);
+  animation: coreGlow 2s ease-in-out infinite;
+}
+
+@keyframes coreGlow {
+  0%, 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.brain-core-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  animation: corePulse 2s ease-out infinite;
+}
+
+.brain-core-pulse--delayed {
+  animation-delay: 1s;
+}
+
+@keyframes corePulse {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+}
+
+/* Neural rings */
+.brain-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  transform-style: preserve-3d;
+}
+
+.brain-ring-1 {
+  width: 200px;
+  height: 200px;
+  margin: -100px 0 0 -100px;
+  animation: ringRotate 10s linear infinite;
+  border-color: rgba(16, 185, 129, 0.4);
+  border-width: 2px;
+}
+
+.brain-ring-2 {
+  width: 280px;
+  height: 280px;
+  margin: -140px 0 0 -140px;
+  animation: ringRotate 15s linear infinite reverse;
+  transform: rotateX(60deg);
+}
+
+.brain-ring-3 {
+  width: 350px;
+  height: 350px;
+  margin: -175px 0 0 -175px;
+  animation: ringRotate 20s linear infinite;
+  transform: rotateY(60deg);
+  border-style: dashed;
+}
+
+@keyframes ringRotate {
+  from { transform: rotateZ(0deg); }
+  to { transform: rotateZ(360deg); }
+}
+
+/* Ring dots */
+.ring-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--accent-bright);
+  border-radius: 50%;
+  box-shadow: 0 0 15px var(--accent-glow);
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+}
+
+.brain-ring-1 .ring-dot {
+  --radius: 100px;
+  --angle: calc(var(--i) * 60deg);
+  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle)));
+}
+
+.brain-ring-2 .ring-dot {
+  --radius: 140px;
+  --angle: calc(var(--i) * 45deg);
+  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle)));
+  width: 6px;
+  height: 6px;
+}
+
+.brain-ring-3 .ring-dot {
+  --radius: 175px;
+  --angle: calc(var(--i) * 90deg);
+  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle)));
+  width: 5px;
+  height: 5px;
+  background: var(--accent-secondary);
+}
+
+/* Neural connections SVG */
+.brain-connections {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 400px;
+  height: 400px;
+  transform: translate(-50%, -50%);
+  opacity: 0.6;
+}
+
+.neural-path {
+  fill: none;
+  stroke: url(#lineGradient);
+  stroke-width: 1.5;
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: drawPath 3s ease infinite;
+}
+
+.neural-path:nth-child(2) { animation-delay: 0.5s; }
+.neural-path:nth-child(3) { animation-delay: 1s; }
+.neural-path:nth-child(4) { animation-delay: 1.5s; }
+.neural-path:nth-child(5) { animation-delay: 2s; }
+.neural-path:nth-child(6) { animation-delay: 2.5s; }
+
+@keyframes drawPath {
+  0%, 100% { stroke-dashoffset: 200; opacity: 0; }
+  50% { stroke-dashoffset: 0; opacity: 1; }
+}
+
+/* Floating particles */
+.brain-particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.brain-particle {
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  background: var(--accent-bright);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--accent-glow);
+  animation: particleFly var(--duration) ease-in-out var(--delay) infinite;
+}
+
+@keyframes particleFly {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% {
+    transform: translate(var(--x), var(--y));
+    opacity: 0;
+  }
+}
+
+/* Outer glow */
+.brain-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle,
+    var(--accent-glow) 0%,
+    rgba(16, 185, 129, 0.1) 40%,
+    transparent 70%);
+  filter: blur(40px);
+  animation: glowPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+/* =====================================================
+   INFO CARDS
+   ===================================================== */
+.info-card {
+  position: absolute;
+  width: 280px;
+  padding: 24px;
+  background: rgba(10, 10, 15, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.info-card--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Positions */
+.info-card--top-left {
+  top: 15%;
+  left: 10%;
+  transform-origin: bottom right;
+}
+
+.info-card--top-left.info-card--visible {
+  transform: scale(1) translateX(0);
+}
+
+.info-card--top-left:not(.info-card--visible) {
+  transform: scale(0.8) translateX(-100px) translateY(-50px);
+}
+
+.info-card--top-right {
+  top: 15%;
+  right: 10%;
+  transform-origin: bottom left;
+}
+
+.info-card--top-right:not(.info-card--visible) {
+  transform: scale(0.8) translateX(100px) translateY(-50px);
+}
+
+.info-card--bottom-left {
+  bottom: 15%;
+  left: 10%;
+  transform-origin: top right;
+}
+
+.info-card--bottom-left:not(.info-card--visible) {
+  transform: scale(0.8) translateX(-100px) translateY(50px);
+}
+
+.info-card--bottom-right {
+  bottom: 15%;
+  right: 10%;
+  transform-origin: top left;
+}
+
+.info-card--bottom-right:not(.info-card--visible) {
+  transform: scale(0.8) translateX(100px) translateY(50px);
+}
+
+.info-card__icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+.info-card__icon svg {
+  width: 24px;
+  height: 24px;
+  color: #000;
+}
+
+.info-card__title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.info-card__desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.info-card__connector {
+  position: absolute;
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.info-card--top-left .info-card__connector {
+  bottom: -30px;
+  right: -30px;
+  transform: rotate(45deg);
+}
+
+.info-card--top-right .info-card__connector {
+  bottom: -30px;
+  left: -30px;
+  transform: rotate(-45deg);
+  background: linear-gradient(-90deg, var(--accent), transparent);
+}
+
+.info-card--bottom-left .info-card__connector {
+  top: -30px;
+  right: -30px;
+  transform: rotate(-45deg);
+}
+
+.info-card--bottom-right .info-card__connector {
+  top: -30px;
+  left: -30px;
+  transform: rotate(45deg);
+  background: linear-gradient(-90deg, var(--accent), transparent);
+}
+
+/* =====================================================
+   SCENE TEXT
+   ===================================================== */
+.scene-text {
+  position: absolute;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+}
+
+.scene-text__content {
+  animation: fadeInUp 0.8s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scene-text__content--hero h1 {
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.scene-text__content--hero h1 span {
+  display: block;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent-bright), var(--accent-secondary), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.scene-text__content--hero p {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+/* Scroll indicator */
+.scroll-indicator {
+  display: flex;
+  justify-content: center;
+}
+
+.scroll-indicator__mouse {
+  width: 26px;
+  height: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 13px;
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+.scroll-indicator__wheel {
+  width: 4px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 2px;
+  animation: scrollWheel 1.5s ease-in-out infinite;
+}
+
+@keyframes scrollWheel {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(8px); opacity: 0.3; }
+}
+
+/* CTA section text */
+.scene-text__content--cta h2 {
+  font-size: clamp(24px, 4vw, 40px);
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 40px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+  border: none;
+  border-radius: 100px;
+  color: #000;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 40px var(--accent-glow);
+}
+
+.cta-button:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 60px var(--accent-glow);
+}
+
+.cta-button svg {
+  transition: transform 0.3s ease;
+}
+
+.cta-button:hover svg {
+  transform: translateX(6px);
+}
+
+/* =====================================================
+   SCROLL SECTIONS
+   ===================================================== */
+.scroll-sections {
+  position: relative;
+  z-index: 2;
+}
+
+.scroll-section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 40px;
+}
+
+.section-content {
+  max-width: 400px;
+  text-align: center;
+  opacity: 0.1;
+  transition: opacity 0.5s ease;
+}
+
+.scroll-section:hover .section-content {
+  opacity: 0.3;
+}
+
+.section-number {
+  display: block;
+  font-size: 120px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.03);
+  line-height: 1;
+  margin-bottom: 20px;
+}
+
+.section-content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+.section-content p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+/* =====================================================
+   VERTICAL PROGRESS DOTS
+   ===================================================== */
+.scroll-progress-vertical {
+  position: fixed;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 100;
+}
+
+.progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.progress-dot--active {
+  background: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+  transform: scale(1.3);
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+@media (max-width: 1200px) {
+  .info-card {
+    width: 240px;
+    padding: 20px;
+  }
+
+  .info-card--top-left,
+  .info-card--bottom-left {
+    left: 5%;
+  }
+
+  .info-card--top-right,
+  .info-card--bottom-right {
+    right: 5%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .spline-scene {
+    width: 1800px;
+    height: 1800px;
+    margin-bottom: -450px;
+  }
+
+  .ai-brain {
+    width: 300px;
+    height: 300px;
+  }
+
+  .brain-core {
+    width: 90px;
+    height: 90px;
+  }
+
+  .brain-ring-1 {
+    width: 150px;
+    height: 150px;
+    margin: -75px 0 0 -75px;
+  }
+
+  .brain-ring-2 {
+    width: 210px;
+    height: 210px;
+    margin: -105px 0 0 -105px;
+  }
+
+  .brain-ring-3 {
+    width: 260px;
+    height: 260px;
+    margin: -130px 0 0 -130px;
+  }
+
+  .info-card {
+    width: 200px;
+    padding: 16px;
+  }
+
+  .info-card__title {
+    font-size: 16px;
+  }
+
+  .info-card__desc {
+    font-size: 12px;
+  }
+
+  .info-card--top-left,
+  .info-card--top-right {
+    top: 12%;
+  }
+
+  .info-card--bottom-left,
+  .info-card--bottom-right {
+    bottom: 12%;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-immersive {
+    padding: 16px 20px;
+  }
+
+  .nav__progress {
+    display: none;
+  }
+
+  .spline-scene {
+    width: 1200px;
+    height: 1200px;
+    margin-bottom: -300px;
+  }
+
+  .spline-loader {
+    width: 500px;
+    height: 500px;
+  }
+
+  .ai-brain {
+    width: 250px;
+    height: 250px;
+  }
+
+  .brain-core {
+    width: 70px;
+    height: 70px;
+  }
+
+  .info-card {
+    position: fixed;
+    width: calc(100% - 40px);
+    max-width: 320px;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .info-card--top-left,
+  .info-card--top-right {
+    top: auto !important;
+    bottom: 20% !important;
+  }
+
+  .info-card--bottom-left,
+  .info-card--bottom-right {
+    bottom: 20% !important;
+  }
+
+  .info-card:not(.info-card--visible) {
+    transform: translateX(-50%) translateY(50px) scale(0.9) !important;
+  }
+
+  .info-card--visible {
+    transform: translateX(-50%) scale(1) !important;
+  }
+
+  .info-card__connector {
+    display: none;
+  }
+
+  .scene-text {
+    bottom: 5%;
+  }
+
+  .scene-text__content--hero h1 {
+    font-size: 28px;
+  }
+
+  .scroll-progress-vertical {
+    right: 15px;
+  }
+
+  .progress-dot {
+    width: 8px;
+    height: 8px;
+  }
+}

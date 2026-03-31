@@ -1,4 +1,13 @@
+/**
+ * Auth API - Legacy compatibility layer
+ *
+ * This file maintains backwards compatibility for existing code
+ * that imports from authApi. All actual logic is in authStorage.js
+ */
+
+import { getToken, setToken, clearAllAuthData } from "../utils/authStorage";
 import { API_URL } from "../config";
+
 const BASE_URL = API_URL;
 
 export async function login(email, password) {
@@ -15,15 +24,25 @@ export async function login(email, password) {
 
   const data = await res.json();
 
-  // Check if user is admin
-  if (!data.is_admin) {
-    throw new Error("Admin access required. Contact administrator.");
-  }
-
   return {
     token: data.access_token,
     isAdmin: data.is_admin,
   };
+}
+
+export async function register(email, password) {
+  const res = await fetch(`${BASE_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Registration failed");
+  }
+
+  return await res.json();
 }
 
 export async function getMe(token) {
@@ -38,16 +57,11 @@ export async function getMe(token) {
   return await res.json();
 }
 
-export function getToken() {
-  return localStorage.getItem("admin_token");
-}
-
-export function setToken(token) {
-  localStorage.setItem("admin_token", token);
-}
+// Re-export from authStorage for backwards compatibility
+export { getToken, setToken };
 
 export function removeToken() {
-  localStorage.removeItem("admin_token");
+  clearAllAuthData();
 }
 
 export function isAuthenticated() {

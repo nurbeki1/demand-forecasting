@@ -1,87 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { NavLink } from "react-router-dom";
 import { API_URL } from "../config";
+import Sidebar from "../components/layout/Sidebar";
+import Topbar from "../components/layout/Topbar";
+import "../styles/dashboard.css";
 import "../styles/neural-graph.css";
-
-// Simple Sidebar without auth dependency
-function SimpleSidebar() {
-  const menuItems = [
-    { path: "/", label: "Dashboard", icon: "◉" },
-    { path: "/charts", label: "Charts", icon: "◈" },
-    { path: "/table", label: "Table", icon: "☰" },
-    { path: "/upload", label: "Upload", icon: "↑" },
-    { path: "/chat", label: "AI Chat", icon: "◇" },
-    { path: "/model", label: "ML Model", icon: "⬡" },
-  ];
-
-  return (
-    <aside className="sidebar">
-      <div className="profile">
-        <div className="avatar">DF</div>
-        <div>
-          <div className="name">Neural View</div>
-          <div className="role">Admin Panel</div>
-        </div>
-      </div>
-      <nav className="menu">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => `menuItem ${isActive ? "active" : ""}`}
-          >
-            <span style={{ fontSize: "16px", opacity: 0.7 }}>{item.icon}</span>
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-
-      <div style={{
-        padding: "16px",
-        borderTop: "1px solid rgba(0, 229, 255, 0.12)",
-        marginTop: "auto"
-      }}>
-        <div style={{
-          padding: "12px",
-          background: "rgba(0, 229, 255, 0.08)",
-          borderRadius: "8px",
-          border: "1px solid rgba(0, 229, 255, 0.15)"
-        }}>
-          <div style={{
-            fontFamily: "'Space Mono', monospace",
-            fontSize: "10px",
-            color: "#4a6580",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            marginBottom: "4px"
-          }}>
-            System Status
-          </div>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
-          }}>
-            <span style={{
-              width: "8px",
-              height: "8px",
-              background: "#00ff88",
-              borderRadius: "50%",
-              boxShadow: "0 0 10px #00ff88"
-            }}></span>
-            <span style={{
-              fontFamily: "'Space Mono', monospace",
-              fontSize: "12px",
-              color: "#00ff88"
-            }}>
-              Online
-            </span>
-          </div>
-        </div>
-      </div>
-    </aside>
-  );
-}
 
 export default function ModelVisualizationPage() {
   const [structure, setStructure] = useState(null);
@@ -127,14 +49,14 @@ export default function ModelVisualizationPage() {
     const links = [];
 
     const colors = {
-      categorical: "#00e5ff",
-      numerical: "#7c3aed",
-      temporal: "#ff6b2b",
-      lag: "#00ff88",
-      cyclic: "#ff00ff",
-      transform: "#ffaa00",
-      model: "#00ff88",
-      output: "#ff6b2b",
+      categorical: "#3b82f6",
+      numerical: "#8b5cf6",
+      temporal: "#f97316",
+      lag: "#22c55e",
+      cyclic: "#ec4899",
+      transform: "#eab308",
+      model: "#10a37f",
+      output: "#ef4444",
     };
 
     const inputFeatures = structure.layers?.[0]?.features || {};
@@ -273,12 +195,12 @@ export default function ModelVisualizationPage() {
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Clear
-      ctx.fillStyle = "#080c14";
+      // Clear - clean dark background for better contrast
+      ctx.fillStyle = "#1a1a2e";
       ctx.fillRect(0, 0, width, height);
 
-      // Grid
-      ctx.strokeStyle = "rgba(0, 229, 255, 0.04)";
+      // Grid - subtle grid
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
       ctx.lineWidth = 1;
       for (let x = 0; x < width; x += 50) {
         ctx.beginPath();
@@ -386,11 +308,11 @@ export default function ModelVisualizationPage() {
         ctx.fill();
 
         // Label
-        ctx.font = size > 30 ? "bold 13px Arial" : "bold 11px Arial";
-        ctx.fillStyle = "#ffffff";
+        ctx.font = size > 30 ? "bold 13px -apple-system, BlinkMacSystemFont, sans-serif" : "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
         ctx.textAlign = "center";
-        ctx.shadowColor = "#000";
-        ctx.shadowBlur = 5;
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 4;
 
         if (size > 30) {
           ctx.fillText(label, x, y + 4);
@@ -404,23 +326,23 @@ export default function ModelVisualizationPage() {
 
       // Draw legend (not affected by zoom/pan)
       const legendItems = [
-        { color: "#00e5ff", label: "Categorical" },
-        { color: "#7c3aed", label: "Numerical" },
-        { color: "#ff6b2b", label: "Temporal" },
-        { color: "#00ff88", label: "Lag Features" },
-        { color: "#ff00ff", label: "Cyclic" },
-        { color: "#ffaa00", label: "Transform" },
-        { color: "#22c55e", label: "Trees" },
+        { color: "#3b82f6", label: "Categorical" },
+        { color: "#8b5cf6", label: "Numerical" },
+        { color: "#f97316", label: "Temporal" },
+        { color: "#22c55e", label: "Lag Features" },
+        { color: "#ec4899", label: "Cyclic" },
+        { color: "#eab308", label: "Transform" },
+        { color: "#10a37f", label: "Trees" },
       ];
 
-      ctx.fillStyle = "rgba(8, 12, 20, 0.95)";
+      ctx.fillStyle = "rgba(26, 26, 46, 0.95)";
       ctx.fillRect(15, 15, 130, legendItems.length * 24 + 25);
-      ctx.strokeStyle = "rgba(0, 229, 255, 0.3)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
       ctx.lineWidth = 1;
       ctx.strokeRect(15, 15, 130, legendItems.length * 24 + 25);
 
-      ctx.font = "bold 11px Arial";
-      ctx.fillStyle = "#4a6580";
+      ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "#6b7280";
       ctx.textAlign = "left";
       ctx.fillText("LEGEND", 25, 34);
 
@@ -433,14 +355,14 @@ export default function ModelVisualizationPage() {
         ctx.arc(30, ly, 6, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
-        ctx.fillStyle = "#e8f4f8";
-        ctx.font = "12px Arial";
+        ctx.fillStyle = "#e5e7eb";
+        ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
         ctx.fillText(item.label, 45, ly + 4);
       });
 
       // Instructions
-      ctx.font = "11px Arial";
-      ctx.fillStyle = "#4a6580";
+      ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "#6b7280";
       ctx.textAlign = "right";
       ctx.fillText("Drag nodes • Scroll to zoom • Right-click to pan", width - 15, height - 15);
 
@@ -526,18 +448,9 @@ export default function ModelVisualizationPage() {
 
   return (
     <div className="appShell">
-      <SimpleSidebar />
+      <Sidebar />
       <div className="main">
-        <div className="topbar">
-          <div className="search">
-            <input placeholder="Quick search" />
-          </div>
-          <div className="topActions">
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "12px", color: "#4a6580" }}>
-              ML Visualization
-            </span>
-          </div>
-        </div>
+        <Topbar />
 
         <div className="neural-graph-page">
           <div className="graph-header">
@@ -546,7 +459,7 @@ export default function ModelVisualizationPage() {
               <span className="graph-subtitle">Random Forest Pipeline • Drag nodes to rearrange</span>
             </div>
             <div className="graph-controls">
-              <span style={{ color: "#4a6580", fontSize: "12px", marginRight: "12px" }}>
+              <span className="zoom-indicator">
                 Zoom: {zoom}%
               </span>
               <button className="settings-btn" onClick={() => { panRef.current = { x: 0, y: 0 }; setZoom(100); }}>
@@ -593,7 +506,7 @@ export default function ModelVisualizationPage() {
                   </div>
                   <div className="metric-row">
                     <span>Status</span>
-                    <span className="metric-value" style={{ color: structure ? "#00ff88" : "#ffaa00" }}>
+                    <span className="metric-value" style={{ color: structure ? "var(--success)" : "var(--warning)" }}>
                       {structure ? "Loaded" : "Loading..."}
                     </span>
                   </div>
