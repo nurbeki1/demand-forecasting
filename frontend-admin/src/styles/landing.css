@@ -773,6 +773,7 @@ html {
 .scroll-sections {
   position: relative;
   z-index: 2;
+  pointer-events: none;
 }
 
 .scroll-section {
@@ -781,6 +782,7 @@ html {
   align-items: center;
   justify-content: center;
   padding: 100px 40px;
+  pointer-events: none;
 }
 
 .section-content {
