@@ -50,7 +50,7 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email"
+          placeholder="Введите email"
           required
           disabled={loading}
           autoComplete="email"
@@ -58,13 +58,13 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
       </div>
 
       <div className="auth-field">
-        <label htmlFor="login-password">Password</label>
+        <label htmlFor="login-password">Пароль</label>
         <input
           id="login-password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter your password"
+          placeholder="Введите пароль"
           required
           disabled={loading}
           minLength={4}
@@ -77,7 +77,7 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
           <span className="auth-spinner" />
         ) : (
           <>
-            <span>Sign In</span>
+            <span>Войти</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -86,8 +86,8 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
       </button>
 
       <div className="auth-switch">
-        <span>Don't have an account?</span>
-        <button type="button" onClick={onSwitch}>Sign up</button>
+        <span>Нет аккаунта?</span>
+        <button type="button" onClick={onSwitch}>Регистрация</button>
       </div>
     </form>
   );
@@ -109,12 +109,12 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Passwords don't match");
+      setError("Пароли не совпадают");
       return;
     }
 
     if (password.length < 4) {
-      setError("Password must be at least 4 characters");
+      setError("Пароль должен быть минимум 4 символа");
       return;
     }
 
@@ -142,7 +142,7 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email"
+          placeholder="Введите email"
           required
           disabled={loading}
           autoComplete="email"
@@ -150,13 +150,13 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
       </div>
 
       <div className="auth-field">
-        <label htmlFor="register-password">Password</label>
+        <label htmlFor="register-password">Пароль</label>
         <input
           id="register-password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Create a password"
+          placeholder="Придумайте пароль"
           required
           disabled={loading}
           minLength={4}
@@ -165,13 +165,13 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
       </div>
 
       <div className="auth-field">
-        <label htmlFor="register-confirm">Confirm Password</label>
+        <label htmlFor="register-confirm">Подтвердите пароль</label>
         <input
           id="register-confirm"
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Confirm your password"
+          placeholder="Повторите пароль"
           required
           disabled={loading}
           minLength={4}
@@ -184,7 +184,7 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
           <span className="auth-spinner" />
         ) : (
           <>
-            <span>Create Account</span>
+            <span>Создать аккаунт</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -193,8 +193,8 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
       </button>
 
       <div className="auth-switch">
-        <span>Already have an account?</span>
-        <button type="button" onClick={onSwitch}>Sign in</button>
+        <span>Уже есть аккаунт?</span>
+        <button type="button" onClick={onSwitch}>Войти</button>
       </div>
     </form>
   );
@@ -258,11 +258,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
-          <h2 className="auth-modal-title">Welcome</h2>
+          <h2 className="auth-modal-title">Добро пожаловать</h2>
           <p className="auth-modal-subtitle">
             {activeTab === "login"
-              ? "Sign in to access your dashboard"
-              : "Create an account to get started"}
+              ? "Войдите для доступа к панели управления"
+              : "Создайте аккаунт чтобы начать"}
           </p>
         </div>
 
@@ -273,14 +273,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
             onClick={() => setActiveTab("login")}
             disabled={loading}
           >
-            Login
+            Вход
           </button>
           <button
             className={`auth-tab ${activeTab === "register" ? "active" : ""}`}
             onClick={() => setActiveTab("register")}
             disabled={loading}
           >
-            Register
+            Регистрация
           </button>
           <div
             className="auth-tab-indicator"
@@ -315,7 +315,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
         {/* Divider */}
         <div className="auth-divider">
-          <span>or continue with</span>
+          <span>или продолжить с</span>
         </div>
 
         {/* Social buttons */}
