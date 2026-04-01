@@ -647,6 +647,7 @@ html {
   transform: translateX(-50%);
   text-align: center;
   z-index: 10;
+  pointer-events: auto;
 }
 
 .scene-text__content {
@@ -738,6 +739,9 @@ html {
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 0 40px var(--accent-glow);
+  pointer-events: auto;
+  position: relative;
+  z-index: 100;
 }
 
 .cta-button:hover {

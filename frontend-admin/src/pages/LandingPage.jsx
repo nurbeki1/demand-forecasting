@@ -20,7 +20,7 @@ gsap.registerPlugin(ScrollTrigger);
 // ============================================
 // SPLINE 3D SCENE - Robot with head rotation
 // ============================================
-function Spline3DScene({ activeSection }) {
+function Spline3DScene({ activeSection, lookAtCenter }) {
   const splineRef = useRef(null);
   const headRef = useRef(null);
   const targetRotation = useRef({ x: 0, y: 0 });
@@ -40,8 +40,13 @@ function Spline3DScene({ activeSection }) {
       4: { x: 0.3, y: 0.6 },       // Bottom-right card (Interact) - look DOWN-RIGHT
     };
 
-    targetRotation.current = rotations[activeSection] || { x: 0, y: 0 };
-  }, [activeSection]);
+    // If lookAtCenter is true (after viewing 4th card), look at center
+    if (lookAtCenter) {
+      targetRotation.current = { x: 0, y: 0 };
+    } else {
+      targetRotation.current = rotations[activeSection] || { x: 0, y: 0 };
+    }
+  }, [activeSection, lookAtCenter]);
 
   // Smooth animation loop for head rotation
   useEffect(() => {
@@ -227,9 +232,39 @@ export default function LandingPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState(0);
+  const [lookAtCenter, setLookAtCenter] = useState(false);
+  const [showCTA, setShowCTA] = useState(false);
   const containerRef = useRef(null);
+  const centerTimerRef = useRef(null);
   const { isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
+
+  // When reaching section 4, look at card first, then center after delay
+  useEffect(() => {
+    if (activeSection === 4) {
+      // First look at 4th card, then after 1 second look at center
+      setLookAtCenter(false);
+      setShowCTA(false);
+
+      centerTimerRef.current = setTimeout(() => {
+        setLookAtCenter(true);
+        // Show CTA text after robot looks at center
+        setTimeout(() => setShowCTA(true), 500);
+      }, 1000);
+    } else {
+      setLookAtCenter(false);
+      setShowCTA(false);
+      if (centerTimerRef.current) {
+        clearTimeout(centerTimerRef.current);
+      }
+    }
+
+    return () => {
+      if (centerTimerRef.current) {
+        clearTimeout(centerTimerRef.current);
+      }
+    };
+  }, [activeSection]);
 
   // Setup scroll animations
   useEffect(() => {
@@ -351,7 +386,7 @@ export default function LandingPage() {
       {/* Fixed center scene */}
       <div className="scene-container">
         {/* 3D Robot from Spline */}
-        <Spline3DScene activeSection={activeSection} />
+        <Spline3DScene activeSection={activeSection} lookAtCenter={lookAtCenter} />
 
         {/* Info cards around the brain */}
         {infoCards.map((card, i) => (
@@ -380,7 +415,7 @@ export default function LandingPage() {
             </div>
           )}
 
-          {activeSection === 4 && (
+          {showCTA && (
             <div className="scene-text__content scene-text__content--cta">
               <h2>Готовы трансформировать ваш бизнес?</h2>
               <button className="cta-button" onClick={handleStart}>
