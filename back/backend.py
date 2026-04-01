@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # ===== DB + AUTH =====
+from sqlalchemy import text, inspect
 from app.database import engine, Base
 from app.auth_routes import router as auth_router
 from app.deps import get_current_user, get_admin_user
@@ -54,8 +55,42 @@ APP_TITLE = "Demand Forecasting System"
 
 app = FastAPI(title=APP_TITLE)
 
-# создаём таблицы при старте
-Base.metadata.create_all(bind=engine)
+# создаём таблицы при старте + миграции
+def run_migrations():
+    """Run database migrations to add missing columns"""
+    try:
+        with engine.connect() as conn:
+            inspector = inspect(engine)
+
+            # First create all tables that don't exist
+            Base.metadata.create_all(bind=engine)
+
+            # Check and add missing columns to users table
+            if 'users' in inspector.get_table_names():
+                existing_columns = [col['name'] for col in inspector.get_columns('users')]
+
+                migrations = [
+                    ("is_verified", "ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE"),
+                    ("google_id", "ALTER TABLE users ADD COLUMN google_id VARCHAR UNIQUE"),
+                    ("avatar_url", "ALTER TABLE users ADD COLUMN avatar_url VARCHAR"),
+                    ("full_name", "ALTER TABLE users ADD COLUMN full_name VARCHAR"),
+                ]
+
+                for col_name, sql in migrations:
+                    if col_name not in existing_columns:
+                        print(f"[Migration] Adding column: {col_name}")
+                        try:
+                            conn.execute(text(sql))
+                            conn.commit()
+                        except Exception as e:
+                            print(f"[Migration] Column {col_name} might already exist: {e}")
+                            conn.rollback()
+
+            print("[Migration] Database migrations complete")
+    except Exception as e:
+        print(f"[Migration] Error: {e}")
+
+run_migrations()
 
 # подключаем auth роуты
 app.include_router(auth_router)
