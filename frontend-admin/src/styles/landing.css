@@ -134,8 +134,10 @@ html {
 .scene-container {
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 1600px;
   bottom: 0;
   display: flex;
   align-items: flex-end;
@@ -539,10 +541,10 @@ html {
   transform: scale(1);
 }
 
-/* Positions */
+/* Positions - fixed px values for consistent spacing */
 .info-card--top-left {
-  top: 15%;
-  left: 10%;
+  top: 18%;
+  left: 40px;
   transform-origin: bottom right;
 }
 
@@ -555,8 +557,8 @@ html {
 }
 
 .info-card--top-right {
-  top: 15%;
-  right: 10%;
+  top: 18%;
+  right: 40px;
   transform-origin: bottom left;
 }
 
@@ -565,8 +567,8 @@ html {
 }
 
 .info-card--bottom-left {
-  bottom: 15%;
-  left: 10%;
+  bottom: 18%;
+  left: 40px;
   transform-origin: top right;
 }
 
@@ -575,8 +577,8 @@ html {
 }
 
 .info-card--bottom-right {
-  bottom: 15%;
-  right: 10%;
+  bottom: 18%;
+  right: 40px;
   transform-origin: top left;
 }
 
