@@ -14,7 +14,8 @@ import {
 
 import Sidebar from "../components/layout/Sidebar";
 import Topbar from "../components/layout/Topbar";
-import { getProducts, getForecast, getHistory } from "../api/forecastApi";
+import InsightCard from "../components/insights/InsightCard";
+import { getProducts, getForecast, getForecastV2, getHistory } from "../api/forecastApi";
 
 ChartJS.register(
   CategoryScale,
@@ -36,6 +37,8 @@ export default function ChartsPage() {
 
   const [historyData, setHistoryData] = useState(null);
   const [forecastData, setForecastData] = useState(null);
+  const [insightData, setInsightData] = useState(null);
+  const [useV2, setUseV2] = useState(true);
 
   useEffect(() => {
     loadProducts();
@@ -58,23 +61,49 @@ export default function ChartsPage() {
 
     setLoading(true);
     setError("");
+    setInsightData(null);
 
     try {
       const [history, forecast] = await Promise.all([
         getHistory(selectedProduct, { limit: 100 }),
-        getForecast({
-          productId: selectedProduct,
-          horizonDays: horizonDays,
-        }),
+        useV2
+          ? getForecastV2({
+              productId: selectedProduct,
+              horizonDays: horizonDays,
+            })
+          : getForecast({
+              productId: selectedProduct,
+              horizonDays: horizonDays,
+            }),
       ]);
 
       setHistoryData(history);
       setForecastData(forecast);
+
+      // If v2, set insight data
+      if (useV2 && forecast.insights) {
+        setInsightData(forecast);
+      }
     } catch (err) {
       setError(err.message || "Failed to load data");
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleFollowUpClick(question) {
+    // Navigate to chat with the question
+    console.log("Follow-up question:", question);
+    // TODO: Integrate with chat
+  }
+
+  function handleSuggestionClick(prompt) {
+    // Navigate to chat with the suggestion prompt
+    console.log("Suggestion prompt:", prompt);
+    // Store in sessionStorage for chat to pick up
+    sessionStorage.setItem("chat_prefill", prompt);
+    // Navigate to admin chat
+    window.location.href = "/admin/chat";
   }
 
   const chartData = {
@@ -244,6 +273,16 @@ export default function ChartsPage() {
               >
                 {loading ? "Loading..." : "Load Data"}
               </button>
+
+              <label className="toggle-label" style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "16px" }}>
+                <input
+                  type="checkbox"
+                  checked={useV2}
+                  onChange={(e) => setUseV2(e.target.checked)}
+                  style={{ width: "16px", height: "16px" }}
+                />
+                <span style={{ fontSize: "12px", color: "#4a6580" }}>Decision Assistant</span>
+              </label>
             </div>
 
             {error && <div className="errorBox">{error}</div>}
@@ -280,6 +319,17 @@ export default function ChartsPage() {
                       {forecastData.model_metrics.r2.toFixed(4)}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Decision Assistant Insight Card */}
+              {insightData && (
+                <div style={{ marginTop: "24px" }}>
+                  <InsightCard
+                    data={insightData}
+                    onFollowUpClick={handleFollowUpClick}
+                    onSuggestionClick={handleSuggestionClick}
+                  />
                 </div>
               )}
             </>

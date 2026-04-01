@@ -32,6 +32,27 @@ export async function getForecast({ productId, storeId, horizonDays }) {
   return res.json();
 }
 
+/**
+ * Get forecast with Decision Assistant insights and trust layer (v2)
+ */
+export async function getForecastV2({ productId, storeId, horizonDays }) {
+  const params = new URLSearchParams({
+    product_id: productId,
+    horizon_days: String(horizonDays),
+  });
+
+  if (storeId) params.set("store_id", storeId);
+
+  const url = `${BASE_URL}/forecast/v2?${params.toString()}`;
+
+  const res = await fetch(url, { headers: getHeaders() });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Failed to fetch forecast v2 (${res.status}). ${text}`);
+  }
+  return res.json();
+}
+
 export async function getProducts() {
   const res = await fetch(`${BASE_URL}/products`, { headers: getHeaders() });
   if (!res.ok) {

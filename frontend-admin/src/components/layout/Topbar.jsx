@@ -1,7 +1,14 @@
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Topbar() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate("/");
+    setTimeout(() => logout(), 100);
+  };
 
   return (
     <div className="topbar">
@@ -17,7 +24,7 @@ export default function Topbar() {
           </span>
         )}
 
-        <button className="logoutBtn" onClick={logout}>
+        <button className="logoutBtn" onClick={handleLogout}>
           Sign out
         </button>
       </div>

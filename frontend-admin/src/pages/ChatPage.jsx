@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -381,6 +382,29 @@ function ChatSidebar({
           <span>New Chat</span>
         </button>
 
+        {/* Projects Section */}
+        <div className="chat-sidebar-section">
+          <div className="section-title">Projects</div>
+          <div className="chat-list">
+            <div className="chat-item">
+              <button className="chat-item-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span className="chat-item-title">Demand Forecasting</span>
+              </button>
+            </div>
+            <div className="chat-item">
+              <button className="chat-item-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span className="chat-item-title">Analytics</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Recent Chats */}
         <div className="chat-sidebar-section">
           <div className="section-title">Recent Chats</div>
@@ -435,7 +459,39 @@ function ChatSidebar({
           </button>
         </div>
 
-        {/* User info - simplified */}
+        {/* Coming Soon Section */}
+        <div className="chat-sidebar-section chat-sidebar-soon">
+          <div className="section-title">Coming Soon</div>
+          <div className="soon-items">
+            <div className="soon-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+              </svg>
+              <span>Plugins</span>
+            </div>
+            <div className="soon-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                <line x1="9" y1="9" x2="9.01" y2="9"/>
+                <line x1="15" y1="9" x2="15.01" y2="9"/>
+              </svg>
+              <span>Custom GPTs</span>
+            </div>
+            <div className="soon-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+                <line x1="9" y1="21" x2="9" y2="9"/>
+              </svg>
+              <span>Workspaces</span>
+            </div>
+          </div>
+        </div>
+
+        {/* User info with logout */}
         <div className="chat-sidebar-user">
           <div className="user-avatar">
             {user?.email?.[0]?.toUpperCase() || 'U'}
@@ -443,6 +499,13 @@ function ChatSidebar({
           <div className="user-info">
             <span className="user-email">{user?.email || 'User'}</span>
           </div>
+          <button className="logout-btn" onClick={onLogout} title="Выйти">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
         </div>
       </aside>
     </>
@@ -454,6 +517,12 @@ function ChatSidebar({
 // ============================================
 export default function ChatPage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate("/");
+    setTimeout(() => logout(), 100);
+  };
 
   // Chat state
   const [messages, setMessages] = useState([]);
@@ -484,6 +553,15 @@ export default function ChatPage() {
     const currentId = getCurrentConversationId();
     if (currentId && savedConversations.find(c => c.id === currentId)) {
       loadConversation(currentId, savedConversations);
+    }
+
+    // Check for prefilled prompt from other pages (e.g., ChartsPage)
+    const prefillPrompt = sessionStorage.getItem("chat_prefill");
+    if (prefillPrompt) {
+      setInputValue(prefillPrompt);
+      sessionStorage.removeItem("chat_prefill");
+      // Focus input
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
 
     // Open sidebar by default on desktop
@@ -700,7 +778,7 @@ export default function ChatPage() {
           onSelectConversation={handleSelectConversation}
           onDeleteConversation={handleDeleteConversation}
           user={user}
-          onLogout={logout}
+          onLogout={handleLogout}
         />
 
         <main className="chat-main">

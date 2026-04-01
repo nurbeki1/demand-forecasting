@@ -22,8 +22,8 @@ export default function Sidebar() {
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
 
   const handleLogout = () => {
-    logout();
-    navigate("/login");
+    navigate("/");
+    setTimeout(() => logout(), 100);
   };
 
   return (
