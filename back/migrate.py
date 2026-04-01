@@ -49,10 +49,13 @@ def run_migrations():
             existing_columns = [col['name'] for col in inspector.get_columns('users')]
 
             migrations = [
+                ("is_active", "ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE"),
+                ("is_admin", "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"),
                 ("is_verified", "ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE"),
                 ("google_id", "ALTER TABLE users ADD COLUMN google_id VARCHAR UNIQUE"),
                 ("avatar_url", "ALTER TABLE users ADD COLUMN avatar_url VARCHAR"),
                 ("full_name", "ALTER TABLE users ADD COLUMN full_name VARCHAR"),
+                ("created_at", "ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
             ]
 
             for col_name, sql in migrations:
