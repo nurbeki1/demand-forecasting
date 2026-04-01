@@ -36,34 +36,40 @@ def send_verification_code(data: SendCodeRequest, db: Session = Depends(get_db))
     """
     Step 1: Send verification code to email
     """
-    # Check if user already exists and is verified
-    existing_user = db.query(User).filter(User.email == data.email).first()
-    if existing_user and existing_user.is_verified:
-        raise HTTPException(status_code=400, detail="Пользователь уже зарегистрирован")
+    try:
+        # Check if user already exists and is verified
+        existing_user = db.query(User).filter(User.email == data.email).first()
+        if existing_user and existing_user.is_verified:
+            raise HTTPException(status_code=400, detail="Пользователь уже зарегистрирован")
 
-    # Delete any existing codes for this email
-    db.query(VerificationCode).filter(
-        VerificationCode.email == data.email
-    ).delete()
-    db.commit()
+        # Delete any existing codes for this email
+        db.query(VerificationCode).filter(
+            VerificationCode.email == data.email
+        ).delete()
+        db.commit()
 
-    # Generate new code
-    code = generate_verification_code()
+        # Generate new code
+        code = generate_verification_code()
 
-    # Save code to database
-    verification = VerificationCode(
-        email=data.email,
-        code=code,
-        expires_at=get_code_expiry()
-    )
-    db.add(verification)
-    db.commit()
+        # Save code to database
+        verification = VerificationCode(
+            email=data.email,
+            code=code,
+            expires_at=get_code_expiry()
+        )
+        db.add(verification)
+        db.commit()
 
-    # Send email
-    if not send_verification_email(data.email, code):
-        raise HTTPException(status_code=500, detail="Не удалось отправить код")
+        # Send email
+        if not send_verification_email(data.email, code):
+            raise HTTPException(status_code=500, detail="Не удалось отправить код")
 
-    return MessageResponse(message="Код отправлен на вашу почту")
+        return MessageResponse(message="Код отправлен на вашу почту")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] send-code failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 
 
 @router.post("/verify-code", response_model=MessageResponse)
@@ -141,6 +147,7 @@ def google_auth(data: GoogleAuthRequest, db: Session = Depends(get_db)):
     Authenticate with Google OAuth
     """
     if not GOOGLE_CLIENT_ID:
+        print("[ERROR] GOOGLE_CLIENT_ID not set")
         raise HTTPException(status_code=500, detail="Google OAuth не настроен")
 
     try:
@@ -187,10 +194,16 @@ def google_auth(data: GoogleAuthRequest, db: Session = Depends(get_db)):
 
         # Create token
         token = create_access_token(subject=user.email)
-        return TokenResponse(access_token=token, is_admin=user.is_admin)
+        return TokenResponse(access_token=token, is_admin=user.is_admin, email=email)
 
     except ValueError as e:
+        print(f"[ERROR] Google token validation failed: {e}")
         raise HTTPException(status_code=400, detail="Неверный Google токен")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Google auth failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 
 
 # ===== STANDARD AUTH =====
@@ -217,25 +230,31 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse)
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     """Login and get access token"""
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="Неверные данные")
+    try:
+        user = db.query(User).filter(User.email == data.email).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="Неверные данные")
 
-    # Check if user has password (not Google-only user)
-    if not user.hashed_password:
-        raise HTTPException(
-            status_code=401,
-            detail="Войдите через Google"
-        )
+        # Check if user has password (not Google-only user)
+        if not user.hashed_password:
+            raise HTTPException(
+                status_code=401,
+                detail="Войдите через Google"
+            )
 
-    if not verify_password(data.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Неверные данные")
+        if not verify_password(data.password, user.hashed_password):
+            raise HTTPException(status_code=401, detail="Неверные данные")
 
-    if not user.is_verified:
-        raise HTTPException(status_code=401, detail="Email не подтверждён")
+        if not user.is_verified:
+            raise HTTPException(status_code=401, detail="Email не подтверждён")
 
-    token = create_access_token(subject=user.email)
-    return TokenResponse(access_token=token, is_admin=user.is_admin)
+        token = create_access_token(subject=user.email)
+        return TokenResponse(access_token=token, is_admin=user.is_admin, email=user.email)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] login failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 
 
 @router.get("/me", response_model=UserResponse)

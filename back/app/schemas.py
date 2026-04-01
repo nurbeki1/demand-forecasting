@@ -36,6 +36,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     is_admin: bool = False
+    email: Optional[str] = None
 
 
 class UserResponse(BaseModel):
