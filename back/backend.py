@@ -13,6 +13,9 @@ from app.database import engine, Base
 from app.auth_routes import router as auth_router
 from app.deps import get_current_user, get_admin_user
 
+# ===== ROUTERS =====
+from app.routers.dashboard import router as dashboard_router
+
 # ===== SERVICES =====
 from services.ai_chat_service import (
     handle_ai_chat,
@@ -43,6 +46,9 @@ Base.metadata.create_all(bind=engine)
 
 # подключаем auth роуты
 app.include_router(auth_router)
+
+# подключаем dashboard роуты
+app.include_router(dashboard_router)
 
 # CORS (для Flutter/веб)
 # CORS - allow frontend domains

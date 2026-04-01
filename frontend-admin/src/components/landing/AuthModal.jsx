@@ -1,12 +1,25 @@
 /**
  * AuthModal - Premium Authentication Modal
- * Login/Register with smooth animations
+ * Features:
+ * - Email verification flow (send code → verify → set password)
+ * - Google OAuth
+ * - Login
  */
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { API_URL } from "../../config";
 import "./AuthModal.css";
+
+// ============================================
+// REGISTRATION STEPS
+// ============================================
+const REGISTER_STEPS = {
+  EMAIL: "email",
+  CODE: "code",
+  PASSWORD: "password",
+};
 
 // ============================================
 // LOGIN FORM
@@ -26,14 +39,13 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
     try {
       const userData = await login(email, password);
       onSuccess();
-      // Navigate based on role
       if (userData?.is_admin) {
         navigate("/admin");
       } else {
         navigate("/user");
       }
     } catch (err) {
-      setError(err.message || "Login failed");
+      setError(err.message || "Ошибка входа");
     } finally {
       setLoading(false);
     }
@@ -94,17 +106,84 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
 }
 
 // ============================================
-// REGISTER FORM
+// REGISTER FORM - Multi-step
 // ============================================
-function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
+function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick }) {
+  const [step, setStep] = useState(REGISTER_STEPS.EMAIL);
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const { register } = useAuth();
+  const [countdown, setCountdown] = useState(0);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  // Countdown timer for resend
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  // Step 1: Send verification code
+  const handleSendCode = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/auth/send-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Не удалось отправить код");
+      }
+
+      setStep(REGISTER_STEPS.CODE);
+      setCountdown(60); // 60 seconds before can resend
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2: Verify code
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/auth/verify-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Неверный код");
+      }
+
+      setStep(REGISTER_STEPS.PASSWORD);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 3: Complete registration
+  const handleCompleteRegistration = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -121,32 +200,157 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
     setLoading(true);
 
     try {
-      await register(email, password);
+      const response = await fetch(`${API_URL}/auth/complete-registration`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Ошибка регистрации");
+      }
+
+      // Auto-login after registration
+      await login(email, password);
       onSuccess();
       navigate("/user");
     } catch (err) {
-      setError(err.message || "Registration failed");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // Resend code
+  const handleResendCode = () => {
+    if (countdown === 0) {
+      setStep(REGISTER_STEPS.EMAIL);
+      setCode("");
+    }
+  };
+
+  // Render based on step
+  if (step === REGISTER_STEPS.EMAIL) {
+    return (
+      <form className="auth-form" onSubmit={handleSendCode}>
+        {error && <div className="auth-error">{error}</div>}
+
+        <div className="auth-step-indicator">
+          <div className="auth-step active">1</div>
+          <div className="auth-step-line" />
+          <div className="auth-step">2</div>
+          <div className="auth-step-line" />
+          <div className="auth-step">3</div>
+        </div>
+
+        <div className="auth-field">
+          <label htmlFor="register-email">Email</label>
+          <input
+            id="register-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Введите email"
+            required
+            disabled={loading}
+            autoComplete="email"
+          />
+        </div>
+
+        <button type="submit" className="auth-submit" disabled={loading}>
+          {loading ? (
+            <span className="auth-spinner" />
+          ) : (
+            <>
+              <span>Отправить код</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </>
+          )}
+        </button>
+
+        <div className="auth-switch">
+          <span>Уже есть аккаунт?</span>
+          <button type="button" onClick={onSwitch}>Войти</button>
+        </div>
+      </form>
+    );
+  }
+
+  if (step === REGISTER_STEPS.CODE) {
+    return (
+      <form className="auth-form" onSubmit={handleVerifyCode}>
+        {error && <div className="auth-error">{error}</div>}
+
+        <div className="auth-step-indicator">
+          <div className="auth-step completed">✓</div>
+          <div className="auth-step-line active" />
+          <div className="auth-step active">2</div>
+          <div className="auth-step-line" />
+          <div className="auth-step">3</div>
+        </div>
+
+        <div className="auth-code-sent">
+          <p>Код отправлен на</p>
+          <strong>{email}</strong>
+        </div>
+
+        <div className="auth-field">
+          <label htmlFor="register-code">Код подтверждения</label>
+          <input
+            id="register-code"
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="000000"
+            required
+            disabled={loading}
+            maxLength={6}
+            className="auth-code-input"
+            autoComplete="one-time-code"
+          />
+        </div>
+
+        <button type="submit" className="auth-submit" disabled={loading || code.length !== 6}>
+          {loading ? (
+            <span className="auth-spinner" />
+          ) : (
+            <>
+              <span>Подтвердить</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </>
+          )}
+        </button>
+
+        <div className="auth-resend">
+          {countdown > 0 ? (
+            <span>Отправить повторно через {countdown}с</span>
+          ) : (
+            <button type="button" onClick={handleResendCode}>
+              Отправить код повторно
+            </button>
+          )}
+        </div>
+      </form>
+    );
+  }
+
+  // Step 3: Password
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
+    <form className="auth-form" onSubmit={handleCompleteRegistration}>
       {error && <div className="auth-error">{error}</div>}
 
-      <div className="auth-field">
-        <label htmlFor="register-email">Email</label>
-        <input
-          id="register-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Введите email"
-          required
-          disabled={loading}
-          autoComplete="email"
-        />
+      <div className="auth-step-indicator">
+        <div className="auth-step completed">✓</div>
+        <div className="auth-step-line active" />
+        <div className="auth-step completed">✓</div>
+        <div className="auth-step-line active" />
+        <div className="auth-step active">3</div>
       </div>
 
       <div className="auth-field">
@@ -191,11 +395,6 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
           </>
         )}
       </button>
-
-      <div className="auth-switch">
-        <span>Уже есть аккаунт?</span>
-        <button type="button" onClick={onSwitch}>Войти</button>
-      </div>
     </form>
   );
 }
@@ -207,6 +406,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   const [activeTab, setActiveTab] = useState("login");
   const [loading, setLoading] = useState(false);
   const modalRef = useRef(null);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   // Close on escape
   useEffect(() => {
@@ -233,6 +434,55 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       onClose();
     }
   };
+
+  // Google OAuth handler
+  const handleGoogleLogin = async (response) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Ошибка Google авторизации");
+      }
+
+      // Store token and redirect
+      localStorage.setItem("token", data.access_token);
+      onSuccess();
+      navigate(data.is_admin ? "/admin" : "/user");
+      window.location.reload(); // Refresh to update auth state
+    } catch (err) {
+      console.error("Google auth error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initialize Google OAuth
+  useEffect(() => {
+    if (isOpen && window.google) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleLogin,
+      });
+
+      window.google.accounts.id.renderButton(
+        document.getElementById("google-signin-button"),
+        {
+          theme: "filled_black",
+          size: "large",
+          width: "100%",
+          text: "continue_with",
+          locale: "ru",
+        }
+      );
+    }
+  }, [isOpen, activeTab]);
 
   if (!isOpen) return null;
 
@@ -315,26 +565,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
         {/* Divider */}
         <div className="auth-divider">
-          <span>или продолжить с</span>
+          <span>или</span>
         </div>
 
-        {/* Social buttons */}
-        <div className="auth-social">
-          <button className="auth-social-btn" disabled={loading}>
-            <svg width="20" height="20" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Google
-          </button>
-          <button className="auth-social-btn" disabled={loading}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-            </svg>
-            GitHub
-          </button>
+        {/* Google Sign-In Button */}
+        <div className="auth-google-container">
+          <div id="google-signin-button"></div>
         </div>
       </div>
     </div>

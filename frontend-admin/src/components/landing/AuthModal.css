@@ -419,6 +419,124 @@
 }
 
 /* =====================================================
+   STEP INDICATOR
+   ===================================================== */
+.auth-step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 24px;
+}
+
+.auth-step {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+  color: #52525b;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.auth-step.active {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+.auth-step.completed {
+  background: #10b981;
+  color: white;
+  border-color: transparent;
+}
+
+.auth-step-line {
+  width: 40px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.auth-step-line.active {
+  background: linear-gradient(90deg, #10b981, #6366f1);
+}
+
+/* =====================================================
+   CODE INPUT
+   ===================================================== */
+.auth-code-input {
+  font-size: 24px !important;
+  font-weight: 600;
+  letter-spacing: 8px;
+  text-align: center;
+}
+
+.auth-code-sent {
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+}
+
+.auth-code-sent p {
+  color: #71717a;
+  font-size: 13px;
+  margin: 0 0 4px;
+}
+
+.auth-code-sent strong {
+  color: #10b981;
+  font-size: 15px;
+}
+
+/* =====================================================
+   RESEND BUTTON
+   ===================================================== */
+.auth-resend {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.auth-resend span {
+  color: #52525b;
+}
+
+.auth-resend button {
+  background: none;
+  border: none;
+  color: #6366f1;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.auth-resend button:hover {
+  color: #818cf8;
+}
+
+/* =====================================================
+   GOOGLE BUTTON CONTAINER
+   ===================================================== */
+.auth-google-container {
+  display: flex;
+  justify-content: center;
+}
+
+.auth-google-container > div {
+  width: 100%;
+}
+
+/* =====================================================
    RESPONSIVE
    ===================================================== */
 @media (max-width: 480px) {
