@@ -74,6 +74,11 @@ ALLOWED_ORIGINS = [
     "https://demand-forecasting-chat.vercel.app",  # AI Chat frontend
 ]
 
+# Add FRONTEND_URL from environment if set
+FRONTEND_URL = os.environ.get("FRONTEND_URL")
+if FRONTEND_URL and FRONTEND_URL not in ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS.append(FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
