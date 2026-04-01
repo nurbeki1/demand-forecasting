@@ -150,6 +150,12 @@ html {
   pointer-events: auto;
 }
 
+/* Ensure scene-text and all children are clickable */
+.scene-container .scene-text,
+.scene-container .scene-text * {
+  pointer-events: auto !important;
+}
+
 /* =====================================================
    SPLINE 3D SCENE
    ===================================================== */
@@ -163,13 +169,17 @@ html {
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   /* Move robot down so feet are cut off */
   margin-bottom: -400px;
+  /* Don't block clicks on other elements */
+  pointer-events: none;
 }
 
-.spline-scene canvas {
+.spline-scene canvas,
+.spline-scene > div {
   width: 100% !important;
   height: 100% !important;
   /* Remove any canvas background */
   background: transparent !important;
+  pointer-events: none !important;
 }
 
 /* Spline iframe/container fix for transparency */
@@ -646,8 +656,8 @@ html {
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
-  z-index: 10;
-  pointer-events: auto;
+  z-index: 1000;
+  pointer-events: auto !important;
 }
 
 .scene-text__content {
