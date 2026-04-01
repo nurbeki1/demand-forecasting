@@ -9,6 +9,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { setToken, setCachedUser } from "../../utils/authStorage";
 import { API_URL } from "../../config";
 import "./AuthModal.css";
 
@@ -405,6 +406,7 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
 export default function AuthModal({ isOpen, onClose, onSuccess }) {
   const [activeTab, setActiveTab] = useState("login");
   const [loading, setLoading] = useState(false);
+  const [googleError, setGoogleError] = useState("");
   const modalRef = useRef(null);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -437,8 +439,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
   // Google OAuth handler
   const handleGoogleLogin = async (response) => {
+    console.log("Google response:", response);
     setLoading(true);
+    setGoogleError("");
+
     try {
+      console.log("Sending to backend:", `${API_URL}/auth/google`);
       const res = await fetch(`${API_URL}/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -446,18 +452,29 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       });
 
       const data = await res.json();
+      console.log("Backend response:", data);
 
       if (!res.ok) {
         throw new Error(data.detail || "Ошибка Google авторизации");
       }
 
-      // Store token and redirect
-      localStorage.setItem("token", data.access_token);
+      // Store token using proper authStorage
+      setToken(data.access_token);
+
+      // Cache user data for instant redirect after reload
+      setCachedUser({
+        is_admin: data.is_admin,
+        email: data.email || "",
+      });
+
       onSuccess();
-      navigate(data.is_admin ? "/admin" : "/user");
-      window.location.reload(); // Refresh to update auth state
+
+      // Navigate and reload to update auth state
+      const targetPath = data.is_admin ? "/admin" : "/user";
+      window.location.href = targetPath;
     } catch (err) {
       console.error("Google auth error:", err);
+      setGoogleError(err.message || "Ошибка подключения к серверу");
     } finally {
       setLoading(false);
     }
@@ -570,6 +587,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
         {/* Google Sign-In Button */}
         <div className="auth-google-container">
+          {googleError && <div className="auth-error" style={{ marginBottom: '12px' }}>{googleError}</div>}
           <div id="google-signin-button"></div>
         </div>
       </div>
