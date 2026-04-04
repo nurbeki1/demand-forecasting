@@ -1,0 +1,354 @@
+{
+  "cities": [
+    {
+      "id": "almaty",
+      "name": "Алматы",
+      "name_en": "Almaty",
+      "region": "Алматы",
+      "population": 2000000,
+      "avg_salary_kzt": 350000,
+      "purchasing_power_index": 1.0,
+      "logistics_cost_from_almaty_kzt": 0,
+      "competition_level": "high",
+      "e_commerce_penetration": 0.75,
+      "tier": 1,
+      "coordinates": {"lat": 43.238949, "lng": 76.945465}
+    },
+    {
+      "id": "astana",
+      "name": "Астана",
+      "name_en": "Astana",
+      "region": "Астана",
+      "population": 1350000,
+      "avg_salary_kzt": 400000,
+      "purchasing_power_index": 1.15,
+      "logistics_cost_from_almaty_kzt": 15000,
+      "competition_level": "high",
+      "e_commerce_penetration": 0.70,
+      "tier": 1,
+      "coordinates": {"lat": 51.169392, "lng": 71.449074}
+    },
+    {
+      "id": "shymkent",
+      "name": "Шымкент",
+      "name_en": "Shymkent",
+      "region": "Шымкент",
+      "population": 1100000,
+      "avg_salary_kzt": 250000,
+      "purchasing_power_index": 0.70,
+      "logistics_cost_from_almaty_kzt": 8000,
+      "competition_level": "medium",
+      "e_commerce_penetration": 0.50,
+      "tier": 2,
+      "coordinates": {"lat": 42.317350, "lng": 69.596810}
+    },
+    {
+      "id": "karaganda",
+      "name": "Караганда",
+      "name_en": "Karaganda",
+      "region": "Карагандинская область",
+      "population": 500000,
+      "avg_salary_kzt": 280000,
+      "purchasing_power_index": 0.80,
+      "logistics_cost_from_almaty_kzt": 12000,
+      "competition_level": "medium",
+      "e_commerce_penetration": 0.55,
+      "tier": 2,
+      "coordinates": {"lat": 49.806406, "lng": 73.085485}
+    },
+    {
+      "id": "aktobe",
+      "name": "Актобе",
+      "name_en": "Aktobe",
+      "region": "Актюбинская область",
+      "population": 420000,
+      "avg_salary_kzt": 300000,
+      "purchasing_power_index": 0.85,
+      "logistics_cost_from_almaty_kzt": 20000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.45,
+      "tier": 2,
+      "coordinates": {"lat": 50.283937, "lng": 57.166978}
+    },
+    {
+      "id": "taraz",
+      "name": "Тараз",
+      "name_en": "Taraz",
+      "region": "Жамбылская область",
+      "population": 360000,
+      "avg_salary_kzt": 220000,
+      "purchasing_power_index": 0.62,
+      "logistics_cost_from_almaty_kzt": 6000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.40,
+      "tier": 2,
+      "coordinates": {"lat": 42.900990, "lng": 71.378491}
+    },
+    {
+      "id": "pavlodar",
+      "name": "Павлодар",
+      "name_en": "Pavlodar",
+      "region": "Павлодарская область",
+      "population": 330000,
+      "avg_salary_kzt": 270000,
+      "purchasing_power_index": 0.77,
+      "logistics_cost_from_almaty_kzt": 18000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.45,
+      "tier": 2,
+      "coordinates": {"lat": 52.285577, "lng": 76.940947}
+    },
+    {
+      "id": "ust-kamenogorsk",
+      "name": "Усть-Каменогорск",
+      "name_en": "Ust-Kamenogorsk",
+      "region": "Восточно-Казахстанская область",
+      "population": 340000,
+      "avg_salary_kzt": 290000,
+      "purchasing_power_index": 0.82,
+      "logistics_cost_from_almaty_kzt": 14000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.48,
+      "tier": 2,
+      "coordinates": {"lat": 49.948759, "lng": 82.628459}
+    },
+    {
+      "id": "semey",
+      "name": "Семей",
+      "name_en": "Semey",
+      "region": "Абайская область",
+      "population": 320000,
+      "avg_salary_kzt": 230000,
+      "purchasing_power_index": 0.65,
+      "logistics_cost_from_almaty_kzt": 13000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.42,
+      "tier": 2,
+      "coordinates": {"lat": 50.411438, "lng": 80.227617}
+    },
+    {
+      "id": "atyrau",
+      "name": "Атырау",
+      "name_en": "Atyrau",
+      "region": "Атырауская область",
+      "population": 280000,
+      "avg_salary_kzt": 450000,
+      "purchasing_power_index": 1.25,
+      "logistics_cost_from_almaty_kzt": 25000,
+      "competition_level": "medium",
+      "e_commerce_penetration": 0.50,
+      "tier": 2,
+      "coordinates": {"lat": 46.806741, "lng": 51.940030}
+    },
+    {
+      "id": "kostanay",
+      "name": "Костанай",
+      "name_en": "Kostanay",
+      "region": "Костанайская область",
+      "population": 240000,
+      "avg_salary_kzt": 240000,
+      "purchasing_power_index": 0.68,
+      "logistics_cost_from_almaty_kzt": 22000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.38,
+      "tier": 3,
+      "coordinates": {"lat": 53.214373, "lng": 63.631312}
+    },
+    {
+      "id": "petropavlovsk",
+      "name": "Петропавловск",
+      "name_en": "Petropavlovsk",
+      "region": "Северо-Казахстанская область",
+      "population": 220000,
+      "avg_salary_kzt": 230000,
+      "purchasing_power_index": 0.65,
+      "logistics_cost_from_almaty_kzt": 24000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.35,
+      "tier": 3,
+      "coordinates": {"lat": 54.865280, "lng": 69.135439}
+    },
+    {
+      "id": "aktau",
+      "name": "Актау",
+      "name_en": "Aktau",
+      "region": "Мангистауская область",
+      "population": 190000,
+      "avg_salary_kzt": 380000,
+      "purchasing_power_index": 1.05,
+      "logistics_cost_from_almaty_kzt": 28000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.42,
+      "tier": 2,
+      "coordinates": {"lat": 43.648522, "lng": 51.197580}
+    },
+    {
+      "id": "uralsk",
+      "name": "Уральск",
+      "name_en": "Uralsk",
+      "region": "Западно-Казахстанская область",
+      "population": 300000,
+      "avg_salary_kzt": 320000,
+      "purchasing_power_index": 0.90,
+      "logistics_cost_from_almaty_kzt": 26000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.40,
+      "tier": 2,
+      "coordinates": {"lat": 51.227272, "lng": 51.386946}
+    },
+    {
+      "id": "kyzylorda",
+      "name": "Кызылорда",
+      "name_en": "Kyzylorda",
+      "region": "Кызылординская область",
+      "population": 270000,
+      "avg_salary_kzt": 210000,
+      "purchasing_power_index": 0.58,
+      "logistics_cost_from_almaty_kzt": 15000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.32,
+      "tier": 3,
+      "coordinates": {"lat": 44.852952, "lng": 65.502235}
+    },
+    {
+      "id": "taldykorgan",
+      "name": "Талдыкорган",
+      "name_en": "Taldykorgan",
+      "region": "Алматинская область",
+      "population": 160000,
+      "avg_salary_kzt": 220000,
+      "purchasing_power_index": 0.62,
+      "logistics_cost_from_almaty_kzt": 4000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.35,
+      "tier": 3,
+      "coordinates": {"lat": 45.016447, "lng": 78.373831}
+    },
+    {
+      "id": "turkestan",
+      "name": "Туркестан",
+      "name_en": "Turkestan",
+      "region": "Туркестанская область",
+      "population": 180000,
+      "avg_salary_kzt": 200000,
+      "purchasing_power_index": 0.55,
+      "logistics_cost_from_almaty_kzt": 10000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.30,
+      "tier": 3,
+      "coordinates": {"lat": 43.302706, "lng": 68.251808}
+    },
+    {
+      "id": "kokshetau",
+      "name": "Кокшетау",
+      "name_en": "Kokshetau",
+      "region": "Акмолинская область",
+      "population": 150000,
+      "avg_salary_kzt": 230000,
+      "purchasing_power_index": 0.65,
+      "logistics_cost_from_almaty_kzt": 18000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.35,
+      "tier": 3,
+      "coordinates": {"lat": 53.284635, "lng": 69.393785}
+    },
+    {
+      "id": "zhezkazgan",
+      "name": "Жезказган",
+      "name_en": "Zhezkazgan",
+      "region": "Улытауская область",
+      "population": 90000,
+      "avg_salary_kzt": 260000,
+      "purchasing_power_index": 0.72,
+      "logistics_cost_from_almaty_kzt": 16000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.30,
+      "tier": 3,
+      "coordinates": {"lat": 47.785454, "lng": 67.713925}
+    },
+    {
+      "id": "ekibastuz",
+      "name": "Экибастуз",
+      "name_en": "Ekibastuz",
+      "region": "Павлодарская область",
+      "population": 130000,
+      "avg_salary_kzt": 250000,
+      "purchasing_power_index": 0.70,
+      "logistics_cost_from_almaty_kzt": 19000,
+      "competition_level": "low",
+      "e_commerce_penetration": 0.32,
+      "tier": 3,
+      "coordinates": {"lat": 51.723399, "lng": 75.323105}
+    }
+  ],
+  "currency": {
+    "usd_to_kzt": 450,
+    "rub_to_kzt": 5,
+    "cny_to_kzt": 62,
+    "last_updated": "2024-01-01"
+  },
+  "categories": {
+    "electronics": {
+      "name_ru": "Электроника",
+      "demand_multiplier": 1.2,
+      "typical_margin_percent": 20,
+      "price_sensitivity": 0.6
+    },
+    "clothing": {
+      "name_ru": "Одежда",
+      "demand_multiplier": 1.0,
+      "typical_margin_percent": 50,
+      "price_sensitivity": 0.4
+    },
+    "home": {
+      "name_ru": "Товары для дома",
+      "demand_multiplier": 0.9,
+      "typical_margin_percent": 35,
+      "price_sensitivity": 0.5
+    },
+    "beauty": {
+      "name_ru": "Красота и здоровье",
+      "demand_multiplier": 1.1,
+      "typical_margin_percent": 60,
+      "price_sensitivity": 0.3
+    },
+    "sports": {
+      "name_ru": "Спорт и отдых",
+      "demand_multiplier": 0.8,
+      "typical_margin_percent": 40,
+      "price_sensitivity": 0.5
+    },
+    "kids": {
+      "name_ru": "Детские товары",
+      "demand_multiplier": 1.0,
+      "typical_margin_percent": 45,
+      "price_sensitivity": 0.4
+    },
+    "auto": {
+      "name_ru": "Автотовары",
+      "demand_multiplier": 0.7,
+      "typical_margin_percent": 30,
+      "price_sensitivity": 0.6
+    },
+    "food": {
+      "name_ru": "Продукты питания",
+      "demand_multiplier": 1.5,
+      "typical_margin_percent": 25,
+      "price_sensitivity": 0.7
+    }
+  },
+  "logistics": {
+    "base_cost_per_kg_kzt": 150,
+    "express_multiplier": 2.5,
+    "bulky_item_surcharge_kzt": 5000
+  },
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2024-01-01",
+    "data_sources": [
+      "Бюро национальной статистики РК",
+      "НБ РК",
+      "Kaspi.kz research"
+    ]
+  }
+}

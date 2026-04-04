@@ -194,3 +194,66 @@ def get_risk_level(score: float) -> RiskLevel:
         return RiskLevel.MEDIUM
     else:
         return RiskLevel.LOW
+
+
+# =========================================================
+# CHAT RESPONSE SCHEMAS
+# =========================================================
+
+class ResponseType(str, Enum):
+    """Type of chat response - determines UI rendering"""
+    STRUCTURED = "structured"  # Full decision assistant response
+    TEXT = "text"              # Plain LLM text (general/conversational)
+    COMPARISON = "comparison"  # Side-by-side comparison
+    LIST = "list"              # Ranked list (top products, etc.)
+
+
+class ConfidenceBlock(BaseModel):
+    """Confidence information for chat response"""
+    level: ConfidenceLevel
+    score: float = Field(ge=0.0, le=1.0)
+    factors: List[Dict[str, Any]] = []
+    explanation: str
+
+
+class DecisionAssistantChatResponse(BaseModel):
+    """
+    Structured response from Decision Assistant chat.
+    Replaces plain text responses for forecast-related intents.
+    """
+    # Response identification
+    response_type: ResponseType
+    intent: str
+    entities: Dict[str, Any] = {}
+
+    # Core content
+    summary: Optional[str] = None
+    why_it_happened: Optional[str] = None
+
+    # Risk and confidence
+    risk_level: Optional[RiskLevel] = None
+    confidence: Optional[ConfidenceBlock] = None
+
+    # Actionable recommendations
+    what_to_do_next: Optional[str] = None
+    action_items: List[Dict[str, Any]] = []
+
+    # Follow-up suggestions (clickable prompts)
+    suggested_questions: List[Dict[str, Any]] = []
+
+    # Data for visualization
+    data: Optional[Dict[str, Any]] = None
+
+    # Full structured insights (for detailed view)
+    insights: Optional[InsightBlock] = None
+    trust: Optional[TrustLayer] = None
+
+    # Alerts
+    alerts: List[Dict[str, Any]] = []
+    has_critical_alert: bool = False
+
+    # Product images (for product search/comparison)
+    images: Optional[List[Dict[str, Any]]] = None
+
+    # Backward compatibility - always present
+    reply: str

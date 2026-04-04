@@ -16,7 +16,10 @@ import {
   sendChatMessage,
   getChatHistory,
   clearChatHistory,
+  recalculateKZAnalysis,
 } from "../api/chatApi";
+
+import KZAnalysisCard from "../components/kz/KZAnalysisCard";
 
 import "../styles/chat.css";
 
@@ -90,28 +93,89 @@ function renderMarkdown(text) {
   const elements = [];
   let inList = false;
   let listItems = [];
+  let inTable = false;
+  let tableRows = [];
+  let tableHeader = null;
+
+  const flushList = (idx) => {
+    if (inList && listItems.length > 0) {
+      elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
+      listItems = [];
+      inList = false;
+    }
+  };
+
+  const flushTable = (idx) => {
+    if (inTable && tableRows.length > 0) {
+      elements.push(
+        <div key={`table-wrap-${idx}`} className="md-table-wrapper">
+          <table className="md-table">
+            {tableHeader && (
+              <thead>
+                <tr>
+                  {tableHeader.map((cell, i) => (
+                    <th key={i}>{processInline(cell.trim())}</th>
+                  ))}
+                </tr>
+              </thead>
+            )}
+            <tbody>
+              {tableRows.map((row, rowIdx) => (
+                <tr key={rowIdx} className={row.some(c => c.includes('🟢')) ? 'row-success' : row.some(c => c.includes('🔴')) ? 'row-danger' : row.some(c => c.includes('🟡')) ? 'row-warning' : ''}>
+                  {row.map((cell, cellIdx) => (
+                    <td key={cellIdx}>{processInline(cell.trim())}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      tableRows = [];
+      tableHeader = null;
+      inTable = false;
+    }
+  };
 
   lines.forEach((line, idx) => {
-    if (line.startsWith('### ')) {
-      if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
-        listItems = [];
-        inList = false;
+    // Check for table row (starts and ends with |)
+    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      flushList(idx);
+
+      // Parse cells
+      const cells = line.trim().slice(1, -1).split('|');
+
+      // Check if it's a separator row (|---|---|)
+      if (cells.every(c => /^[\s:-]+$/.test(c))) {
+        // This is the separator, skip it but mark we're in table
+        inTable = true;
+        return;
       }
+
+      if (!inTable && !tableHeader) {
+        // First row is header
+        tableHeader = cells;
+        inTable = true;
+      } else {
+        // Data row
+        tableRows.push(cells);
+      }
+      return;
+    }
+
+    // If we were in a table but this line isn't a table row, flush the table
+    if (inTable) {
+      flushTable(idx);
+    }
+
+    if (line.startsWith('### ')) {
+      flushList(idx);
       elements.push(<h4 key={idx} className="md-h3">{processInline(line.slice(4))}</h4>);
     } else if (line.startsWith('## ')) {
-      if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
-        listItems = [];
-        inList = false;
-      }
+      flushList(idx);
       elements.push(<h3 key={idx} className="md-h2">{processInline(line.slice(3))}</h3>);
     } else if (line.startsWith('# ')) {
-      if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
-        listItems = [];
-        inList = false;
-      }
+      flushList(idx);
       elements.push(<h2 key={idx} className="md-h1">{processInline(line.slice(2))}</h2>);
     } else if (line.match(/^[-*]\s/)) {
       inList = true;
@@ -120,30 +184,22 @@ function renderMarkdown(text) {
       inList = true;
       listItems.push(<li key={idx}>{processInline(line.replace(/^\d+\.\s/, ''))}</li>);
     } else if (line === '---') {
-      if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
-        listItems = [];
-        inList = false;
-      }
+      flushList(idx);
       elements.push(<hr key={idx} className="md-divider" />);
     } else if (line.trim() === '') {
-      if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
-        listItems = [];
-        inList = false;
-      }
+      flushList(idx);
     } else {
-      if (inList) {
-        elements.push(<ul key={`list-${idx}`} className="md-list">{listItems}</ul>);
-        listItems = [];
-        inList = false;
-      }
+      flushList(idx);
       elements.push(<p key={idx} className="md-p">{processInline(line)}</p>);
     }
   });
 
+  // Flush remaining content
   if (inList && listItems.length > 0) {
     elements.push(<ul key="list-final" className="md-list">{listItems}</ul>);
+  }
+  if (inTable && tableRows.length > 0) {
+    flushTable('final');
   }
 
   return elements;
@@ -675,8 +731,11 @@ export default function ChatPage() {
         role: "assistant",
         content: response.reply,
         intent: response.intent,
+        response_type: response.response_type,
         images: response.images,
         data: response.data,
+        suggested_questions: response.suggested_questions,
+        available_details: response.available_details,
       };
       const finalMessages = [...newMessages, assistantMessage];
       setMessages(finalMessages);
@@ -697,6 +756,37 @@ export default function ChatPage() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  // Handle KZ analysis recalculation with new markup
+  const handleKZRecalculate = async (markup, originalMessage) => {
+    if (!originalMessage?.data?.product_name) return;
+
+    try {
+      const response = await recalculateKZAnalysis(
+        originalMessage.data.product_name,
+        markup
+      );
+
+      // Update the message with new data
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg === originalMessage
+            ? { ...msg, data: { ...response, markup_percent: markup } }
+            : msg
+        )
+      );
+
+      // Save updated conversation
+      const updatedMessages = messages.map((msg) =>
+        msg === originalMessage
+          ? { ...msg, data: { ...response, markup_percent: markup } }
+          : msg
+      );
+      saveCurrentConversation(updatedMessages);
+    } catch (error) {
+      console.error("Failed to recalculate KZ analysis:", error);
     }
   };
 
@@ -924,7 +1014,31 @@ export default function ChatPage() {
                         {msg.images && msg.images.length > 0 && (
                           <ProductCarousel images={msg.images} />
                         )}
-                        {msg.data && <MiniChart data={msg.data} />}
+                        {msg.data && !msg.response_type?.startsWith('kz_') && <MiniChart data={msg.data} />}
+                        {msg.response_type?.startsWith('kz_') && msg.data && msg.response_type !== 'error' && (
+                          <KZAnalysisCard
+                            data={msg.data}
+                            onMarkupChange={(markup) => handleKZRecalculate(markup, msg)}
+                            responseType={msg.response_type}
+                          />
+                        )}
+                        {/* Suggested Questions for Progressive Disclosure */}
+                        {msg.role === 'assistant' && msg.suggested_questions && msg.suggested_questions.length > 0 && (
+                          <div className="suggested-questions">
+                            {msg.suggested_questions.slice(0, 4).map((sq, sqIdx) => (
+                              <button
+                                key={sqIdx}
+                                className="suggested-question-btn"
+                                onClick={() => {
+                                  setInputValue(sq.prompt || sq.text);
+                                  setTimeout(() => handleSend(), 100);
+                                }}
+                              >
+                                {sq.text}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -157,8 +157,8 @@ class TestHandleAiChat:
 
         result = handle_ai_chat("Hello", user_id=1)
 
-        assert "suggestions" in result
-        assert isinstance(result["suggestions"], list)
+        assert "suggested_questions" in result
+        assert isinstance(result["suggested_questions"], list)
 
     @patch("services.ai_chat_service.ask_llm")
     def test_stores_messages(self, mock_llm):
@@ -353,6 +353,108 @@ class TestContextBuilding:
             {}
         )
         assert len(context) > 0
+
+
+class TestKZProgressiveDisclosure:
+    """Tests for KZ Analysis Progressive Disclosure"""
+
+    @patch("services.ai_chat_service.web_search_service")
+    @patch("services.ai_chat_service.profit_calculator")
+    @patch("services.ai_chat_service.kz_market_service")
+    def test_kz_analysis_returns_short_response(self, mock_kz_service, mock_profit, mock_web):
+        """KZ_ANALYSIS should return short response with progressive disclosure options"""
+        # Mock the services
+        from unittest.mock import AsyncMock
+        mock_web.get_competitor_prices = AsyncMock(return_value=[])
+        mock_web.search_product_price = AsyncMock(return_value=MagicMock(
+            price_usd=500.0,
+            product_name="Test Product",
+            source="test",
+            url="http://test.com",
+            price_range=None
+        ))
+
+        # Create a mock result object
+        mock_result = MagicMock()
+        mock_result.is_profitable = True
+        mock_result.product_name = "Samsung Galaxy"
+        mock_result.product_cost_usd = 400.0
+        mock_result.product_cost_kzt = 180000.0
+        mock_result.currency_rate = 450
+        mock_result.retail_price_usd = 500.0
+        mock_result.wholesale_discount_applied = True
+        mock_result.competitor_analysis = None
+        mock_result.investment = None
+        mock_result.risk_analysis = None
+        mock_result.warnings = []
+        mock_result.to_dict = MagicMock(return_value={})
+
+        mock_profit.apply_wholesale_discount = MagicMock(return_value=400.0)
+        mock_profit.analyze_all_cities = MagicMock(return_value=mock_result)
+
+        result = handle_ai_chat("Samsung Galaxy в Казахстане", user_id=500)
+
+        # Should return short response type
+        assert result.get("response_type") == "kz_analysis_short"
+        # Should have progressive disclosure options
+        assert "available_details" in result
+        assert "cities" in result.get("available_details", [])
+        # Should have suggested questions for details
+        suggestions = result.get("suggested_questions", [])
+        suggestion_texts = [s.get("text", "") for s in suggestions]
+        assert any("город" in t.lower() for t in suggestion_texts)
+
+    def test_kz_detail_without_cache_returns_error(self):
+        """KZ_ANALYSIS_DETAIL without cached result should return error"""
+        # Use a new user_id that won't have cached data
+        result = handle_ai_chat("Покажи анализ по городам", user_id=999)
+
+        # Should return error since no cached data
+        assert result.get("response_type") == "error"
+        assert "нет предыдущего" in result.get("reply", "").lower() or "error" in result.get("response_type", "")
+
+
+class TestKZIntentClassification:
+    """Tests for KZ intent classification"""
+
+    def test_kz_analysis_intent(self):
+        """Should classify KZ analysis queries correctly"""
+        from services.intent_classifier import classify_intent
+
+        intent, entities = classify_intent("Samsung Galaxy в Казахстане")
+        assert intent == Intent.KZ_ANALYSIS
+
+    def test_kz_analysis_detail_intent_cities(self):
+        """Should classify detail requests for cities"""
+        from services.intent_classifier import classify_intent
+
+        intent, entities = classify_intent("Покажи анализ по городам")
+        assert intent == Intent.KZ_ANALYSIS_DETAIL
+        assert entities.get("kz_detail_type") == "cities"
+
+    def test_kz_analysis_detail_intent_full(self):
+        """Should classify full analysis request"""
+        from services.intent_classifier import classify_intent
+
+        intent, entities = classify_intent("Покажи всю информацию")
+        assert intent == Intent.KZ_ANALYSIS_DETAIL
+        assert entities.get("kz_detail_type") == "full"
+
+    def test_kz_analysis_detail_intent_sales_tips(self):
+        """Should classify sales tips request"""
+        from services.intent_classifier import classify_intent
+
+        intent, entities = classify_intent("Советы по продаже")
+        assert intent == Intent.KZ_ANALYSIS_DETAIL
+        assert entities.get("kz_detail_type") == "sales_tips"
+
+    def test_kz_analysis_detail_intent_risks(self):
+        """Should classify risk detail request"""
+        from services.intent_classifier import classify_intent
+
+        intent, entities = classify_intent("Детальный анализ рисков")
+        assert intent == Intent.KZ_ANALYSIS_DETAIL
+        assert entities.get("kz_detail_type") == "risk_detail"
 
 
 if __name__ == "__main__":

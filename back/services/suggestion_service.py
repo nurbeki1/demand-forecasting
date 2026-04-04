@@ -272,5 +272,185 @@ class SuggestionService:
         return actions
 
 
+    def generate_action_chain_suggestions(
+        self,
+        product_id: str,
+        current_action: str,
+        result_context: Dict,
+    ) -> List[FollowUpSuggestion]:
+        """
+        Generate contextual next-step suggestions based on the action just completed.
+        This enables "action chaining" - each action naturally leads to the next.
+
+        Args:
+            product_id: Current product being analyzed
+            current_action: The action that was just completed
+                           (forecast, scenario, comparison, alert_view, analysis)
+            result_context: Results from the completed action
+                           (risk_level, confidence, change_percent, etc.)
+
+        Returns:
+            List of relevant next-step suggestions (max 5)
+        """
+        suggestions = []
+
+        if current_action == "forecast":
+            # After viewing forecast, suggest these actions
+            risk_level = result_context.get("risk_level", "low")
+
+            if risk_level in ["high", "medium"]:
+                suggestions.append(FollowUpSuggestion(
+                    id="show_risks",
+                    text="Показать топ-5 рисковых товаров",
+                    category=SuggestionCategory.ANALYSIS,
+                    priority=SuggestionPriority.HIGH,
+                    icon="alert-triangle",
+                    prompt="Покажи топ 5 товаров с наибольшим риском",
+                ))
+
+            suggestions.append(FollowUpSuggestion(
+                id="scenario_discount",
+                text="Симулировать скидку 10%",
+                category=SuggestionCategory.ACTION,
+                priority=SuggestionPriority.MEDIUM,
+                icon="percent",
+                prompt=f"Что если добавить скидку 10% на {product_id}?",
+                requires_data=True,
+                data_params={
+                    "product_id": product_id,
+                    "action": "scenario",
+                    "changes": [{"feature": "Discount", "change_type": "absolute", "value": 10}]
+                },
+            ))
+
+            suggestions.append(FollowUpSuggestion(
+                id="scenario_price",
+                text="Симулировать снижение цены",
+                category=SuggestionCategory.ACTION,
+                priority=SuggestionPriority.MEDIUM,
+                icon="dollar-sign",
+                prompt=f"Что если снизить цену на 10% для {product_id}?",
+                requires_data=True,
+                data_params={
+                    "product_id": product_id,
+                    "action": "scenario",
+                    "changes": [{"feature": "Price", "change_type": "percent", "value": -10}]
+                },
+            ))
+
+            suggestions.append(FollowUpSuggestion(
+                id="compare_region",
+                text="Сравнить регионы North vs South",
+                category=SuggestionCategory.COMPARISON,
+                priority=SuggestionPriority.LOW,
+                icon="map",
+                prompt="Сравни спрос в регионах North и South",
+            ))
+
+        elif current_action == "scenario":
+            # After scenario simulation
+            change_percent = result_context.get("change_percent", 0)
+
+            if change_percent > 5:
+                suggestions.append(FollowUpSuggestion(
+                    id="apply_scenario",
+                    text="Рассмотреть реализацию",
+                    category=SuggestionCategory.ACTION,
+                    priority=SuggestionPriority.HIGH,
+                    icon="check-circle",
+                    prompt=f"Какие шаги нужны для реализации этого сценария для {product_id}?",
+                ))
+
+            suggestions.append(FollowUpSuggestion(
+                id="try_promo",
+                text="Попробовать акцию",
+                category=SuggestionCategory.ACTION,
+                priority=SuggestionPriority.MEDIUM,
+                icon="star",
+                prompt=f"Что если запустить промо-акцию для {product_id}?",
+                requires_data=True,
+                data_params={
+                    "product_id": product_id,
+                    "action": "scenario",
+                    "changes": [{"feature": "Holiday/Promotion", "change_type": "set", "value": 1}]
+                },
+            ))
+
+            suggestions.append(FollowUpSuggestion(
+                id="back_to_forecast",
+                text="Вернуться к прогнозу",
+                category=SuggestionCategory.ANALYSIS,
+                priority=SuggestionPriority.LOW,
+                icon="bar-chart-2",
+                prompt=f"Покажи прогноз для {product_id} на 7 дней",
+            ))
+
+        elif current_action == "comparison":
+            # After comparison
+            winner = result_context.get("winner")
+
+            if winner:
+                suggestions.append(FollowUpSuggestion(
+                    id="analyze_winner",
+                    text=f"Полный анализ {winner}",
+                    category=SuggestionCategory.ANALYSIS,
+                    priority=SuggestionPriority.HIGH,
+                    icon="search",
+                    prompt=f"Дай полный анализ {winner}",
+                ))
+
+            suggestions.append(FollowUpSuggestion(
+                id="compare_more",
+                text="Сравнить с другими товарами",
+                category=SuggestionCategory.COMPARISON,
+                priority=SuggestionPriority.MEDIUM,
+                icon="git-compare",
+                prompt="Какие ещё похожие товары можно сравнить?",
+            ))
+
+        elif current_action == "alert_view":
+            # After viewing alerts
+            suggestions.append(FollowUpSuggestion(
+                id="resolve_critical",
+                text="Как устранить критические риски?",
+                category=SuggestionCategory.ACTION,
+                priority=SuggestionPriority.HIGH,
+                icon="shield",
+                prompt="Как устранить критические риски? Дай план действий.",
+            ))
+
+            suggestions.append(FollowUpSuggestion(
+                id="stockout_prevention",
+                text="План предотвращения дефицита",
+                category=SuggestionCategory.ACTION,
+                priority=SuggestionPriority.HIGH,
+                icon="package",
+                prompt="Какие действия предпринять для предотвращения дефицита?",
+            ))
+
+        elif current_action == "analysis":
+            # After full analysis
+            suggestions.append(FollowUpSuggestion(
+                id="scenario_from_analysis",
+                text="Симулировать улучшения",
+                category=SuggestionCategory.ACTION,
+                priority=SuggestionPriority.HIGH,
+                icon="trending-up",
+                prompt=f"Какие изменения помогут улучшить показатели {product_id}?",
+            ))
+
+        # Always add exploration options
+        suggestions.append(FollowUpSuggestion(
+            id="top_products",
+            text="Показать топ-5 товаров",
+            category=SuggestionCategory.EXPLORATION,
+            priority=SuggestionPriority.LOW,
+            icon="award",
+            prompt="Покажи топ 5 самых продаваемых товаров",
+        ))
+
+        return suggestions[:5]
+
+
 # Singleton instance
 suggestion_service = SuggestionService()

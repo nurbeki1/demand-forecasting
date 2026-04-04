@@ -23,6 +23,13 @@ class Intent(str, Enum):
     LOW_PERFORMERS = "low_performers"
     DATASET_INFO = "dataset_info"
     SMART_FORECAST = "smart_forecast"  # NEW: Forecast with factors
+    SCENARIO = "scenario"  # NEW: What-if scenario simulation
+    # Kazakhstan Market Analysis
+    KZ_ANALYSIS = "kz_analysis"  # Short KZ regional analysis (progressive disclosure)
+    KZ_ANALYSIS_DETAIL = "kz_analysis_detail"  # Detailed KZ analysis (cities, tips, risks, full)
+    KZ_CITY_PROFIT = "kz_city_profit"  # Profit in specific city
+    KZ_COMPETITOR = "kz_competitor"  # Competitor prices
+    KZ_WHOLESALE = "kz_wholesale"  # Wholesale price search
     GENERAL = "general"
 
 
@@ -164,15 +171,115 @@ INTENT_PATTERNS = {
         r"какие (есть )?категори",
         r"какие (есть )?регион",
     ],
+    Intent.SCENARIO: [
+        r"что если",
+        r"what if",
+        r"симуляц",
+        r"simulat",
+        r"сценарий",
+        r"scenario",
+        r"если.*изменить",
+        r"if.*change",
+        r"при (скидке|цене|акции|промо)",
+        r"попробовать|попробуй",
+        r"try.*(?:price|discount|promo)",
+        r"снизить цену",
+        r"повысить цену",
+        r"добавить скидку",
+        r"запустить (акци|промо)",
+        r"изменить (цену|скидку)",
+    ],
+    # Kazakhstan Market Analysis
+    Intent.KZ_ANALYSIS: [
+        r"казахстан|кз|kazakhstan",
+        r"продавать в.*(городах|регионах|кз)",
+        r"прибыль.*(город|регион)",
+        r"анализ.*(для|по).*(кз|казахстан)",
+        r"выгодно продавать",
+        r"где продавать",
+        r"в каких городах",
+        r"региональн.*анализ",
+        r"regional.*analysis",
+        r"рынок казахстан",
+        r"рынок кз",
+    ],
+    # KZ Analysis Detail - progressive disclosure follow-ups
+    Intent.KZ_ANALYSIS_DETAIL: [
+        r"покажи\s*(всё|все|всю|полн|детал)",
+        r"анализ\s*по\s*городам",
+        r"таблиц.*город",
+        r"карт.*казахстан",
+        r"советы\s*по\s*продаже",
+        r"детальн.*риск",
+        r"вс[яюе]\s*информаци",
+        r"полный\s*анализ",
+        r"подробнее",
+        r"показать\s*больше",
+        r"всё\s*вместе",
+        r"расскажи\s*подробнее",
+        r"больше\s*информации",
+        r"дай\s*детали",
+        r"полная\s*версия",
+    ],
+    Intent.KZ_CITY_PROFIT: [
+        r"(алматы|астана|шымкент|караганда|актобе|тараз|павлодар|атырау|костанай|актау|уральск)",
+        r"(almaty|astana|shymkent|karaganda|aktobe|taraz|pavlodar|atyrau|kostanay|aktau|uralsk)",
+        r"прибыль в городе",
+        r"продавать в (алматы|астана)",
+        r"выгодно.*(алматы|астана)",
+    ],
+    Intent.KZ_COMPETITOR: [
+        r"конкурент",
+        r"competitor",
+        r"цен[аы] на kaspi",
+        r"kaspi\.?kz",
+        r"сколько стоит на каспи",
+        r"цены у продавцов",
+    ],
+    Intent.KZ_WHOLESALE: [
+        r"оптов.*цен",
+        r"wholesale",
+        r"aliexpress.*цен",
+        r"amazon.*цен",
+        r"закуп.*цен",
+        r"себестоимость",
+        r"цена закупки",
+        r"сколько стоит на алиэкспресс",
+    ],
 }
 
 # Patterns for entity extraction
-PRODUCT_ID_PATTERN = re.compile(r"P\d{4}", re.IGNORECASE)
+# Supports both P0001 format and AMZN060737 format
+PRODUCT_ID_PATTERN = re.compile(r"(P\d{4}|AMZN\d{6})", re.IGNORECASE)
 DAYS_PATTERN = re.compile(r"(\d+)\s*(дн|day|дней|days?)", re.IGNORECASE)
 NUMBER_PATTERN = re.compile(r"\b(\d+)\b")
 
 CATEGORIES = ["electronics", "clothing", "food", "home", "sports", "beauty"]
 REGIONS = ["east", "west", "north", "south"]
+
+# Kazakhstan cities for entity extraction
+KZ_CITIES = {
+    "алматы": "almaty", "almaty": "almaty",
+    "астана": "astana", "astana": "astana",
+    "шымкент": "shymkent", "shymkent": "shymkent",
+    "караганда": "karaganda", "karaganda": "karaganda",
+    "актобе": "aktobe", "aktobe": "aktobe",
+    "тараз": "taraz", "taraz": "taraz",
+    "павлодар": "pavlodar", "pavlodar": "pavlodar",
+    "усть-каменогорск": "ust-kamenogorsk", "ust-kamenogorsk": "ust-kamenogorsk",
+    "семей": "semey", "semey": "semey",
+    "атырау": "atyrau", "atyrau": "atyrau",
+    "костанай": "kostanay", "kostanay": "kostanay",
+    "петропавловск": "petropavlovsk", "petropavlovsk": "petropavlovsk",
+    "актау": "aktau", "aktau": "aktau",
+    "уральск": "uralsk", "uralsk": "uralsk",
+    "кызылорда": "kyzylorda", "kyzylorda": "kyzylorda",
+    "талдыкорган": "taldykorgan", "taldykorgan": "taldykorgan",
+    "туркестан": "turkestan", "turkestan": "turkestan",
+    "кокшетау": "kokshetau", "kokshetau": "kokshetau",
+    "жезказган": "zhezkazgan", "zhezkazgan": "zhezkazgan",
+    "экибастуз": "ekibastuz", "ekibastuz": "ekibastuz",
+}
 
 # Known product brand/name patterns for search
 PRODUCT_NAME_PATTERNS = [
@@ -279,6 +386,94 @@ def extract_region(text: str) -> Optional[str]:
     return None
 
 
+def extract_kz_city(text: str) -> Optional[str]:
+    """Extract Kazakhstan city from text"""
+    text_lower = text.lower()
+    for city_name, city_id in KZ_CITIES.items():
+        if city_name in text_lower:
+            return city_id
+    return None
+
+
+def extract_kz_cities(text: str) -> List[str]:
+    """Extract all Kazakhstan cities mentioned in text"""
+    text_lower = text.lower()
+    cities = []
+    for city_name, city_id in KZ_CITIES.items():
+        if city_name in text_lower and city_id not in cities:
+            cities.append(city_id)
+    return cities
+
+
+def extract_price_usd(text: str) -> Optional[float]:
+    """Extract USD price from text (e.g., '$800', '800 долларов', '800 usd')"""
+    patterns = [
+        r'\$\s*(\d+(?:[.,]\d+)?)',
+        r'(\d+(?:[.,]\d+)?)\s*(?:долларов|доллар|usd|\$)',
+        r'(?:по|за|стоит|цена)\s*(\d+(?:[.,]\d+)?)\s*(?:долларов|доллар|usd|\$)?',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text.lower())
+        if match:
+            price_str = match.group(1).replace(',', '.')
+            try:
+                return float(price_str)
+            except ValueError:
+                pass
+    return None
+
+
+def extract_markup_percent(text: str) -> Optional[float]:
+    """Extract markup percentage from text"""
+    patterns = [
+        r'наценк[ау]\s*(\d+(?:[.,]\d+)?)\s*%',
+        r'(\d+(?:[.,]\d+)?)\s*%\s*наценк',
+        r'markup\s*(\d+(?:[.,]\d+)?)\s*%',
+        r'(\d+(?:[.,]\d+)?)\s*%\s*markup',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text.lower())
+        if match:
+            try:
+                return float(match.group(1).replace(',', '.'))
+            except ValueError:
+                pass
+    return None
+
+
+# Detail type patterns for KZ_ANALYSIS_DETAIL
+KZ_DETAIL_PATTERNS = {
+    "cities": [r"город", r"таблиц", r"карт", r"регион"],
+    "sales_tips": [r"совет", r"продаж", r"рекоменд", r"маркетинг"],
+    "risk_detail": [r"риск", r"анализ риск"],
+    "full": [r"всё|все|полн|вся\s*информ|всё\s*вместе|полная\s*версия|целиком"],
+}
+
+
+def extract_kz_detail_type(text: str) -> str:
+    """
+    Extract which detail type the user wants for KZ analysis.
+    Returns: 'cities', 'sales_tips', 'risk_detail', or 'full'
+    """
+    text_lower = text.lower()
+
+    # Check for "full" first (higher priority)
+    for pattern in KZ_DETAIL_PATTERNS["full"]:
+        if re.search(pattern, text_lower):
+            return "full"
+
+    # Then check other types
+    for detail_type, patterns in KZ_DETAIL_PATTERNS.items():
+        if detail_type == "full":
+            continue
+        for pattern in patterns:
+            if re.search(pattern, text_lower):
+                return detail_type
+
+    # Default to full if unclear
+    return "full"
+
+
 def extract_top_n(text: str, default: int = 5) -> int:
     """Extract 'top N' number from text"""
     match = re.search(r"(?:топ|top)[-\s]?(\d+)", text, re.IGNORECASE)
@@ -366,6 +561,19 @@ def classify_intent(message: str) -> Tuple[Intent, Dict[str, Any]]:
     if top_n != 5:  # Only add if not default
         entities["top_n"] = top_n
 
+    # Extract KZ-related entities
+    kz_cities = extract_kz_cities(message)
+    if kz_cities:
+        entities["kz_cities"] = kz_cities
+
+    price_usd = extract_price_usd(message)
+    if price_usd:
+        entities["price_usd"] = price_usd
+
+    markup = extract_markup_percent(message)
+    if markup:
+        entities["markup_percent"] = markup
+
     # Score each intent
     intent_scores: Dict[Intent, int] = {intent: 0 for intent in Intent}
 
@@ -376,6 +584,34 @@ def classify_intent(message: str) -> Tuple[Intent, Dict[str, Any]]:
 
     # Get best matching intent
     best_intent = max(intent_scores, key=intent_scores.get)
+
+    # PRIORITY: Kazakhstan market intents
+    # Check KZ_ANALYSIS_DETAIL first (follow-up questions)
+    kz_detail_score = intent_scores.get(Intent.KZ_ANALYSIS_DETAIL, 0)
+    if kz_detail_score > 0:
+        # This is a detail request - extract what type of detail
+        detail_type = extract_kz_detail_type(message)
+        entities["kz_detail_type"] = detail_type
+        return Intent.KZ_ANALYSIS_DETAIL, entities
+
+    # If KZ patterns matched and we have a product name, it's KZ_ANALYSIS
+    kz_intent_score = (
+        intent_scores.get(Intent.KZ_ANALYSIS, 0) +
+        intent_scores.get(Intent.KZ_CITY_PROFIT, 0) +
+        intent_scores.get(Intent.KZ_COMPETITOR, 0) +
+        intent_scores.get(Intent.KZ_WHOLESALE, 0)
+    )
+    if kz_intent_score > 0:
+        # Determine which KZ intent
+        if intent_scores.get(Intent.KZ_COMPETITOR, 0) > 0:
+            best_intent = Intent.KZ_COMPETITOR
+        elif intent_scores.get(Intent.KZ_WHOLESALE, 0) > 0:
+            best_intent = Intent.KZ_WHOLESALE
+        elif kz_cities and len(kz_cities) == 1:
+            best_intent = Intent.KZ_CITY_PROFIT
+        else:
+            best_intent = Intent.KZ_ANALYSIS
+        return best_intent, entities
 
     # IMPORTANT: Check for comparison first - it has priority over product search
     # "сравни iPhone и Samsung" should be COMPARISON, not PRODUCT_SEARCH
@@ -429,6 +665,8 @@ def get_intent_description(intent: Intent) -> str:
     descriptions = {
         Intent.FORECAST: "Generate demand forecast",
         Intent.PRODUCT_INFO: "Get product information",
+        Intent.PRODUCT_SEARCH: "Search for product",
+        Intent.PRODUCT_ANALYSIS: "Full product analysis",
         Intent.COMPARISON: "Compare products or regions",
         Intent.TRENDS: "Analyze trends",
         Intent.RECOMMENDATIONS: "Get recommendations",
@@ -439,6 +677,14 @@ def get_intent_description(intent: Intent) -> str:
         Intent.TOP_PRODUCTS: "Top performing products",
         Intent.LOW_PERFORMERS: "Low performing products",
         Intent.DATASET_INFO: "Dataset overview",
+        Intent.SMART_FORECAST: "Smart forecast with factors",
+        Intent.SCENARIO: "What-if scenario simulation",
+        # Kazakhstan Market Analysis
+        Intent.KZ_ANALYSIS: "Kazakhstan regional market analysis (short)",
+        Intent.KZ_ANALYSIS_DETAIL: "Kazakhstan analysis details (cities, tips, risks)",
+        Intent.KZ_CITY_PROFIT: "Profit analysis for Kazakhstan city",
+        Intent.KZ_COMPETITOR: "Competitor price analysis",
+        Intent.KZ_WHOLESALE: "Wholesale price search",
         Intent.GENERAL: "General question",
     }
     return descriptions.get(intent, "Unknown intent")
@@ -479,6 +725,12 @@ def get_follow_up_suggestions(intent: Intent, entities: Dict[str, Any]) -> List[
         suggestions.append("Какие факторы влияют?")
         suggestions.append("Рекомендации по запасам")
 
+    elif intent == Intent.SCENARIO and product_ids:
+        suggestions.append(f"Что если снизить цену на 10%?")
+        suggestions.append(f"Симулировать акцию для {product_ids[0]}")
+        suggestions.append(f"Прогноз для {product_ids[0]}")
+        suggestions.append("Сравнить сценарии")
+
     elif intent == Intent.COMPARISON:
         suggestions.append("Что посоветуешь?")
         suggestions.append("Топ-5 по росту")
@@ -500,8 +752,42 @@ def get_follow_up_suggestions(intent: Intent, entities: Dict[str, Any]) -> List[
         suggestions.append("iPhone 15")
         suggestions.append("Сравни East и West")
 
+    # Kazakhstan Market intents
+    elif intent == Intent.KZ_ANALYSIS:
+        suggestions.append("🏙️ Анализ по городам")
+        suggestions.append("💡 Советы по продаже")
+        suggestions.append("⚠️ Детальный анализ рисков")
+        suggestions.append("📊 Полный анализ")
+
+    elif intent == Intent.KZ_ANALYSIS_DETAIL:
+        suggestions.append("iPhone 15 в Казахстане")
+        suggestions.append("Samsung Galaxy в КЗ")
+        suggestions.append("Анализ Алматы")
+        suggestions.append("Конкуренты на Kaspi")
+
+    elif intent == Intent.KZ_CITY_PROFIT:
+        kz_cities = entities.get("kz_cities", [])
+        if kz_cities:
+            suggestions.append(f"Анализ по всему Казахстану")
+            suggestions.append("Сравни с Алматы")
+        else:
+            suggestions.append("Прибыль в Алматы")
+            suggestions.append("Прибыль в Астана")
+        suggestions.append("Топ-5 городов")
+        suggestions.append("Логистика")
+
+    elif intent == Intent.KZ_COMPETITOR:
+        suggestions.append("iPhone 15 в Казахстане")
+        suggestions.append("Оптовая цена")
+        suggestions.append("Какая наценка выгодна?")
+
+    elif intent == Intent.KZ_WHOLESALE:
+        suggestions.append("Анализ для Казахстана")
+        suggestions.append("Конкуренты на Kaspi")
+        suggestions.append("Прибыль по городам")
+
     else:
-        suggestions.append("iPhone 15")
+        suggestions.append("iPhone 15 в Казахстане")
         suggestions.append("Samsung Galaxy")
         suggestions.append("Топ-5 продуктов")
         suggestions.append("Какие категории есть?")

@@ -1,0 +1,829 @@
+/* =====================================================
+   KZ ANALYSIS CARD STYLES
+   Premium dark theme with existing chat.css variables
+   ===================================================== */
+
+/* =====================================================
+   MAIN CARD
+   ===================================================== */
+.kz-analysis-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  margin-top: 16px;
+  overflow: hidden;
+}
+
+.kz-analysis-card.profitable {
+  border-left: 4px solid var(--success);
+}
+
+.kz-analysis-card.risky {
+  border-left: 4px solid #f59e0b;
+}
+
+.kz-analysis-card.unprofitable {
+  border-left: 4px solid var(--error);
+}
+
+/* =====================================================
+   HEADER
+   ===================================================== */
+.kz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.kz-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kz-status-icon {
+  font-size: 24px;
+}
+
+.kz-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kz-product-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.kz-header-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.kz-profitable-badge {
+  padding: 6px 12px;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+}
+
+/* =====================================================
+   PRICE SUMMARY
+   ===================================================== */
+.kz-price-summary {
+  display: flex;
+  align-items: stretch;
+  padding: 16px 20px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.kz-price-item {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kz-price-item.highlight {
+  background: rgba(99, 102, 241, 0.1);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  margin: -8px 0;
+}
+
+.kz-price-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kz-price-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.kz-price-value.success {
+  color: var(--success);
+}
+
+.kz-price-converted {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.kz-price-divider {
+  width: 1px;
+  background: var(--border-subtle);
+  align-self: stretch;
+}
+
+/* =====================================================
+   WARNINGS
+   ===================================================== */
+.kz-warnings {
+  padding: 12px 20px;
+  background: rgba(245, 158, 11, 0.1);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.kz-warning-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #fbbf24;
+}
+
+.kz-warning-icon {
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   CITIES QUICK VIEW
+   ===================================================== */
+.kz-cities-quick {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.kz-cities-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kz-cities-group-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.kz-cities-group.best .kz-cities-list {
+  color: var(--success);
+}
+
+.kz-cities-group.avoid .kz-cities-list {
+  color: var(--error);
+}
+
+.kz-cities-list {
+  font-size: 13px;
+}
+
+/* =====================================================
+   SECTION
+   ===================================================== */
+.kz-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.kz-section:last-child {
+  border-bottom: none;
+}
+
+.kz-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.kz-recalculating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.kz-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-default);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =====================================================
+   MARKUP SLIDER
+   ===================================================== */
+.kz-markup-slider {
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.kz-markup-slider.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.kz-slider-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.kz-slider-icon {
+  font-size: 18px;
+}
+
+.kz-slider-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.kz-slider-value {
+  font-size: 18px;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.kz-slider-track-container {
+  margin-bottom: 12px;
+}
+
+.kz-slider-input {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.kz-slider-input::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.kz-slider-input::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.kz-slider-input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  border: none;
+}
+
+.kz-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.kz-slider-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kz-preset-btn {
+  padding: 8px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kz-preset-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.kz-preset-btn.active {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.kz-preset-btn .check-mark {
+  font-size: 12px;
+}
+
+/* =====================================================
+   CITIES TABLE
+   ===================================================== */
+.kz-cities-table-container {
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.kz-cities-table-wrapper {
+  overflow-x: auto;
+}
+
+.kz-cities-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.kz-cities-table th {
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 1px solid var(--border-default);
+  white-space: nowrap;
+}
+
+.kz-cities-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.kz-cities-table th.sortable:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.kz-cities-table th.sorted {
+  color: var(--accent);
+}
+
+.kz-cities-table th .th-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kz-cities-table th .sort-indicator {
+  font-size: 12px;
+}
+
+.kz-cities-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.kz-cities-table tr:last-child td {
+  border-bottom: none;
+}
+
+.kz-cities-table tr:hover {
+  background: var(--bg-tertiary);
+}
+
+.kz-cities-table tr.top-city {
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.kz-cities-table tr.top-city:hover {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.kz-cities-table .city-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kz-cities-table .top-badge {
+  font-size: 12px;
+}
+
+.kz-cities-table .margin-value {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.kz-cities-table .margin-value.good {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+}
+
+.kz-cities-table .margin-value.medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.kz-cities-table .margin-value.low {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+}
+
+.kz-cities-table .profit-cell {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.kz-cities-table .status-cell {
+  text-align: center;
+}
+
+.kz-cities-table .status-badge {
+  font-size: 14px;
+}
+
+.kz-show-all-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.kz-show-all-btn:hover {
+  background: var(--bg-hover);
+}
+
+/* =====================================================
+   KAZAKHSTAN MAP - Official SVG with black fill, white borders
+   ===================================================== */
+.kz-map-container {
+  background: #000000;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.kz-map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.kz-map-header h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.kz-map-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.kz-map-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.kz-map-legend .legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.kz-map-legend .legend-dot.profitable {
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+}
+
+.kz-map-legend .legend-dot.risky {
+  background: #eab308;
+  box-shadow: 0 0 6px #eab308;
+}
+
+.kz-map-legend .legend-dot.unprofitable {
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
+}
+
+/* SVG Map */
+.kz-map-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
+/* Country outline from official SVG */
+.kz-map-svg .kz-country-outline {
+  transition: fill 0.3s ease;
+}
+
+.kz-map-svg:hover .kz-country-outline {
+  fill: #0d0d18;
+}
+
+/* City markers */
+.kz-map-svg .kz-city {
+  transition: all 0.2s ease;
+}
+
+.kz-map-svg .kz-city .city-marker {
+  transition: r 0.2s ease, fill 0.2s ease;
+}
+
+.kz-map-svg .kz-city:hover .city-marker {
+  r: 6;
+}
+
+.kz-map-svg .kz-city.highlighted .city-marker {
+  r: 7;
+}
+
+.kz-map-svg .kz-city .city-label {
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Pulse animation for profitable cities */
+.kz-map-svg .city-pulse {
+  animation: svgPulse 2s ease-out infinite;
+  transform-origin: center;
+}
+
+@keyframes svgPulse {
+  0% {
+    r: 5;
+    opacity: 1;
+  }
+  100% {
+    r: 15;
+    opacity: 0;
+  }
+}
+
+/* =====================================================
+   COLLAPSIBLE SECTIONS
+   ===================================================== */
+.kz-collapsible {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.kz-collapsible-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.kz-collapsible-header:hover {
+  background: var(--bg-tertiary);
+}
+
+.kz-collapsible-icon {
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+.kz-collapsible-content {
+  padding: 0 20px 16px;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =====================================================
+   INVESTMENT GRID
+   ===================================================== */
+.kz-investment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.kz-investment-item {
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kz-investment-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.kz-investment-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.kz-investment-value.highlight {
+  color: var(--accent);
+}
+
+.kz-investment-value.success {
+  color: var(--success);
+}
+
+/* =====================================================
+   COMPETITOR ANALYSIS
+   ===================================================== */
+.kz-competitor-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kz-competitor-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.kz-competitor-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.kz-competitor-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.kz-competitor-value.level-high {
+  color: var(--error);
+}
+
+.kz-competitor-value.level-medium {
+  color: #f59e0b;
+}
+
+.kz-competitor-value.level-low {
+  color: var(--success);
+}
+
+.kz-competitor-list {
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.kz-competitor-list ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+
+.kz-competitor-list li {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 4px 0;
+}
+
+/* =====================================================
+   RISK ANALYSIS
+   ===================================================== */
+.kz-risk-analysis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.kz-risk-section {
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.kz-risk-section h5 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.kz-risk-section ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.kz-risk-section li {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 6px 0;
+  line-height: 1.4;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+@media (max-width: 640px) {
+  .kz-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .kz-price-summary {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .kz-price-divider {
+    width: 100%;
+    height: 1px;
+  }
+
+  .kz-slider-presets {
+    justify-content: center;
+  }
+
+  .kz-cities-table {
+    font-size: 12px;
+  }
+
+  .kz-cities-table th,
+  .kz-cities-table td {
+    padding: 10px 12px;
+  }
+
+  .kz-investment-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .kz-risk-analysis {
+    grid-template-columns: 1fr;
+  }
+
+  .kz-map-legend {
+    gap: 12px;
+  }
+}

@@ -99,3 +99,26 @@ export async function getAnalyticsTrends() {
   }
   return res.json();
 }
+
+/**
+ * Recalculate KZ market analysis with a new markup percentage
+ * @param {string} productName - The product name to analyze
+ * @param {number} markupPercent - The markup percentage (10-100)
+ * @returns {Promise<object>} - Updated KZ analysis data
+ */
+export async function recalculateKZAnalysis(productName, markupPercent) {
+  const res = await fetch(`${BASE_URL}/kz/analyze`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({
+      product_name: productName,
+      markup_percent: markupPercent,
+    }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || `KZ analysis recalculation failed (${res.status})`);
+  }
+  return res.json();
+}
