@@ -8,9 +8,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query, Depends, File, UploadFile
+from fastapi import FastAPI, HTTPException, Query, Depends, File, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from app.config import validate_settings_on_startup, get_settings
+from app.rate_limiter import limiter, RateLimits
 
 # ===== DB + AUTH =====
 from sqlalchemy import text, inspect
@@ -53,7 +58,14 @@ from app.insight_schemas import (
 
 APP_TITLE = "Demand Forecasting System"
 
+# Validate settings at startup (exits if invalid)
+settings = validate_settings_on_startup()
+
 app = FastAPI(title=APP_TITLE)
+
+# Setup rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # создаём таблицы при старте + миграции
 def run_migrations():
@@ -101,11 +113,11 @@ app.include_router(auth_router)
 # подключаем dashboard роуты
 app.include_router(dashboard_router)
 
-# CORS (для Flutter/веб)
 # CORS - allow frontend domains
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:5174",
+    "http://localhost:5175",
     "http://localhost:3000",
     "https://demand-forecasting-orcin.vercel.app",
     "https://demand-forecasting.vercel.app",
@@ -117,12 +129,29 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL")
 if FRONTEND_URL and FRONTEND_URL not in ALLOWED_ORIGINS:
     ALLOWED_ORIGINS.append(FRONTEND_URL)
 
+# Add additional CORS origins from settings
+if settings.cors_origins:
+    for origin in settings.cors_origins.split(","):
+        origin = origin.strip()
+        if origin and origin not in ALLOWED_ORIGINS:
+            ALLOWED_ORIGINS.append(origin)
+
+# Explicit CORS methods and headers (security best practice)
+ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+ALLOWED_HEADERS = [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=ALLOWED_METHODS,
+    allow_headers=ALLOWED_HEADERS,
 )
 
 # =========================================================
@@ -542,7 +571,8 @@ def get_active_alerts(
 # =========================================================
 
 @app.post("/chat")
-def chat(payload: ChatRequest, user=Depends(get_current_user)):
+@limiter.limit(RateLimits.CHAT)
+def chat(request: Request, payload: ChatRequest, user=Depends(get_current_user)):
     """AI чат с RAG для анализа спроса"""
     return handle_ai_chat(payload.message, user.id)
 
@@ -560,6 +590,82 @@ def chat_history(
 def delete_chat_history(user=Depends(get_current_user)):
     """Очистить историю чата"""
     return clear_chat_history(user.id)
+
+
+class ScenarioChangeRequest(BaseModel):
+    """Request model for scenario change"""
+    feature: str
+    change_type: str = "percent"  # "absolute" | "percent" | "set"
+    value: float
+
+
+@app.post("/chat/scenario")
+def run_chat_scenario(
+    product_id: str = Query(..., description="Product ID to simulate"),
+    horizon_days: int = Query(7, ge=1, le=30, description="Forecast horizon"),
+    changes: List[ScenarioChangeRequest] = [],
+    user=Depends(get_current_user),
+):
+    """
+    Run what-if scenario simulation.
+
+    Simulates changes to price, discount, promotion, etc. and shows
+    impact on demand forecast.
+
+    Example:
+        POST /chat/scenario?product_id=SKU001&horizon_days=7
+        Body: [{"feature": "Price", "change_type": "percent", "value": -10}]
+    """
+    from services.scenario_service import scenario_service, ScenarioChange
+
+    df = get_df()
+    sub = df[df["Product ID"] == product_id]
+
+    if len(sub) < 30:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Not enough data for product {product_id}. Need at least 30 records."
+        )
+
+    # Convert request models to ScenarioChange dataclasses
+    scenario_changes = [
+        ScenarioChange(
+            feature=c.feature,
+            change_type=c.change_type,
+            value=c.value
+        )
+        for c in changes
+    ]
+
+    try:
+        result = scenario_service.simulate_scenario(
+            product_id=product_id,
+            df=sub,
+            horizon_days=horizon_days,
+            changes=scenario_changes,
+        )
+
+        return {
+            "product_id": product_id,
+            "horizon_days": horizon_days,
+            "baseline_predictions": result.baseline_predictions,
+            "scenario_predictions": result.scenario_predictions,
+            "total_baseline": result.total_baseline,
+            "total_scenario": result.total_scenario,
+            "change_percent": result.change_percent,
+            "change_absolute": result.change_absolute,
+            "impact_explanation": result.impact_explanation,
+            "feature_impacts": result.feature_impacts,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/chat/scenario/features")
+def get_scenario_features(user=Depends(get_current_user)):
+    """Get available features for scenario simulation"""
+    from services.scenario_service import scenario_service
+    return scenario_service.get_available_features()
 
 
 # =========================================================
@@ -701,3 +807,220 @@ def model_visualize(
         "metrics": features.get("metrics", {}),
         "product_id": product_id,
     }
+
+
+# =========================================================
+# KAZAKHSTAN MARKET ANALYSIS
+# =========================================================
+
+from services.kz_market_service import kz_market_service
+from services.profit_calculator_service import profit_calculator
+from services.web_search_service import web_search_service
+from app.kz_schemas import (
+    CityResponse,
+    CityListResponse,
+    CategoryInfo,
+    CategoryListResponse,
+    CurrencyRates,
+    AnalyzeProductRequest,
+    AnalyzeCityRequest,
+    RegionalAnalysisResponse,
+    CityProfitAnalysisResponse,
+    CompetitorAnalysisResponse,
+    CompetitorPriceResponse,
+    LogisticsCostRequest,
+    LogisticsCostResponse,
+    MarketTrendResponse,
+    WholesalePriceInfo,
+)
+
+
+@app.get("/kz/cities", response_model=CityListResponse)
+def get_kz_cities(user=Depends(get_current_user)):
+    """Get all Kazakhstan cities with economic indicators"""
+    cities = kz_market_service.get_cities_dict()
+    return CityListResponse(cities=cities, total=len(cities))
+
+
+@app.get("/kz/cities/{city_id}", response_model=CityResponse)
+def get_kz_city(city_id: str, user=Depends(get_current_user)):
+    """Get specific city by ID"""
+    city = kz_market_service.get_city_by_id(city_id)
+    if city is None:
+        raise HTTPException(status_code=404, detail=f"City {city_id} not found")
+    return city.to_dict()
+
+
+@app.get("/kz/categories", response_model=CategoryListResponse)
+def get_kz_categories(user=Depends(get_current_user)):
+    """Get all product categories with market characteristics"""
+    categories = kz_market_service.get_categories()
+    return CategoryListResponse(
+        categories=[
+            CategoryInfo(
+                id=c.id,
+                name_ru=c.name_ru,
+                demand_multiplier=c.demand_multiplier,
+                typical_margin_percent=c.typical_margin_percent,
+                price_sensitivity=c.price_sensitivity,
+            )
+            for c in categories
+        ]
+    )
+
+
+@app.get("/kz/currency", response_model=CurrencyRates)
+def get_kz_currency(user=Depends(get_current_user)):
+    """Get current currency exchange rates"""
+    rates = kz_market_service.get_all_currency_rates()
+    return CurrencyRates(
+        usd_to_kzt=rates["USD"],
+        rub_to_kzt=rates["RUB"],
+        cny_to_kzt=rates["CNY"],
+    )
+
+
+@app.post("/kz/analyze", response_model=RegionalAnalysisResponse)
+async def analyze_product_for_kz(
+    request: AnalyzeProductRequest,
+    user=Depends(get_current_user),
+):
+    """
+    Analyze product profitability across all Kazakhstan cities.
+
+    If product_cost_usd is not provided, will search for wholesale price online.
+    """
+    # Get product cost
+    wholesale_info = None
+    if request.product_cost_usd is not None:
+        product_cost_usd = request.product_cost_usd
+    else:
+        # Search for price online
+        price_info = await web_search_service.search_product_price(request.product_name)
+        product_cost_usd = price_info.price_usd
+        wholesale_info = WholesalePriceInfo(
+            price_usd=price_info.price_usd,
+            price_kzt=price_info.price_usd * kz_market_service.get_currency_rate("USD"),
+            source=price_info.source,
+            url=price_info.url,
+            found=price_info.found,
+        )
+
+    # Run analysis
+    result = profit_calculator.analyze_all_cities(
+        product_cost_usd=product_cost_usd,
+        category=request.category,
+        markup_percent=request.markup_percent,
+        product_name=request.product_name,
+        shipping_cost_usd=request.shipping_cost_usd,
+    )
+
+    # Convert to response
+    response_data = result.to_dict()
+    response_data["wholesale_info"] = wholesale_info
+    return response_data
+
+
+@app.get("/kz/analyze/{city_id}", response_model=CityProfitAnalysisResponse)
+def analyze_city_profit(
+    city_id: str,
+    product_cost_usd: float = Query(..., ge=0),
+    category: str = Query("electronics"),
+    markup_percent: float = Query(25.0, ge=0, le=200),
+    shipping_cost_usd: float = Query(0.0, ge=0),
+    user=Depends(get_current_user),
+):
+    """Analyze profitability for a specific city"""
+    analysis = profit_calculator.calculate_city_profit(
+        product_cost_usd=product_cost_usd,
+        category=category,
+        city_id=city_id,
+        markup_percent=markup_percent,
+        shipping_cost_usd=shipping_cost_usd,
+    )
+
+    if analysis is None:
+        raise HTTPException(status_code=404, detail=f"City {city_id} not found")
+
+    return analysis.to_dict()
+
+
+@app.get("/kz/competitors")
+async def get_competitor_prices(
+    product_name: str = Query(..., min_length=1),
+    market: str = Query("kaspi"),
+    user=Depends(get_current_user),
+):
+    """Get competitor prices on Kazakhstan marketplaces"""
+    competitors = await web_search_service.get_competitor_prices(product_name, market)
+
+    prices = [c.price_kzt for c in competitors if c.price_kzt > 0]
+
+    return CompetitorAnalysisResponse(
+        product_name=product_name,
+        competitors=[
+            CompetitorPriceResponse(
+                product_name=c.product_name,
+                price_kzt=c.price_kzt,
+                seller=c.seller,
+                platform=c.platform,
+                url=c.url,
+                rating=c.rating,
+                reviews_count=c.reviews_count,
+            )
+            for c in competitors
+        ],
+        avg_price_kzt=sum(prices) / len(prices) if prices else 0,
+        min_price_kzt=min(prices) if prices else 0,
+        max_price_kzt=max(prices) if prices else 0,
+    )
+
+
+@app.get("/kz/trends/{category}", response_model=MarketTrendResponse)
+async def get_market_trends(
+    category: str,
+    user=Depends(get_current_user),
+):
+    """Get market trends for a category"""
+    trend = await web_search_service.get_market_trends(category)
+    return MarketTrendResponse(
+        category=trend.category,
+        trend_direction=trend.trend_direction,
+        trend_description=trend.trend_description,
+        key_products=trend.key_products,
+        source=trend.source,
+    )
+
+
+@app.post("/kz/logistics", response_model=LogisticsCostResponse)
+def calculate_logistics_cost(
+    request: LogisticsCostRequest,
+    user=Depends(get_current_user),
+):
+    """Calculate logistics cost between cities"""
+    base_cost = kz_market_service.get_logistics_cost(
+        from_city=request.from_city,
+        to_city=request.to_city,
+    )
+
+    total_cost = kz_market_service.get_logistics_cost(
+        from_city=request.from_city,
+        to_city=request.to_city,
+        weight_kg=request.weight_kg,
+        is_express=request.is_express,
+        is_bulky=request.is_bulky,
+    )
+
+    weight_cost = total_cost - base_cost
+    if request.is_express:
+        weight_cost = 0  # Already included in multiplier
+
+    return LogisticsCostResponse(
+        from_city=request.from_city,
+        to_city=request.to_city,
+        base_cost_kzt=base_cost,
+        weight_cost_kzt=weight_cost,
+        total_cost_kzt=total_cost,
+        is_express=request.is_express,
+        is_bulky=request.is_bulky,
+    )

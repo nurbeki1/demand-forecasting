@@ -39,6 +39,20 @@ class TokenResponse(BaseModel):
     email: Optional[str] = None
 
 
+class TokenPairResponse(BaseModel):
+    """Response with both access and refresh tokens."""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    is_admin: bool = False
+    email: Optional[str] = None
+
+
+class RefreshTokenRequest(BaseModel):
+    """Request to refresh access token."""
+    refresh_token: str
+
+
 class UserResponse(BaseModel):
     id: int
     email: str

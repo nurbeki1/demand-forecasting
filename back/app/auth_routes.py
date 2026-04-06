@@ -3,12 +3,13 @@ Authentication Routes
 - Email verification flow
 - Google OAuth
 - Standard login/register
+- Token refresh
 """
 import os
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -18,10 +19,14 @@ from .models import User, VerificationCode
 from .schemas import (
     RegisterRequest, LoginRequest, TokenResponse, UserResponse,
     SendCodeRequest, VerifyCodeRequest, CompleteRegistrationRequest,
-    GoogleAuthRequest, MessageResponse
+    GoogleAuthRequest, MessageResponse, TokenPairResponse, RefreshTokenRequest
 )
-from .security import hash_password, verify_password, create_access_token
+from .security import (
+    hash_password, verify_password, create_access_token,
+    create_token_pair, verify_refresh_token
+)
 from .email_service import generate_verification_code, send_verification_email, get_code_expiry
+from .rate_limiter import limiter, RateLimits
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -32,7 +37,12 @@ GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 # ===== EMAIL VERIFICATION FLOW =====
 
 @router.post("/send-code", response_model=MessageResponse)
-def send_verification_code(data: SendCodeRequest, db: Session = Depends(get_db)):
+@limiter.limit(RateLimits.SEND_CODE)
+def send_verification_code(
+    request: Request,
+    data: SendCodeRequest,
+    db: Session = Depends(get_db)
+):
     """
     Step 1: Send verification code to email
     """
@@ -73,7 +83,12 @@ def send_verification_code(data: SendCodeRequest, db: Session = Depends(get_db))
 
 
 @router.post("/verify-code", response_model=MessageResponse)
-def verify_code(data: VerifyCodeRequest, db: Session = Depends(get_db)):
+@limiter.limit(RateLimits.VERIFY_CODE)
+def verify_code(
+    request: Request,
+    data: VerifyCodeRequest,
+    db: Session = Depends(get_db)
+):
     """
     Step 2: Verify the code
     """
@@ -92,8 +107,13 @@ def verify_code(data: VerifyCodeRequest, db: Session = Depends(get_db)):
     return MessageResponse(message="Код подтверждён")
 
 
-@router.post("/complete-registration", response_model=TokenResponse)
-def complete_registration(data: CompleteRegistrationRequest, db: Session = Depends(get_db)):
+@router.post("/complete-registration", response_model=TokenPairResponse)
+@limiter.limit(RateLimits.LOGIN)
+def complete_registration(
+    request: Request,
+    data: CompleteRegistrationRequest,
+    db: Session = Depends(get_db)
+):
     """
     Step 3: Complete registration with password
     """
@@ -134,15 +154,25 @@ def complete_registration(data: CompleteRegistrationRequest, db: Session = Depen
     db.commit()
     db.refresh(user)
 
-    # Create token
-    token = create_access_token(subject=user.email)
-    return TokenResponse(access_token=token, is_admin=user.is_admin)
+    # Create token pair
+    access_token, refresh_token = create_token_pair(user.email)
+    return TokenPairResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        is_admin=user.is_admin,
+        email=user.email
+    )
 
 
 # ===== GOOGLE OAUTH =====
 
-@router.post("/google", response_model=TokenResponse)
-def google_auth(data: GoogleAuthRequest, db: Session = Depends(get_db)):
+@router.post("/google", response_model=TokenPairResponse)
+@limiter.limit(RateLimits.LOGIN)
+def google_auth(
+    request: Request,
+    data: GoogleAuthRequest,
+    db: Session = Depends(get_db)
+):
     """
     Authenticate with Google OAuth
     """
@@ -192,9 +222,14 @@ def google_auth(data: GoogleAuthRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
 
-        # Create token
-        token = create_access_token(subject=user.email)
-        return TokenResponse(access_token=token, is_admin=user.is_admin, email=email)
+        # Create token pair
+        access_token, refresh_token = create_token_pair(user.email)
+        return TokenPairResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            is_admin=user.is_admin,
+            email=email
+        )
 
     except ValueError as e:
         print(f"[ERROR] Google token validation failed: {e}")
@@ -209,7 +244,12 @@ def google_auth(data: GoogleAuthRequest, db: Session = Depends(get_db)):
 # ===== STANDARD AUTH =====
 
 @router.post("/register")
-def register(data: RegisterRequest, db: Session = Depends(get_db)):
+@limiter.limit(RateLimits.LOGIN)
+def register(
+    request: Request,
+    data: RegisterRequest,
+    db: Session = Depends(get_db)
+):
     """Register a new user (regular user, not admin) - Legacy endpoint"""
     existing = db.query(User).filter(User.email == data.email).first()
     if existing:
@@ -227,9 +267,14 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     return {"message": "Регистрация успешна"}
 
 
-@router.post("/login", response_model=TokenResponse)
-def login(data: LoginRequest, db: Session = Depends(get_db)):
-    """Login and get access token"""
+@router.post("/login", response_model=TokenPairResponse)
+@limiter.limit(RateLimits.LOGIN)
+def login(
+    request: Request,
+    data: LoginRequest,
+    db: Session = Depends(get_db)
+):
+    """Login and get access + refresh tokens"""
     try:
         user = db.query(User).filter(User.email == data.email).first()
         if not user:
@@ -248,13 +293,55 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         if not user.is_verified:
             raise HTTPException(status_code=401, detail="Email не подтверждён")
 
-        token = create_access_token(subject=user.email)
-        return TokenResponse(access_token=token, is_admin=user.is_admin, email=user.email)
+        access_token, refresh_token = create_token_pair(user.email)
+        return TokenPairResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            is_admin=user.is_admin,
+            email=user.email
+        )
     except HTTPException:
         raise
     except Exception as e:
         print(f"[ERROR] login failed: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
+
+
+@router.post("/refresh", response_model=TokenPairResponse)
+@limiter.limit(RateLimits.LOGIN)
+def refresh_token(
+    request: Request,
+    data: RefreshTokenRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh access token using refresh token.
+    Returns new access and refresh token pair.
+    """
+    # Verify refresh token
+    email = verify_refresh_token(data.refresh_token)
+    if not email:
+        raise HTTPException(
+            status_code=401,
+            detail="Недействительный или истёкший refresh token"
+        )
+
+    # Get user
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Пользователь не найден")
+
+    if not user.is_active:
+        raise HTTPException(status_code=401, detail="Аккаунт деактивирован")
+
+    # Create new token pair
+    access_token, refresh_token = create_token_pair(user.email)
+    return TokenPairResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        is_admin=user.is_admin,
+        email=user.email
+    )
 
 
 @router.get("/me", response_model=UserResponse)
