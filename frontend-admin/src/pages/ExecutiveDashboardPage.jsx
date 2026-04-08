@@ -5,12 +5,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Sidebar from "../components/layout/Sidebar";
 import Topbar from "../components/layout/Topbar";
 import ExecutiveDashboard from "../components/dashboard/ExecutiveDashboard";
 import { getExecutiveDashboard } from "../api/forecastApi";
 
 export default function ExecutiveDashboardPage() {
+  const { t } = useTranslation();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,7 +57,7 @@ export default function ExecutiveDashboardPage() {
       <div className="appShell">
         <Sidebar />
         <div className="main">
-          <Topbar title="Executive Dashboard" />
+          <Topbar title={t('dashboard.executiveDashboard')} />
           <div className="content">
             <div style={{
               display: "flex",
@@ -66,7 +68,7 @@ export default function ExecutiveDashboardPage() {
               gap: "16px",
               color: "var(--text-tertiary)"
             }}>
-              <span style={{ color: "var(--error)" }}>Error: {error}</span>
+              <span style={{ color: "var(--error)" }}>{t('common.error')}: {error}</span>
               <button
                 onClick={handleRefresh}
                 style={{
@@ -78,7 +80,7 @@ export default function ExecutiveDashboardPage() {
                   cursor: "pointer"
                 }}
               >
-                Try Again
+                {t('common.tryAgain')}
               </button>
             </div>
           </div>
@@ -91,7 +93,7 @@ export default function ExecutiveDashboardPage() {
     <div className="appShell">
       <Sidebar />
       <div className="main">
-        <Topbar title="Executive Dashboard" />
+        <Topbar title={t('dashboard.executiveDashboard')} />
         <div className="content">
           <ExecutiveDashboard
             data={dashboardData}

@@ -1,12 +1,14 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import Sidebar from "../components/layout/Sidebar";
 import Topbar from "../components/layout/Topbar";
 import { uploadDataset, clearModelCache, getModelCache } from "../api/forecastApi";
 
 export default function UploadPage() {
+  const { t } = useTranslation();
   const [isDragOver, setIsDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
   const [cacheInfo, setCacheInfo] = useState(null);
 
@@ -16,20 +18,20 @@ export default function UploadPage() {
     if (!file) return;
 
     if (!file.name.endsWith(".csv")) {
-      setError("Please upload a CSV file");
+      toast.error(t('upload.pleaseUploadCsv'));
       return;
     }
 
     setLoading(true);
-    setError("");
     setSuccess(null);
 
     try {
       const result = await uploadDataset(file);
       setSuccess(result);
+      toast.success(result.message || t('upload.uploadSuccess'));
       await loadCacheInfo();
     } catch (err) {
-      setError(err.message || "Upload failed");
+      toast.error(err.message || "Upload failed");
     } finally {
       setLoading(false);
     }
@@ -48,9 +50,9 @@ export default function UploadPage() {
     try {
       await clearModelCache();
       await loadCacheInfo();
-      setSuccess({ message: "Cache cleared successfully" });
+      toast.success(t('upload.cacheClearedSuccess'));
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     }
   }
 
@@ -83,14 +85,14 @@ export default function UploadPage() {
         <div className="content">
           <div className="headerRow">
             <div>
-              <div className="title">Upload Data</div>
-              <div className="subtitle">Upload a new CSV dataset</div>
+              <div className="title">{t('upload.title')}</div>
+              <div className="subtitle">{t('upload.subtitle')}</div>
             </div>
           </div>
 
           <div className="card">
             <div className="cardHeader">
-              <div className="cardTitle">Upload Dataset</div>
+              <div className="cardTitle">{t('upload.uploadDataset')}</div>
             </div>
 
             <div
@@ -102,10 +104,10 @@ export default function UploadPage() {
             >
               <div className="uploadIcon">+</div>
               <div className="uploadText">
-                {loading ? "Uploading..." : "Drop CSV file here or click to browse"}
+                {loading ? t('upload.uploading') : t('upload.dropHere')}
               </div>
               <div className="uploadHint">
-                Required columns: Date, Product ID, Demand Forecast
+                {t('upload.requiredColumns')}
               </div>
               <input
                 ref={inputRef}
@@ -115,8 +117,6 @@ export default function UploadPage() {
                 onChange={handleInputChange}
               />
             </div>
-
-            {error && <div className="errorBox">{error}</div>}
 
             {success && (
               <div className="successBox">
@@ -136,29 +136,29 @@ export default function UploadPage() {
           <div className="card" style={{ marginTop: 16 }}>
             <div className="cardHeader">
               <div>
-                <div className="cardTitle">Model Cache</div>
-                <div className="cardSub">Cached ML models for faster predictions</div>
+                <div className="cardTitle">{t('upload.modelCache')}</div>
+                <div className="cardSub">{t('upload.cachedModels')}</div>
               </div>
               <button className="btn" onClick={handleClearCache}>
-                Clear Cache
+                {t('upload.clearCache')}
               </button>
             </div>
 
             {cacheInfo ? (
               <div>
                 <div style={{ marginBottom: 12 }}>
-                  Cached models: <strong>{cacheInfo.cached_models}</strong>
+                  {t('upload.cachedModelsCount')} <strong>{cacheInfo.cached_models}</strong>
                 </div>
 
                 {cacheInfo.cached_models > 0 && (
                   <table className="table">
                     <thead>
                       <tr>
-                        <th>Model Key</th>
-                        <th>MAE</th>
-                        <th>RMSE</th>
-                        <th>R2</th>
-                        <th>Trained At</th>
+                        <th>{t('upload.modelKey')}</th>
+                        <th>{t('forecast.metrics.mae')}</th>
+                        <th>{t('forecast.metrics.rmse')}</th>
+                        <th>{t('forecast.metrics.r2')}</th>
+                        <th>{t('upload.trainedAt')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -177,28 +177,28 @@ export default function UploadPage() {
               </div>
             ) : (
               <button className="btn" onClick={loadCacheInfo}>
-                Load Cache Info
+                {t('upload.loadCacheInfo')}
               </button>
             )}
           </div>
 
           <div className="card" style={{ marginTop: 16 }}>
             <div className="cardHeader">
-              <div className="cardTitle">CSV Format Requirements</div>
+              <div className="cardTitle">{t('upload.csvFormat')}</div>
             </div>
             <div style={{ color: "#4a6580", lineHeight: 1.8, fontFamily: "'Space Mono', monospace", fontSize: "13px" }}>
-              <p style={{ color: "#e8f4fc", marginBottom: "12px" }}>Your CSV file should contain the following columns:</p>
+              <p style={{ color: "#e8f4fc", marginBottom: "12px" }}>{t('upload.csvFormatDesc')}</p>
               <ul style={{ paddingLeft: "20px" }}>
-                <li><span style={{ color: "#00e5ff" }}>Date</span> - Date in YYYY-MM-DD format</li>
-                <li><span style={{ color: "#00e5ff" }}>Product ID</span> - Product identifier (e.g., P0001)</li>
+                <li><span style={{ color: "#00e5ff" }}>Date</span> - {t('upload.dateFormat')}</li>
+                <li><span style={{ color: "#00e5ff" }}>Product ID</span> - {t('upload.productIdFormat')}</li>
                 <li><span style={{ color: "#00e5ff" }}>Store ID</span> - Store identifier (optional)</li>
-                <li><span style={{ color: "#00e5ff" }}>Demand Forecast</span> - Forecasted demand (target variable)</li>
+                <li><span style={{ color: "#00e5ff" }}>Demand Forecast</span> - {t('upload.demandFormat')}</li>
                 <li><span style={{ color: "#00e5ff" }}>Category</span> - Product category</li>
                 <li><span style={{ color: "#00e5ff" }}>Region</span> - Geographic region</li>
                 <li><span style={{ color: "#00e5ff" }}>Price</span> - Product price</li>
                 <li><span style={{ color: "#00e5ff" }}>Inventory Level</span> - Current inventory</li>
-                <li><span style={{ color: "#00e5ff" }}>Weather Condition</span> - Weather (Sunny, Rainy, etc.)</li>
-                <li><span style={{ color: "#00e5ff" }}>Seasonality</span> - Season (Spring, Summer, etc.)</li>
+                <li><span style={{ color: "#00e5ff" }}>Weather Condition</span> - Weather</li>
+                <li><span style={{ color: "#00e5ff" }}>Seasonality</span> - Season</li>
               </ul>
             </div>
           </div>

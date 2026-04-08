@@ -4,10 +4,12 @@
  * - Email verification flow (send code → verify → set password)
  * - Google OAuth
  * - Login
+ * - Full i18n support
  */
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { setToken, setCachedUser } from "../../utils/authStorage";
 import { API_URL } from "../../config";
@@ -31,6 +33,7 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
   const [error, setError] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,7 +49,7 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
         navigate("/user");
       }
     } catch (err) {
-      setError(err.message || "Ошибка входа");
+      setError(err.message || t('auth.loginError'));
     } finally {
       setLoading(false);
     }
@@ -57,13 +60,13 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
       {error && <div className="auth-error">{error}</div>}
 
       <div className="auth-field">
-        <label htmlFor="login-email">Email</label>
+        <label htmlFor="login-email">{t('auth.email')}</label>
         <input
           id="login-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Введите email"
+          placeholder={t('auth.enterEmail')}
           required
           disabled={loading}
           autoComplete="email"
@@ -71,13 +74,13 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
       </div>
 
       <div className="auth-field">
-        <label htmlFor="login-password">Пароль</label>
+        <label htmlFor="login-password">{t('auth.password')}</label>
         <input
           id="login-password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Введите пароль"
+          placeholder={t('auth.enterPassword')}
           required
           disabled={loading}
           minLength={4}
@@ -90,7 +93,7 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
           <span className="auth-spinner" />
         ) : (
           <>
-            <span>Войти</span>
+            <span>{t('auth.login')}</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -99,8 +102,8 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
       </button>
 
       <div className="auth-switch">
-        <span>Нет аккаунта?</span>
-        <button type="button" onClick={onSwitch}>Регистрация</button>
+        <span>{t('auth.noAccount')}</span>
+        <button type="button" onClick={onSwitch}>{t('auth.register')}</button>
       </div>
     </form>
   );
@@ -119,6 +122,7 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
   const [countdown, setCountdown] = useState(0);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Countdown timer for resend
   useEffect(() => {
@@ -144,7 +148,7 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Не удалось отправить код");
+        throw new Error(data.detail || t('auth.sendCodeError'));
       }
 
       setStep(REGISTER_STEPS.CODE);
@@ -172,7 +176,7 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Неверный код");
+        throw new Error(data.detail || t('auth.invalidCode'));
       }
 
       setStep(REGISTER_STEPS.PASSWORD);
@@ -189,12 +193,12 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Пароли не совпадают");
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
     if (password.length < 4) {
-      setError("Пароль должен быть минимум 4 символа");
+      setError(t('auth.passwordMinLength'));
       return;
     }
 
@@ -210,7 +214,7 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Ошибка регистрации");
+        throw new Error(data.detail || t('auth.registerError'));
       }
 
       // Auto-login after registration
@@ -247,13 +251,13 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
         </div>
 
         <div className="auth-field">
-          <label htmlFor="register-email">Email</label>
+          <label htmlFor="register-email">{t('auth.email')}</label>
           <input
             id="register-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Введите email"
+            placeholder={t('auth.enterEmail')}
             required
             disabled={loading}
             autoComplete="email"
@@ -265,7 +269,7 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
             <span className="auth-spinner" />
           ) : (
             <>
-              <span>Отправить код</span>
+              <span>{t('auth.sendCode')}</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
@@ -274,8 +278,8 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
         </button>
 
         <div className="auth-switch">
-          <span>Уже есть аккаунт?</span>
-          <button type="button" onClick={onSwitch}>Войти</button>
+          <span>{t('auth.haveAccount')}</span>
+          <button type="button" onClick={onSwitch}>{t('auth.login')}</button>
         </div>
       </form>
     );
@@ -295,12 +299,12 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
         </div>
 
         <div className="auth-code-sent">
-          <p>Код отправлен на</p>
+          <p>{t('auth.codeSentTo')}</p>
           <strong>{email}</strong>
         </div>
 
         <div className="auth-field">
-          <label htmlFor="register-code">Код подтверждения</label>
+          <label htmlFor="register-code">{t('auth.verificationCode')}</label>
           <input
             id="register-code"
             type="text"
@@ -320,7 +324,7 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
             <span className="auth-spinner" />
           ) : (
             <>
-              <span>Подтвердить</span>
+              <span>{t('auth.verify')}</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
@@ -330,10 +334,10 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
 
         <div className="auth-resend">
           {countdown > 0 ? (
-            <span>Отправить повторно через {countdown}с</span>
+            <span>{t('auth.resendIn', { seconds: countdown })}</span>
           ) : (
             <button type="button" onClick={handleResendCode}>
-              Отправить код повторно
+              {t('auth.resendCode')}
             </button>
           )}
         </div>
@@ -355,13 +359,13 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
       </div>
 
       <div className="auth-field">
-        <label htmlFor="register-password">Пароль</label>
+        <label htmlFor="register-password">{t('auth.password')}</label>
         <input
           id="register-password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Придумайте пароль"
+          placeholder={t('auth.createPassword')}
           required
           disabled={loading}
           minLength={4}
@@ -370,13 +374,13 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
       </div>
 
       <div className="auth-field">
-        <label htmlFor="register-confirm">Подтвердите пароль</label>
+        <label htmlFor="register-confirm">{t('auth.confirmPassword')}</label>
         <input
           id="register-confirm"
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Повторите пароль"
+          placeholder={t('auth.repeatPassword')}
           required
           disabled={loading}
           minLength={4}
@@ -389,7 +393,7 @@ function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick 
           <span className="auth-spinner" />
         ) : (
           <>
-            <span>Создать аккаунт</span>
+            <span>{t('auth.createAccount')}</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -410,6 +414,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   const modalRef = useRef(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   // Close on escape
   useEffect(() => {
@@ -455,7 +460,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       console.log("Backend response:", data);
 
       if (!res.ok) {
-        throw new Error(data.detail || "Ошибка Google авторизации");
+        throw new Error(data.detail || t('auth.googleError'));
       }
 
       // Store token using proper authStorage
@@ -474,10 +479,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       window.location.href = targetPath;
     } catch (err) {
       console.error("Google auth error:", err);
-      setGoogleError(err.message || "Ошибка подключения к серверу");
+      setGoogleError(err.message || t('auth.serverError'));
     } finally {
       setLoading(false);
     }
+  };
+
+  // Get Google locale based on current language
+  const getGoogleLocale = () => {
+    const locales = { kk: 'kk', ru: 'ru', en: 'en' };
+    return locales[i18n.language] || 'en';
   };
 
   // Initialize Google OAuth
@@ -495,11 +506,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
           size: "large",
           width: "100%",
           text: "continue_with",
-          locale: "ru",
+          locale: getGoogleLocale(),
         }
       );
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, activeTab, i18n.language]);
 
   if (!isOpen) return null;
 
@@ -511,7 +522,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
           className="auth-modal-close"
           onClick={onClose}
           disabled={loading}
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6L6 18M6 6l12 12"/>
@@ -525,11 +536,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
-          <h2 className="auth-modal-title">Добро пожаловать</h2>
+          <h2 className="auth-modal-title">{t('auth.welcome')}</h2>
           <p className="auth-modal-subtitle">
             {activeTab === "login"
-              ? "Войдите для доступа к панели управления"
-              : "Создайте аккаунт чтобы начать"}
+              ? t('auth.loginSubtitle')
+              : t('auth.registerSubtitle')}
           </p>
         </div>
 
@@ -540,14 +551,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
             onClick={() => setActiveTab("login")}
             disabled={loading}
           >
-            Вход
+            {t('auth.loginTab')}
           </button>
           <button
             className={`auth-tab ${activeTab === "register" ? "active" : ""}`}
             onClick={() => setActiveTab("register")}
             disabled={loading}
           >
-            Регистрация
+            {t('auth.registerTab')}
           </button>
           <div
             className="auth-tab-indicator"
@@ -582,12 +593,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
         {/* Divider */}
         <div className="auth-divider">
-          <span>или</span>
+          <span>{t('auth.or')}</span>
         </div>
 
         {/* Google Sign-In Button */}
         <div className="auth-google-container">
-          {googleError && <div className="auth-error" style={{ marginBottom: '12px' }}>{googleError}</div>}
+          {googleError && <div className="auth-error auth-google-error">{googleError}</div>}
           <div id="google-signin-button"></div>
         </div>
       </div>

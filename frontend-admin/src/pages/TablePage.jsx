@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import Sidebar from "../components/layout/Sidebar";
 import Topbar from "../components/layout/Topbar";
 import { getProducts, getHistory } from "../api/forecastApi";
 
 export default function TablePage() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -13,7 +16,6 @@ export default function TablePage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const pageSize = 20;
 
@@ -40,13 +42,12 @@ export default function TablePage() {
         setSelectedProduct(data[0].product_id);
       }
     } catch (err) {
-      setError("Failed to load products");
+      toast.error(t('common.error'));
     }
   }
 
   async function loadHistory() {
     setLoading(true);
-    setError("");
 
     try {
       const data = await getHistory(selectedProduct, {
@@ -56,7 +57,7 @@ export default function TablePage() {
       setRecords(data.records);
       setTotal(data.total);
     } catch (err) {
-      setError(err.message || "Failed to load data");
+      toast.error(err.message || "Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -76,15 +77,15 @@ export default function TablePage() {
         <div className="content">
           <div className="headerRow">
             <div>
-              <div className="title">Data Table</div>
-              <div className="subtitle">Browse historical sales data</div>
+              <div className="title">{t('table.title')}</div>
+              <div className="subtitle">{t('table.subtitle')}</div>
             </div>
           </div>
 
           <div className="panel">
             <div className="filterRow">
               <div className="field">
-                <label>Category</label>
+                <label>{t('common.category')}</label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => {
@@ -93,7 +94,7 @@ export default function TablePage() {
                     setRecords([]);
                   }}
                 >
-                  <option value="">All Categories</option>
+                  <option value="">{t('table.allCategories')}</option>
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
@@ -103,7 +104,7 @@ export default function TablePage() {
               </div>
 
               <div className="field">
-                <label>Product</label>
+                <label>{t('common.product')}</label>
                 <select
                   value={selectedProduct}
                   onChange={(e) => {
@@ -111,47 +112,46 @@ export default function TablePage() {
                     setPage(0);
                   }}
                 >
-                  <option value="">Select Product</option>
+                  <option value="">{t('common.selectProduct')}</option>
                   {filteredProducts.map((p) => (
                     <option key={p.product_id} value={p.product_id}>
-                      {p.product_id} ({p.total_records} records)
+                      {p.product_id} ({p.total_records} {t('table.records')})
                     </option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {error && <div className="errorBox">{error}</div>}
           </div>
 
           <div className="card">
             <div className="cardHeader">
               <div>
                 <div className="cardTitle">
-                  {selectedProduct ? `Sales History - ${selectedProduct}` : "Sales History"}
+                  {selectedProduct ? `${t('table.salesHistory')} - ${selectedProduct}` : t('table.salesHistory')}
                 </div>
                 {total > 0 && (
                   <div className="cardSub">
-                    Showing {page * pageSize + 1}-{Math.min((page + 1) * pageSize, total)} of {total} records
+                    {t('table.showing')} {page * pageSize + 1}-{Math.min((page + 1) * pageSize, total)} {t('common.of')} {total} {t('table.records')}
                   </div>
                 )}
               </div>
             </div>
 
             {loading ? (
-              <div className="emptyBox">Loading...</div>
+              <div className="emptyBox">{t('common.loading')}</div>
             ) : records.length > 0 ? (
               <>
                 <div className="tableWrap">
                   <table className="table">
                     <thead>
                       <tr>
-                        <th>Date</th>
-                        <th>Units Sold</th>
-                        <th>Category</th>
-                        <th>Region</th>
-                        <th>Price</th>
-                        <th>Inventory</th>
+                        <th>{t('common.date')}</th>
+                        <th>{t('table.unitsSold')}</th>
+                        <th>{t('common.category')}</th>
+                        <th>{t('table.region')}</th>
+                        <th>{t('common.price')}</th>
+                        <th>{t('table.inventory')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -176,24 +176,24 @@ export default function TablePage() {
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0}
                   >
-                    Previous
+                    {t('common.previous')}
                   </button>
                   <span>
-                    Page {page + 1} of {totalPages}
+                    {t('common.page')} {page + 1} {t('common.of')} {totalPages}
                   </span>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                     disabled={page >= totalPages - 1}
                   >
-                    Next
+                    {t('common.next')}
                   </button>
                 </div>
               </>
             ) : (
               <div className="emptyBox">
                 {selectedProduct
-                  ? "No data available"
-                  : "Select a product to view data"}
+                  ? t('common.noData')
+                  : t('common.selectProduct')}
               </div>
             )}
           </div>
@@ -201,15 +201,15 @@ export default function TablePage() {
           {products.length > 0 && (
             <div className="card" style={{ marginTop: 16 }}>
               <div className="cardHeader">
-                <div className="cardTitle">Products Summary</div>
+                <div className="cardTitle">{t('table.productsSummary')}</div>
               </div>
               <div className="tableWrap">
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Product ID</th>
-                      <th>Category</th>
-                      <th>Total Records</th>
+                      <th>{t('table.productId')}</th>
+                      <th>{t('common.category')}</th>
+                      <th>{t('table.totalRecords')}</th>
                     </tr>
                   </thead>
                   <tbody>

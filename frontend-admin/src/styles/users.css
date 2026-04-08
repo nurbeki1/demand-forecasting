@@ -1,0 +1,116 @@
+.users-total {
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+.users-search {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--bg-primary, #0a0a0f);
+  border: 1px solid var(--border, #2a2a3e);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.users-search:focus {
+  outline: none;
+  border-color: var(--accent, #6366f1);
+}
+
+.users-table td {
+  vertical-align: middle;
+}
+
+.user-email-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.user-you-badge {
+  font-size: 11px;
+  color: var(--accent, #6366f1);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.user-badge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badge-admin {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent, #6366f1);
+}
+
+.badge-user {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-tertiary);
+}
+
+.badge-active {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success, #10b981);
+}
+
+.badge-inactive {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error, #ef4444);
+}
+
+.user-inactive {
+  opacity: 0.5;
+}
+
+.user-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.user-action-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border, #2a2a3e);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s ease;
+}
+
+.user-action-btn:hover:not(:disabled) {
+  border-color: var(--accent, #6366f1);
+}
+
+.user-action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.user-action-delete:hover:not(:disabled) {
+  border-color: var(--error, #ef4444);
+}

@@ -1350,7 +1350,7 @@ def _track_and_store(
 # MAIN CHAT HANDLER
 # =========================================================
 
-def handle_ai_chat(message: str, user_id: int) -> Dict[str, Any]:
+def handle_ai_chat(message: str, user_id: int, language: str = "kk") -> Dict[str, Any]:
     """
     Main handler for AI chat messages with Decision Assistant pipeline.
 
@@ -1360,6 +1360,7 @@ def handle_ai_chat(message: str, user_id: int) -> Dict[str, Any]:
     Args:
         message: User's message
         user_id: User ID for session isolation
+        language: Language code for responses (kk, ru, en). Defaults to Kazakh.
 
     Returns:
         Response dictionary with reply, intent, data, suggestions
@@ -1460,8 +1461,15 @@ def handle_ai_chat(message: str, user_id: int) -> Dict[str, Any]:
     # Step 5: Build RAG context
     context = build_rag_context(intent, entities)
 
-    # Step 6: Build system prompt with context
-    system_prompt = SYSTEM_PROMPT.format(
+    # Step 6: Build system prompt with context and language
+    lang_instructions = {
+        "kk": "МАҢЫЗДЫ: Қазақ тілінде жауап беріңіз. Барлық жауаптар қазақша болуы керек.",
+        "ru": "ВАЖНО: Отвечайте на русском языке. Все ответы должны быть на русском.",
+        "en": "IMPORTANT: Respond in English. All responses must be in English.",
+    }
+    lang_instruction = lang_instructions.get(language, lang_instructions["kk"])
+
+    system_prompt = f"{lang_instruction}\n\n" + SYSTEM_PROMPT.format(
         context=context,
         history=history
     )
@@ -1470,7 +1478,12 @@ def handle_ai_chat(message: str, user_id: int) -> Dict[str, Any]:
     try:
         response = ask_llm(system_prompt, message)
     except Exception as e:
-        response = f"Sorry, I encountered an error: {str(e)}"
+        error_messages = {
+            "kk": "Кешіріңіз, қате орын алды",
+            "ru": "Извините, произошла ошибка",
+            "en": "Sorry, I encountered an error"
+        }
+        response = f"{error_messages.get(language, error_messages['kk'])}: {str(e)}"
 
     # Step 8: Get chart data if applicable
     chart_data = get_chart_data(intent, entities)

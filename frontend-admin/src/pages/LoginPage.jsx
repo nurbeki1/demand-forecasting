@@ -7,6 +7,8 @@
  */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import "../styles/login.css";
 
@@ -36,9 +38,9 @@ function GeometricLogo() {
 }
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
 
@@ -46,7 +48,6 @@ export default function LoginPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
     try {
@@ -55,10 +56,8 @@ export default function LoginPage() {
       } else {
         await login(email, password);
       }
-      // Navigation is handled automatically by PublicRoute guard
-      // which will redirect to appropriate dashboard based on role
     } catch (err) {
-      setError(err.message || "Authentication failed");
+      toast.error(err.message || t('auth.serverError'));
       setLoading(false);
     }
   }
@@ -69,20 +68,18 @@ export default function LoginPage() {
         <GeometricLogo />
 
         <div className="login-header">
-          <h1>{isRegister ? "Create account" : "Welcome back"}</h1>
-          <p>{isRegister ? "Start your journey" : "Sign in to continue"}</p>
+          <h1>{isRegister ? t('auth.register') : t('auth.welcome')}</h1>
+          <p>{isRegister ? t('auth.registerSubtitle') : t('auth.loginSubtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
-          {error && <div className="error-box">{error}</div>}
-
           <div className="form-group">
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
+              placeholder={t('auth.email')}
               required
               disabled={loading}
               autoComplete="email"
@@ -95,7 +92,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder={t('auth.password')}
               required
               disabled={loading}
               minLength={4}
@@ -107,22 +104,19 @@ export default function LoginPage() {
             {loading ? (
               <span className="loading-spinner"></span>
             ) : (
-              isRegister ? "Create account" : "Continue"
+              isRegister ? t('auth.createAccount') : t('auth.login')
             )}
           </button>
         </form>
 
         <div className="login-footer">
-          <span>{isRegister ? "Already have an account?" : "Don't have an account?"}</span>
+          <span>{isRegister ? t('auth.haveAccount') : t('auth.noAccount')}</span>
           <button
             type="button"
-            onClick={() => {
-              setIsRegister(!isRegister);
-              setError("");
-            }}
+            onClick={() => setIsRegister(!isRegister)}
             className="btn-switch"
           >
-            {isRegister ? "Sign in" : "Sign up"}
+            {isRegister ? t('auth.login') : t('auth.register')}
           </button>
         </div>
       </div>

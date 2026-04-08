@@ -25,6 +25,10 @@ from app.deps import get_current_user, get_admin_user
 
 # ===== ROUTERS =====
 from app.routers.dashboard import router as dashboard_router
+from app.telegram_routes import router as telegram_router
+from app.report_routes import router as report_router
+from app.user_routes import router as user_router
+from app.settings_routes import router as settings_router
 
 # ===== SERVICES =====
 from services.ai_chat_service import (
@@ -37,11 +41,14 @@ from services.ai_chat_service import (
 from services.forecast_service import get_forecast_chart
 from services.model_service import (
     get_or_train_model,
+    train_model_preview,
     predict,
     clear_cache,
     get_cache_info,
+    get_cache_key,
     get_feature_importance,
     get_model_structure,
+    _model_cache,
     CAT_COLS,
     DATE_COL,
     TARGET_COL,
@@ -113,11 +120,22 @@ app.include_router(auth_router)
 # подключаем dashboard роуты
 app.include_router(dashboard_router)
 
+# подключаем telegram роуты
+app.include_router(telegram_router)
+
+# подключаем report роуты
+app.include_router(report_router)
+app.include_router(user_router)
+app.include_router(settings_router)
+
 # CORS - allow frontend domains
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175",
+    "http://localhost:5176",
+    "http://localhost:5177",
+    "http://localhost:5178",
     "http://localhost:3000",
     "https://demand-forecasting-orcin.vercel.app",
     "https://demand-forecasting.vercel.app",
@@ -155,6 +173,30 @@ app.add_middleware(
 )
 
 # =========================================================
+# TELEGRAM BOT STARTUP
+# =========================================================
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup"""
+    try:
+        from services.telegram_bot_service import init_telegram_bot
+        await init_telegram_bot()
+    except Exception as e:
+        print(f"[Telegram Bot] Failed to start: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown"""
+    try:
+        from services.telegram_bot_service import stop_telegram_bot
+        await stop_telegram_bot()
+    except Exception as e:
+        print(f"[Telegram Bot] Failed to stop: {e}")
+
+
+# =========================================================
 # DATASET CONFIG
 # =========================================================
 
@@ -185,6 +227,7 @@ class ForecastResponse(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    language: str = "kk"  # Default to Kazakh, supports kk, ru, en
 
 
 class ProductInfo(BaseModel):
@@ -574,7 +617,7 @@ def get_active_alerts(
 @limiter.limit(RateLimits.CHAT)
 def chat(request: Request, payload: ChatRequest, user=Depends(get_current_user)):
     """AI чат с RAG для анализа спроса"""
-    return handle_ai_chat(payload.message, user.id)
+    return handle_ai_chat(payload.message, user.id, language=payload.language)
 
 
 @app.get("/chat/history")
@@ -760,15 +803,137 @@ def retrain_model(
     if len(sub) < 30:
         raise HTTPException(status_code=400, detail="Not enough data for this product")
 
+    # Capture old metrics before retrain
+    cache_key = get_cache_key(product_id, store_id)
+    old_metrics = _model_cache[cache_key]["metrics"] if cache_key in _model_cache else None
+    old_trained_at = str(_model_cache[cache_key]["trained_at"]) if cache_key in _model_cache else None
+
     trained = get_or_train_model(sub, product_id, store_id, force_retrain=True)
+
+    improvement = None
+    if old_metrics:
+        improvement = {
+            "mae_change": round(trained["metrics"]["mae"] - old_metrics["mae"], 4),
+            "rmse_change": round(trained["metrics"]["rmse"] - old_metrics["rmse"], 4),
+            "r2_change": round(trained["metrics"]["r2"] - old_metrics["r2"], 4),
+        }
 
     return {
         "message": "Model retrained successfully",
         "product_id": product_id,
         "store_id": store_id,
         "metrics": trained["metrics"],
+        "old_metrics": old_metrics,
+        "trained_at": str(trained["trained_at"]),
+        "old_trained_at": old_trained_at,
+        "improvement": improvement,
+    }
+
+
+# =========================================================
+# FORECAST COMPARISON
+# =========================================================
+
+@app.get("/forecast/compare")
+async def forecast_compare(
+    product_id: str = Query(...),
+    store_id: Optional[str] = Query(None),
+    horizon_days: int = Query(7, ge=1, le=30),
+    user=Depends(get_admin_user),
+):
+    """Compare current cached model vs freshly retrained model"""
+    import asyncio
+
+    df = get_df()
+    sub = df[df["Product ID"] == product_id]
+    if store_id and "Store ID" in sub.columns:
+        sub = sub[sub["Store ID"] == store_id]
+
+    if len(sub) < 30:
+        raise HTTPException(status_code=400, detail="Not enough data for this product")
+
+    cache_key = get_cache_key(product_id, store_id)
+
+    # Get current model predictions (if cached)
+    current_data = None
+    if cache_key in _model_cache:
+        current_trained = _model_cache[cache_key]
+        _, current_preds = predict(current_trained, horizon_days)
+        current_data = {
+            "predictions": [round(float(p), 2) for p in current_preds],
+            "metrics": current_trained["metrics"],
+            "trained_at": str(current_trained["trained_at"]),
+        }
+
+    # Train new model without caching (CPU-intensive, run in thread)
+    new_trained = await asyncio.to_thread(train_model_preview, sub, product_id, store_id)
+    future_df, new_preds = predict(new_trained, horizon_days)
+
+    dates = [str(d.date()) for d in future_df[DATE_COL]]
+
+    new_data = {
+        "predictions": [round(float(p), 2) for p in new_preds],
+        "metrics": new_trained["metrics"],
+        "trained_at": str(new_trained["trained_at"]),
+    }
+
+    # Calculate comparison
+    comparison = None
+    if current_data:
+        comparison = {
+            "mae_diff": round(new_trained["metrics"]["mae"] - current_data["metrics"]["mae"], 4),
+            "rmse_diff": round(new_trained["metrics"]["rmse"] - current_data["metrics"]["rmse"], 4),
+            "r2_diff": round(new_trained["metrics"]["r2"] - current_data["metrics"]["r2"], 4),
+        }
+
+    return {
+        "product_id": product_id,
+        "dates": dates,
+        "current": current_data,
+        "retrained": new_data,
+        "comparison": comparison,
+    }
+
+
+@app.post("/forecast/compare/accept")
+def forecast_compare_accept(
+    product_id: str = Query(...),
+    store_id: Optional[str] = Query(None),
+    user=Depends(get_admin_user),
+):
+    """Accept retrained model — force retrain and save to cache"""
+    df = get_df()
+    sub = df[df["Product ID"] == product_id]
+    if store_id and "Store ID" in sub.columns:
+        sub = sub[sub["Store ID"] == store_id]
+
+    if len(sub) < 30:
+        raise HTTPException(status_code=400, detail="Not enough data")
+
+    trained = get_or_train_model(sub, product_id, store_id, force_retrain=True)
+
+    return {
+        "message": "New model accepted and saved",
+        "product_id": product_id,
+        "metrics": trained["metrics"],
         "trained_at": str(trained["trained_at"]),
     }
+
+
+# =========================================================
+# SEARCH
+# =========================================================
+
+@app.get("/search")
+def global_search(
+    q: str = Query(..., min_length=1),
+    limit: int = Query(10, ge=1, le=50),
+    user=Depends(get_current_user),
+):
+    """Global product search using fuzzy matching"""
+    from services.product_search_service import search_product
+    results = search_product(q, top_k=limit)
+    return {"results": results, "query": q, "total": len(results)}
 
 
 # =========================================================

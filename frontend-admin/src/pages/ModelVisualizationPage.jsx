@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { API_URL } from "../config";
 import Sidebar from "../components/layout/Sidebar";
 import Topbar from "../components/layout/Topbar";
@@ -6,6 +7,7 @@ import "../styles/dashboard.css";
 import "../styles/neural-graph.css";
 
 export default function ModelVisualizationPage() {
+  const { t } = useTranslation();
   const [structure, setStructure] = useState(null);
   const [error, setError] = useState(null);
   const [showSettings, setShowSettings] = useState(true);
@@ -326,12 +328,12 @@ export default function ModelVisualizationPage() {
 
       // Draw legend (not affected by zoom/pan)
       const legendItems = [
-        { color: "#3b82f6", label: "Categorical" },
-        { color: "#8b5cf6", label: "Numerical" },
-        { color: "#f97316", label: "Temporal" },
-        { color: "#22c55e", label: "Lag Features" },
-        { color: "#ec4899", label: "Cyclic" },
-        { color: "#eab308", label: "Transform" },
+        { color: "#3b82f6", label: t('model.categorical') },
+        { color: "#8b5cf6", label: t('model.numerical') },
+        { color: "#f97316", label: t('model.temporal') },
+        { color: "#22c55e", label: t('model.lagFeatures') },
+        { color: "#ec4899", label: t('model.cyclic') },
+        { color: "#eab308", label: t('model.transform') },
         { color: "#10a37f", label: "Trees" },
       ];
 
@@ -344,7 +346,7 @@ export default function ModelVisualizationPage() {
       ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
       ctx.fillStyle = "#6b7280";
       ctx.textAlign = "left";
-      ctx.fillText("LEGEND", 25, 34);
+      ctx.fillText(t('model.legend').toUpperCase(), 25, 34);
 
       legendItems.forEach((item, i) => {
         const ly = 52 + i * 24;
@@ -364,7 +366,7 @@ export default function ModelVisualizationPage() {
       ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
       ctx.fillStyle = "#6b7280";
       ctx.textAlign = "right";
-      ctx.fillText("Drag nodes • Scroll to zoom • Right-click to pan", width - 15, height - 15);
+      ctx.fillText(t('model.dragInstructions'), width - 15, height - 15);
 
       animationRef.current = requestAnimationFrame(draw);
     };
@@ -455,23 +457,23 @@ export default function ModelVisualizationPage() {
         <div className="neural-graph-page">
           <div className="graph-header">
             <div className="graph-title">
-              <h1>ML Model Architecture</h1>
-              <span className="graph-subtitle">Random Forest Pipeline • Drag nodes to rearrange</span>
+              <h1>{t('model.title')}</h1>
+              <span className="graph-subtitle">{t('model.subtitle')}</span>
             </div>
             <div className="graph-controls">
               <span className="zoom-indicator">
-                Zoom: {zoom}%
+                {t('model.zoom')}: {zoom}%
               </span>
               <button className="settings-btn" onClick={() => { panRef.current = { x: 0, y: 0 }; setZoom(100); }}>
-                Reset View
+                {t('model.resetView')}
               </button>
               <button className="settings-btn" onClick={() => setShowSettings(!showSettings)}>
-                {showSettings ? "Hide Panel" : "Show Panel"}
+                {showSettings ? t('model.hidePanel') : t('model.showPanel')}
               </button>
             </div>
           </div>
 
-          {error && <div className="graph-error">Error: {error}</div>}
+          {error && <div className="graph-error">{t('common.error')}: {error}</div>}
 
           <div className="graph-container">
             <div className="canvas-wrapper" ref={wrapperRef}>
@@ -489,41 +491,41 @@ export default function ModelVisualizationPage() {
 
             {showSettings && (
               <div className="settings-panel">
-                <h3>Model Info</h3>
+                <h3>{t('model.modelInfo')}</h3>
 
                 <div className="metrics-panel">
                   <div className="metric-row">
-                    <span>Type</span>
+                    <span>{t('model.type')}</span>
                     <span className="metric-value">RandomForest</span>
                   </div>
                   <div className="metric-row">
-                    <span>Trees</span>
+                    <span>{t('model.trees')}</span>
                     <span className="metric-value">300</span>
                   </div>
                   <div className="metric-row">
-                    <span>Features</span>
+                    <span>{t('model.features')}</span>
                     <span className="metric-value">25+</span>
                   </div>
                   <div className="metric-row">
-                    <span>Status</span>
+                    <span>{t('common.status')}</span>
                     <span className="metric-value" style={{ color: structure ? "var(--success)" : "var(--warning)" }}>
-                      {structure ? "Loaded" : "Loading..."}
+                      {structure ? t('model.loaded') : t('model.loadingModel')}
                     </span>
                   </div>
                 </div>
 
                 {selectedNode && (
                   <div className="node-info">
-                    <h4>Selected Node</h4>
+                    <h4>{t('model.selectedNode')}</h4>
                     <div className="info-row">
-                      <span>ID</span>
+                      <span>{t('model.id')}</span>
                       <span>{selectedNode}</span>
                     </div>
                   </div>
                 )}
 
                 <div className="settings-group">
-                  <label>Zoom Level</label>
+                  <label>{t('model.zoomLevel')}</label>
                   <input
                     type="range"
                     min="30"
@@ -535,8 +537,8 @@ export default function ModelVisualizationPage() {
                 </div>
 
                 <div className="features-list">
-                  <h4>Pipeline Stages</h4>
-                  {["Input Features", "Preprocessing", "Random Forest", "Prediction"].map((stage, i) => (
+                  <h4>{t('model.pipelineStages')}</h4>
+                  {[t('model.inputFeatures'), t('model.preprocessing'), t('model.randomForest'), t('model.predictionStage')].map((stage, i) => (
                     <div key={i} className="feature-row">
                       <span className="feature-rank">{i + 1}</span>
                       <span className="feature-name">{stage}</span>

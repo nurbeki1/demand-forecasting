@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function Controls({ onSubmit, loading }) {
+  const { t } = useTranslation();
   const [productId, setProductId] = useState("P0001");
   const [storeId, setStoreId] = useState(""); // optional
   const [horizonDays, setHorizonDays] = useState(7);
@@ -17,17 +19,17 @@ export default function Controls({ onSubmit, loading }) {
   return (
     <form className="controls" onSubmit={submit}>
       <div className="field">
-        <label>Product ID</label>
+        <label>{t('controls.productId')}</label>
         <input value={productId} onChange={(e) => setProductId(e.target.value)} placeholder="P0001" />
       </div>
 
       <div className="field">
-        <label>Store ID (optional)</label>
+        <label>{t('controls.storeId')}</label>
         <input value={storeId} onChange={(e) => setStoreId(e.target.value)} placeholder="S001" />
       </div>
 
       <div className="field">
-        <label>Horizon days</label>
+        <label>{t('controls.horizonDays')}</label>
         <input
           type="number"
           min={1}
@@ -38,7 +40,7 @@ export default function Controls({ onSubmit, loading }) {
       </div>
 
       <button className="btn" disabled={loading}>
-        {loading ? "Loading..." : "Get Forecast"}
+        {loading ? t('common.loading') : t('controls.getForecast')}
       </button>
     </form>
   );

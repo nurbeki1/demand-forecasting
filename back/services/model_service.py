@@ -198,6 +198,18 @@ def train_model(df: pd.DataFrame, test_size: float = 0.2) -> Dict[str, Any]:
     }
 
 
+def train_model_preview(
+    df: pd.DataFrame,
+    product_id: str,
+    store_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Обучает новую модель БЕЗ сохранения в кэш.
+    Используется для сравнения моделей (preview).
+    """
+    return train_model(df)
+
+
 def get_or_train_model(
     df: pd.DataFrame,
     product_id: str,

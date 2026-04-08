@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "../components/landing/AuthModal";
 import gsap from "gsap";
@@ -111,10 +112,11 @@ function Spline3DScene({ activeSection, lookAtCenter }) {
 
 // Loading spinner
 function SplineLoader() {
+  const { t } = useTranslation();
   return (
     <div className="spline-loader">
       <div className="spline-loader__spinner" />
-      <p>Загрузка 3D модели...</p>
+      <p>{t('common.loading')}</p>
     </div>
   );
 }
@@ -238,6 +240,7 @@ export default function LandingPage() {
   const centerTimerRef = useRef(null);
   const { isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // When reaching section 4, look at card first, then center after delay
   useEffect(() => {
@@ -312,7 +315,7 @@ export default function LandingPage() {
     }
   };
 
-  // Info cards data - Russian localization
+  // Info cards data - localized
   const infoCards = [
     {
       position: "top-left",
@@ -321,8 +324,8 @@ export default function LandingPage() {
           <path d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       ),
-      title: "Прогноз",
-      description: "ИИ прогнозирует спрос с точностью 94% с помощью нейронных сетей",
+      title: t('landing.features.forecast.title'),
+      description: t('landing.features.forecast.description'),
     },
     {
       position: "top-right",
@@ -332,8 +335,8 @@ export default function LandingPage() {
           <path d="M12 6v6l4 2" />
         </svg>
       ),
-      title: "Анализ",
-      description: "Аналитика рыночных трендов и поведения потребителей в реальном времени",
+      title: t('landing.features.analysis.title'),
+      description: t('landing.features.analysis.description'),
     },
     {
       position: "bottom-left",
@@ -342,8 +345,8 @@ export default function LandingPage() {
           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
         </svg>
       ),
-      title: "Оптимизация",
-      description: "Сокращение затрат на запасы на 30% с умным управлением складом",
+      title: t('landing.features.optimization.title'),
+      description: t('landing.features.optimization.description'),
     },
     {
       position: "bottom-right",
@@ -352,8 +355,8 @@ export default function LandingPage() {
           <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" />
         </svg>
       ),
-      title: "Диалог",
-      description: "Задавайте вопросы на естественном языке, получайте мгновенные ответы",
+      title: t('landing.features.dialog.title'),
+      description: t('landing.features.dialog.description'),
     },
   ];
 
@@ -379,7 +382,7 @@ export default function LandingPage() {
           />
         </div>
         <button className="nav__cta" onClick={handleStart}>
-          Начать
+          {t('landing.getStarted')}
         </button>
       </nav>
 
@@ -403,10 +406,10 @@ export default function LandingPage() {
           {activeSection === 0 && (
             <div className="scene-text__content scene-text__content--hero">
               <h1>
-                <span>Будущее</span>
-                <span className="gradient-text">Прогнозирования Спроса</span>
+                <span>{t('landing.heroTitle1')}</span>
+                <span className="gradient-text">{t('landing.heroTitle2')}</span>
               </h1>
-              <p>Прокрутите для изучения</p>
+              <p>{t('landing.scrollToExplore')}</p>
               <div className="scroll-indicator">
                 <div className="scroll-indicator__mouse">
                   <div className="scroll-indicator__wheel" />
@@ -417,9 +420,9 @@ export default function LandingPage() {
 
           {showCTA && (
             <div className="scene-text__content scene-text__content--cta">
-              <h2>Готовы трансформировать ваш бизнес?</h2>
+              <h2>{t('landing.cta.title')}</h2>
               <button className="cta-button" onClick={handleStart}>
-                <span>Начать сейчас</span>
+                <span>{t('landing.cta.button')}</span>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
@@ -440,24 +443,24 @@ export default function LandingPage() {
         <section className="scroll-section scroll-section--predict">
           <div className="section-content">
             <span className="section-number">02</span>
-            <h2>Прогнозируйте будущее</h2>
-            <p>Наши нейронные сети анализируют исторические данные, рыночные тренды и внешние факторы для прогнозирования спроса с беспрецедентной точностью.</p>
+            <h2>{t('landing.sections.predict.title')}</h2>
+            <p>{t('landing.sections.predict.description')}</p>
           </div>
         </section>
 
         <section className="scroll-section scroll-section--analyze">
           <div className="section-content">
             <span className="section-number">03</span>
-            <h2>Понимайте причины</h2>
-            <p>Объяснимый ИИ разбивает каждый прогноз на понятные факторы, на основе которых можно действовать.</p>
+            <h2>{t('landing.sections.understand.title')}</h2>
+            <p>{t('landing.sections.understand.description')}</p>
           </div>
         </section>
 
         <section className="scroll-section scroll-section--optimize">
           <div className="section-content">
             <span className="section-number">04</span>
-            <h2>Оптимизируйте операции</h2>
-            <p>Сокращайте затраты, минимизируйте потери и максимизируйте эффективность с интеллектуальным управлением запасами.</p>
+            <h2>{t('landing.sections.optimize.title')}</h2>
+            <p>{t('landing.sections.optimize.description')}</p>
           </div>
         </section>
 

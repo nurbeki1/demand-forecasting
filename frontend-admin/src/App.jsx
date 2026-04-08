@@ -15,6 +15,8 @@
  */
 
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 
@@ -27,6 +29,9 @@ import ExecutiveDashboardPage from "./pages/ExecutiveDashboardPage";
 import TablePage from "./pages/TablePage";
 import UploadPage from "./pages/UploadPage";
 import ModelVisualizationPage from "./pages/ModelVisualizationPage";
+import ReportsPage from "./pages/ReportsPage";
+import ForecastComparisonPage from "./pages/ForecastComparisonPage";
+import UserManagementPage from "./pages/UserManagementPage";
 
 // Styles
 import "./styles/dashboard.css";
@@ -36,6 +41,7 @@ import "./styles/dashboard.css";
 // =============================================================================
 
 function LoadingScreen() {
+  const { t } = useTranslation();
   return (
     <div className="loading-screen" style={{
       display: 'flex',
@@ -56,7 +62,7 @@ function LoadingScreen() {
           animation: 'spin 1s linear infinite',
           margin: '0 auto 16px',
         }} />
-        <div>Loading...</div>
+        <div>{t('common.loading')}</div>
       </div>
       <style>{`
         @keyframes spin {
@@ -111,7 +117,7 @@ function AdminRoute({ children }) {
   const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
   if (!isAdmin) {
@@ -131,7 +137,7 @@ function UserRoute({ children }) {
   const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
   if (isAdmin) {
@@ -216,6 +222,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/admin/users"
+        element={
+          <AdminRoute>
+            <UserManagementPage />
+          </AdminRoute>
+        }
+      />
+      <Route
         path="/admin/table"
         element={
           <AdminRoute>
@@ -228,6 +242,22 @@ function AppRoutes() {
         element={
           <AdminRoute>
             <UploadPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/compare"
+        element={
+          <AdminRoute>
+            <ForecastComparisonPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/reports"
+        element={
+          <AdminRoute>
+            <ReportsPage />
           </AdminRoute>
         }
       />
@@ -271,6 +301,21 @@ export default function App() {
             <AppRoutes />
           </AuthGuard>
         </AuthProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: "var(--bg-secondary, #1a1a2e)",
+              border: "1px solid var(--border, #2a2a3e)",
+              color: "var(--text-primary, #e0e0e0)",
+              fontSize: "14px",
+            },
+          }}
+          theme="dark"
+          richColors
+          closeButton
+        />
       </ThemeProvider>
     </BrowserRouter>
   );

@@ -1,0 +1,49 @@
+.compare-table td:first-child {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.compare-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.compare-accept-btn {
+  flex: 1;
+  padding: 14px 24px;
+  background: var(--success, #10b981) !important;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.compare-accept-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.compare-accept-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.compare-keep-btn {
+  flex: 1;
+  padding: 14px 24px;
+  background: var(--bg-secondary, #1a1a2e) !important;
+  color: var(--text-secondary);
+  border: 1px solid var(--border, #2a2a3e);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.compare-keep-btn:hover {
+  border-color: var(--text-tertiary);
+}

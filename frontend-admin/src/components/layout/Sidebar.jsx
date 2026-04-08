@@ -1,22 +1,28 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
+import LanguageSwitcher from "../LanguageSwitcher";
 
 export default function Sidebar() {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Admin menu items - all under /admin prefix
   const adminMenuItems = [
-    { path: "/admin", label: "Dashboard", icon: "🎯" },
-    { path: "/admin/forecast", label: "Forecasts & Charts", icon: "📊" },
-    { path: "/admin/table", label: "Data Table", icon: "📋" },
-    { path: "/admin/upload", label: "Upload CSV", icon: "📤" },
-    { path: "/admin/model", label: "ML Model", icon: "🤖" },
+    { path: "/admin", label: t('nav.dashboard'), icon: "🎯" },
+    { path: "/admin/forecast", label: t('forecast.title'), icon: "📊" },
+    { path: "/admin/compare", label: t('nav.compare', 'Compare'), icon: "⚖️" },
+    { path: "/admin/reports", label: t('nav.reports'), icon: "📑" },
+    { path: "/admin/users", label: t('nav.users'), icon: "👥" },
+    { path: "/admin/table", label: t('common.export'), icon: "📋" },
+    { path: "/admin/upload", label: t('common.import'), icon: "📤" },
+    { path: "/admin/model", label: t('model.title'), icon: "🤖" },
   ];
 
-  // Regular user menu items - AI Chat
+  // Regular user menu items - AI Chat (settings is inside ChatPage)
   const userMenuItems = [
-    { path: "/user", label: "AI Chat", icon: "💬" },
+    { path: "/user", label: t('nav.chat'), icon: "💬" },
   ];
 
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
@@ -30,17 +36,13 @@ export default function Sidebar() {
     <aside className="sidebar">
       {/* Profile Section */}
       <div className="profile">
-        <div className="avatar" style={{
-          background: isAdmin ? "var(--accent)" : "var(--success)"
-        }}>
+        <div className={`avatar ${isAdmin ? "avatar-admin" : "avatar-user"}`}>
           {isAdmin ? "A" : "U"}
         </div>
         <div>
           <div className="name">{user?.email?.split("@")[0] || "User"}</div>
-          <div className="role" style={{
-            color: isAdmin ? "var(--accent)" : "var(--text-tertiary)"
-          }}>
-            {isAdmin ? "Administrator" : "User"}
+          <div className={`role ${isAdmin ? "role-admin" : "role-user"}`}>
+            {isAdmin ? t('common.admin', 'Admin') : t('common.user', 'User')}
           </div>
         </div>
       </div>
@@ -61,63 +63,38 @@ export default function Sidebar() {
       </nav>
 
       {/* Spacer */}
-      <div style={{ flex: 1 }} />
+      <div className="sidebar-spacer" />
+
+      {/* Language Switcher */}
+      <div className="sidebar-language-section">
+        <div className="sidebar-language-label">
+          {t('settings.language')}
+        </div>
+        <LanguageSwitcher variant="buttons" />
+      </div>
 
       {/* Logout Button */}
-      <div style={{
-        padding: "16px",
-        borderTop: "1px solid var(--border)"
-      }}>
+      <div className="sidebar-block">
         <button
           onClick={handleLogout}
-          style={{
-            width: "100%",
-            padding: "12px 16px",
-            background: "var(--bg-secondary)",
-            border: "1px solid var(--border)",
-            borderRadius: "12px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            cursor: "pointer",
-            color: "var(--text-secondary)",
-            fontSize: "14px",
-            transition: "all 0.2s ease"
-          }}
+          className="sidebar-logout-button"
+          aria-label={t('nav.logout')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
             <polyline points="16 17 21 12 16 7"/>
             <line x1="21" y1="12" x2="9" y2="12"/>
           </svg>
-          Sign Out
+          {t('nav.logout')}
         </button>
       </div>
 
       {/* Status Indicator */}
-      <div style={{
-        padding: "0 16px 16px"
-      }}>
-        <div style={{
-          padding: "12px 16px",
-          background: "var(--bg-secondary)",
-          borderRadius: "12px",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px"
-        }}>
-          <span style={{
-            width: "8px",
-            height: "8px",
-            background: "var(--success)",
-            borderRadius: "50%"
-          }}></span>
-          <span style={{
-            fontSize: "13px",
-            color: "var(--text-secondary)"
-          }}>
-            System Online
+      <div className="sidebar-block">
+        <div className="sidebar-status">
+          <span className="sidebar-status-dot"></span>
+          <span className="sidebar-status-text">
+            {t('common.systemOnline')}
           </span>
         </div>
       </div>

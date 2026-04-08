@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -45,14 +47,13 @@ ChartJS.register(
 );
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [historyData, setHistoryData] = useState(null);
-  const [error, setError] = useState("");
 
   async function handleSubmit(values) {
     try {
-      setError("");
       setLoading(true);
       const [forecastRes, historyRes] = await Promise.all([
         getForecast(values),
@@ -61,7 +62,7 @@ export default function AdminDashboard() {
       setData(forecastRes);
       setHistoryData(historyRes);
     } catch (e) {
-      setError(e?.message || "Unknown error");
+      toast.error(e?.message || "Unknown error");
       setData(null);
       setHistoryData(null);
     } finally {
@@ -105,7 +106,7 @@ export default function AdminDashboard() {
       ],
       datasets: [
         {
-          label: "Historical Sales",
+          label: t('dashboard.historicalSales'),
           data: [
             ...historyRecords.map((r) => r.units_sold),
             ...Array(forecastRecords.length).fill(null),
@@ -118,7 +119,7 @@ export default function AdminDashboard() {
           borderWidth: 2,
         },
         {
-          label: "Forecast",
+          label: t('forecast.result'),
           data: [
             ...Array(historyRecords.length).fill(null),
             ...forecastRecords.map((p) => p.predicted_units_sold),
@@ -177,18 +178,17 @@ export default function AdminDashboard() {
           {/* HEADER */}
           <div className="headerRow">
             <div>
-              <div className="title">Forecasts & Charts</div>
-              <div className="subtitle">Generate forecasts and visualize demand data</div>
+              <div className="title">{t('dashboard.forecasts')}</div>
+              <div className="subtitle">{t('dashboard.forecastsSubtitle')}</div>
             </div>
           </div>
 
           {/* CONTROLS */}
           <div className="panel">
             <Controls onSubmit={handleSubmit} loading={loading} />
-            {error && <div className="errorBox">{error}</div>}
           </div>
 
-          {loading && <div className="hint">Loading forecast…</div>}
+          {loading && <div className="hint">{t('dashboard.loadingForecast')}</div>}
 
           {/* DATA */}
           {data && derived && (
@@ -208,8 +208,8 @@ export default function AdminDashboard() {
                 <div className="card" style={{ marginBottom: "20px" }}>
                   <div className="cardHeader">
                     <div>
-                      <div className="cardTitle">Historical vs Forecast</div>
-                      <div className="cardSub">Compare past sales with predicted demand</div>
+                      <div className="cardTitle">{t('dashboard.historicalVsForecast')}</div>
+                      <div className="cardSub">{t('dashboard.compareHistorical')}</div>
                     </div>
                   </div>
                   <div style={{ height: "350px" }}>
@@ -223,8 +223,8 @@ export default function AdminDashboard() {
                 <div className="card">
                   <div className="cardHeader">
                     <div>
-                      <div className="cardTitle">Forecast Overview</div>
-                      <div className="cardSub">Predicted demand volume</div>
+                      <div className="cardTitle">{t('dashboard.forecastOverview')}</div>
+                      <div className="cardSub">{t('dashboard.predictedDemand')}</div>
                     </div>
                   </div>
                   <SalesOverviewChart predictions={data.predictions} />
@@ -233,8 +233,8 @@ export default function AdminDashboard() {
                 <div className="card">
                   <div className="cardHeader">
                     <div>
-                      <div className="cardTitle">Demand Distribution</div>
-                      <div className="cardSub">Forecast breakdown by period</div>
+                      <div className="cardTitle">{t('dashboard.demandDistribution')}</div>
+                      <div className="cardSub">{t('dashboard.forecastBreakdown')}</div>
                     </div>
                   </div>
                   <DemandDonut buckets={derived.buckets} />
@@ -245,19 +245,19 @@ export default function AdminDashboard() {
               {data.model_metrics && (
                 <div className="card" style={{ marginBottom: "20px" }}>
                   <div className="cardHeader">
-                    <div className="cardTitle">Model Performance</div>
+                    <div className="cardTitle">{t('dashboard.modelPerformance')}</div>
                   </div>
                   <div className="metricsGrid">
                     <div className="metricCard">
-                      <div className="metricLabel">MAE</div>
+                      <div className="metricLabel">{t('forecast.metrics.mae')}</div>
                       <div className="metricValue">{data.model_metrics.mae.toFixed(2)}</div>
                     </div>
                     <div className="metricCard">
-                      <div className="metricLabel">RMSE</div>
+                      <div className="metricLabel">{t('forecast.metrics.rmse')}</div>
                       <div className="metricValue">{data.model_metrics.rmse.toFixed(2)}</div>
                     </div>
                     <div className="metricCard">
-                      <div className="metricLabel">R2 Score</div>
+                      <div className="metricLabel">{t('forecast.metrics.r2')}</div>
                       <div className="metricValue">{data.model_metrics.r2.toFixed(4)}</div>
                     </div>
                   </div>
@@ -267,7 +267,7 @@ export default function AdminDashboard() {
               {/* FORECAST TABLE */}
               <div className="card">
                 <div className="cardHeader">
-                  <div className="cardTitle">Forecast Details</div>
+                  <div className="cardTitle">{t('dashboard.forecastDetails')}</div>
                 </div>
                 <ForecastTable predictions={data.predictions} />
               </div>

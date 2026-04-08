@@ -22,10 +22,10 @@ class Settings(BaseSettings):
 
     # Token expiration
     access_token_expire_minutes: int = Field(
-        default=60,
+        default=1440,
         ge=1,
-        le=1440,
-        description="Access token expiration time in minutes (default: 60)"
+        le=10080,
+        description="Access token expiration time in minutes (default: 1440 = 24 hours)"
     )
     refresh_token_expire_days: int = Field(
         default=7,

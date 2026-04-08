@@ -1,0 +1,471 @@
+/* =====================================================
+   SETTINGS PANEL - Claude-style Design
+   ===================================================== */
+
+/* =====================================================
+   SETTINGS PANEL WRAPPER (for centering)
+   ===================================================== */
+.settings-panel-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-primary);
+  padding: 40px;
+}
+
+/* =====================================================
+   CLAUDE-STYLE SETTINGS PANEL
+   ===================================================== */
+.settings-panel-claude {
+  display: flex;
+  height: 70vh;
+  max-height: 700px;
+  width: 100%;
+  max-width: 900px;
+  background: #1a1a1a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #e5e5e5;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Left Navigation */
+.settings-nav-claude {
+  width: 180px;
+  padding: 16px 12px;
+  background: #1a1a1a;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.settings-nav-item-claude {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #a0a0a0;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-nav-item-claude:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e5e5e5;
+}
+
+.settings-nav-item-claude.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* Right Content Area */
+.settings-content-claude {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 40px;
+  max-width: 700px;
+}
+
+.settings-content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.settings-content-header h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.settings-close-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #808080;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e5e5e5;
+}
+
+/* Settings Sections */
+.settings-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-section {
+  margin-bottom: 16px;
+}
+
+/* Settings Group */
+.settings-group {
+  margin-bottom: 32px;
+}
+
+.settings-group-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Settings Row */
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 0;
+  gap: 24px;
+}
+
+.settings-row-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-row-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  color: #e5e5e5;
+  margin-bottom: 2px;
+}
+
+.settings-row-desc {
+  display: block;
+  font-size: 13px;
+  color: #707070;
+  line-height: 1.4;
+}
+
+.settings-row-full {
+  padding: 12px 0;
+}
+
+.settings-row-full .settings-row-title {
+  margin-bottom: 12px;
+}
+
+/* Input Fields */
+.settings-input-claude {
+  width: 280px;
+  padding: 8px 12px;
+  background: #2a2a2a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #e5e5e5;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.settings-input-claude:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.settings-input-claude:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.settings-input-claude:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-input-claude::placeholder {
+  color: #606060;
+}
+
+/* Select Dropdown */
+.settings-select-claude {
+  min-width: 160px;
+  padding: 8px 32px 8px 12px;
+  background: #2a2a2a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #e5e5e5;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23808080' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: all 0.15s ease;
+}
+
+.settings-select-claude:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.settings-select-claude:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.settings-select-claude option {
+  background: #2a2a2a;
+  color: #e5e5e5;
+}
+
+/* Toggle Switch - Claude Style */
+.toggle-claude {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-claude input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider-claude {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #3a3a3a;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.toggle-slider-claude:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: #808080;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.toggle-claude input:checked + .toggle-slider-claude {
+  background: #6366f1;
+}
+
+.toggle-claude input:checked + .toggle-slider-claude:before {
+  transform: translateX(18px);
+  background: #ffffff;
+}
+
+/* Color Mode Cards */
+.color-mode-cards {
+  display: flex;
+  gap: 12px;
+}
+
+.color-mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.color-mode-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.color-mode-card.active {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.color-mode-card span {
+  font-size: 12px;
+  color: #a0a0a0;
+}
+
+.color-mode-card.active span {
+  color: #e5e5e5;
+}
+
+/* Color Mode Preview */
+.color-mode-preview {
+  width: 80px;
+  height: 56px;
+  border-radius: 8px;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.color-mode-preview.light {
+  background: #ffffff;
+}
+
+.color-mode-preview.light .preview-sidebar {
+  background: #f5f5f5;
+  border-right: 1px solid #e5e5e5;
+}
+
+.color-mode-preview.light .preview-content {
+  background: #ffffff;
+}
+
+.color-mode-preview.light .preview-line {
+  background: #e0e0e0;
+}
+
+.color-mode-preview.auto {
+  background: linear-gradient(135deg, #ffffff 50%, #1a1a1a 50%);
+}
+
+.color-mode-preview.auto .preview-sidebar {
+  background: linear-gradient(180deg, #f5f5f5 50%, #252525 50%);
+  border-right: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.color-mode-preview.auto .preview-content {
+  background: transparent;
+}
+
+.color-mode-preview.auto .preview-line {
+  background: linear-gradient(90deg, #e0e0e0 50%, #3a3a3a 50%);
+}
+
+.color-mode-preview.dark {
+  background: #1a1a1a;
+}
+
+.color-mode-preview.dark .preview-sidebar {
+  background: #252525;
+  border-right: 1px solid #333333;
+}
+
+.color-mode-preview.dark .preview-content {
+  background: #1a1a1a;
+}
+
+.color-mode-preview.dark .preview-line {
+  background: #3a3a3a;
+}
+
+.preview-sidebar {
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.preview-content {
+  flex: 1;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-line {
+  height: 6px;
+  border-radius: 3px;
+}
+
+.preview-line.short {
+  width: 60%;
+}
+
+/* Scrollbar */
+.settings-content-claude::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-content-claude::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-content-claude::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.settings-content-claude::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* =====================================================
+   RESPONSIVE - Mobile
+   ===================================================== */
+@media (max-width: 768px) {
+  .settings-panel-wrapper {
+    padding: 16px;
+    align-items: flex-start;
+  }
+
+  .settings-panel-claude {
+    flex-direction: column;
+    height: 85vh;
+    max-height: none;
+    border-radius: 12px;
+  }
+
+  .settings-nav-claude {
+    width: 100%;
+    padding: 12px;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+  }
+
+  .settings-nav-item-claude {
+    white-space: nowrap;
+    padding: 8px 16px;
+  }
+
+  .settings-content-claude {
+    padding: 20px;
+  }
+
+  .settings-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .settings-input-claude,
+  .settings-select-claude {
+    width: 100%;
+  }
+
+  .color-mode-cards {
+    flex-wrap: wrap;
+  }
+}

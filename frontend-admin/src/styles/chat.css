@@ -77,68 +77,183 @@
 }
 
 /* =====================================================
-   CHAT SIDEBAR (Conversation History)
+   CHAT SIDEBAR (Claude-style Collapsible)
    ===================================================== */
-/* Overlay only on mobile */
-.chat-sidebar-overlay {
-  display: none;
-}
-
-@media (max-width: 1023px) {
-  .chat-sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    z-index: 40;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--transition-normal);
-  }
-
-  .chat-sidebar-overlay.visible {
-    display: block;
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
 .chat-sidebar {
-  width: var(--sidebar-width);
   height: 100vh;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: margin-left var(--transition-normal), width var(--transition-normal);
+  transition: width var(--transition-normal);
+  overflow: hidden;
 }
 
-/* Desktop: sidebar pushes content, not overlays */
-@media (min-width: 1024px) {
-  .chat-sidebar {
-    margin-left: calc(-1 * var(--sidebar-width));
-  }
-
-  .chat-sidebar.open {
-    margin-left: 0;
-  }
+/* Collapsed State - Only Icons */
+.chat-sidebar.collapsed {
+  width: 60px;
 }
 
-/* Mobile: sidebar overlays */
-@media (max-width: 1023px) {
-  .chat-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    z-index: 50;
-    transform: translateX(-100%);
-  }
-
-  .chat-sidebar.open {
-    transform: translateX(0);
-  }
+/* Expanded State - Full Width */
+.chat-sidebar.expanded {
+  width: var(--sidebar-width);
 }
+
+/* Sidebar Top Section */
+.sidebar-top {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 8px;
+}
+
+/* Logo / Toggle Button */
+.sidebar-logo-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.sidebar-logo-btn:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+}
+
+.sidebar-logo-btn:focus-visible,
+.sidebar-icon-btn:focus-visible,
+.chat-item-btn:focus-visible,
+.chat-item-delete:focus-visible,
+.sidebar-logout-btn:focus-visible,
+.carousel-btn:focus-visible,
+.mic-btn:focus-visible,
+.send-btn:focus-visible,
+.empty-send-btn:focus-visible,
+.suggested-question-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sidebar-logo-btn svg {
+  transition: transform var(--transition-fast);
+}
+
+.chat-sidebar.expanded .sidebar-logo-btn svg {
+  transform: rotate(0deg);
+}
+
+.chat-sidebar.collapsed .sidebar-logo-btn svg {
+  transform: rotate(180deg);
+}
+
+/* Icon Buttons */
+.sidebar-icon-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Icon buttons - icons stay in fixed position */
+.sidebar-icon-btn svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+  min-width: 20px;
+}
+
+/* Hide text in collapsed state with transition */
+.sidebar-icon-btn span {
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+  overflow: hidden;
+}
+
+.chat-sidebar.collapsed .sidebar-icon-btn span {
+  opacity: 0;
+  width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-icon-btn:hover svg {
+  opacity: 1;
+}
+
+/* Expanded Content (Chat List) */
+.sidebar-expanded-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 8px;
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+}
+
+.chat-sidebar.collapsed .sidebar-expanded-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Sidebar Bottom Section */
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+
+/* Small User Avatar */
+.user-avatar-small {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  flex-shrink: 0;
+}
+
+/* User Email */
+.user-email-small {
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 /* Sidebar Header */
 .chat-sidebar-header {
@@ -415,6 +530,60 @@
   color: var(--error);
 }
 
+/* User row in sidebar - avatar + email + logout */
+.sidebar-user-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+}
+
+/* Smaller avatar to match icon alignment */
+.sidebar-user-row .user-avatar-small {
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+}
+
+/* Hide email and logout in collapsed state */
+.sidebar-user-row .user-email-small,
+.sidebar-user-row .sidebar-logout-btn {
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+}
+
+.chat-sidebar.collapsed .sidebar-user-row .user-email-small,
+.chat-sidebar.collapsed .sidebar-user-row .sidebar-logout-btn {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Logout button in user row */
+.sidebar-logout-btn {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+}
+
 /* Coming Soon Section */
 .chat-sidebar-soon {
   opacity: 0.5;
@@ -524,27 +693,25 @@
   position: relative;
 }
 
-.empty-menu-toggle {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  z-index: 10;
+/* Sidebar overlay for tablet/mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
 }
 
-.empty-menu-toggle:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+@media (max-width: 1023px) {
+  .sidebar-overlay.visible {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .empty-content {
@@ -1141,7 +1308,11 @@
    RESPONSIVE - TABLET
    ===================================================== */
 @media (max-width: 1023px) {
-  .chat-sidebar.open {
+  .chat-sidebar.expanded {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100;
     box-shadow: var(--shadow-lg);
   }
 }
@@ -1151,12 +1322,43 @@
    ===================================================== */
 @media (max-width: 640px) {
   :root {
-    --sidebar-width: 100%;
+    --sidebar-width: 260px;
   }
 
-  .sidebar {
-    width: 100%;
-    max-width: 320px;
+  /* On mobile, collapsed sidebar still shows icons */
+  .chat-sidebar.collapsed {
+    width: 52px;
+  }
+
+  .chat-sidebar.collapsed .sidebar-top,
+  .chat-sidebar.collapsed .sidebar-bottom {
+    padding: 8px 4px;
+  }
+
+  .chat-sidebar.collapsed .sidebar-logo-btn,
+  .chat-sidebar.collapsed .sidebar-icon-btn,
+  .chat-sidebar.collapsed .sidebar-user-row {
+    padding: 8px;
+  }
+
+  .chat-sidebar.collapsed .sidebar-logo-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .user-avatar-small {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  /* Expanded sidebar on mobile */
+  .chat-sidebar.expanded {
+    width: var(--sidebar-width);
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100;
   }
 
   .empty-content {

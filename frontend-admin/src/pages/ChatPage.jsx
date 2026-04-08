@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   LineChart,
   Line,
@@ -20,28 +21,30 @@ import {
 } from "../api/chatApi";
 
 import KZAnalysisCard from "../components/kz/KZAnalysisCard";
+import SettingsPanel from "../components/settings/SettingsPanel";
 
 import "../styles/chat.css";
 
 // ============================================
 // TYPEWRITER ANIMATION COMPONENT
 // ============================================
-const TYPEWRITER_PHRASES = [
-  "How can I help you today?",
-  "Ask anything, I'm ready.",
-  "Let's build something great.",
-  "Search, write, analyze, create.",
-  "Your AI workspace starts here.",
+const getTypewriterPhrases = (t) => [
+  t('chat.welcome'),
+  t('chat.askAnything'),
+  t('chat.aiDisclaimer'),
 ];
 
 function TypewriterText() {
+  const { t } = useTranslation();
   const [displayText, setDisplayText] = useState("");
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
+  const phrases = getTypewriterPhrases(t);
+
   useEffect(() => {
-    const currentPhrase = TYPEWRITER_PHRASES[phraseIndex];
+    const currentPhrase = phrases[phraseIndex];
 
     if (isPaused) {
       const pauseTimer = setTimeout(() => {
@@ -67,7 +70,7 @@ function TypewriterText() {
           setDisplayText(displayText.slice(0, -1));
         } else {
           setIsDeleting(false);
-          setPhraseIndex((prev) => (prev + 1) % TYPEWRITER_PHRASES.length);
+          setPhraseIndex((prev) => (prev + 1) % phrases.length);
         }
       }
     }, typeSpeed);
@@ -232,7 +235,7 @@ function processInline(text) {
 // ============================================
 // PRODUCT COMPONENTS
 // ============================================
-function ProductCard({ product }) {
+function ProductCard({ product, t }) {
   return (
     <div className="product-card">
       <div className="product-image-container">
@@ -254,7 +257,7 @@ function ProductCard({ product }) {
       <div className="product-info">
         <div className="product-name">{product.name}</div>
         <div className="product-price">
-          {product.price > 0 ? `₹${product.price.toLocaleString()}` : 'Price N/A'}
+          {product.price > 0 ? `₹${product.price.toLocaleString()}` : t('common.noData')}
         </div>
         {product.rating > 0 && (
           <div className="product-rating">
@@ -267,7 +270,7 @@ function ProductCard({ product }) {
   );
 }
 
-function ProductCarousel({ images }) {
+function ProductCarousel({ images, t }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!images || images.length === 0) return null;
@@ -275,10 +278,11 @@ function ProductCarousel({ images }) {
   return (
     <div className="product-carousel">
       <div className="carousel-header">
-        <span className="carousel-title">Products ({images.length})</span>
+        <span className="carousel-title">{t('dashboard.products')} ({images.length})</span>
         <div className="carousel-nav">
           <button
             className="carousel-btn"
+            aria-label={t('common.previous')}
             onClick={() => setCurrentIndex(prev => prev === 0 ? images.length - 1 : prev - 1)}
           >
             ‹
@@ -286,18 +290,19 @@ function ProductCarousel({ images }) {
           <span className="carousel-counter">{currentIndex + 1} / {images.length}</span>
           <button
             className="carousel-btn"
+            aria-label={t('common.next')}
             onClick={() => setCurrentIndex(prev => prev === images.length - 1 ? 0 : prev + 1)}
           >
             ›
           </button>
         </div>
       </div>
-      <ProductCard product={images[currentIndex]} />
+      <ProductCard product={images[currentIndex]} t={t} />
     </div>
   );
 }
 
-function MiniChart({ data }) {
+function MiniChart({ data, t }) {
   if (!data?.history && !data?.forecast) return null;
 
   const historyData = (data.history || []).slice(-7).map((h) => ({
@@ -330,7 +335,7 @@ function MiniChart({ data }) {
   return (
     <div className="mini-chart">
       <div className="mini-chart-header">
-        <span>Demand Forecast</span>
+        <span>{t('chart.demandForecast')}</span>
         <span className={`trend-badge ${trendUp ? 'up' : 'down'}`}>
           {trendUp ? '↑' : '↓'} {Math.abs(trendPercent)}%
         </span>
@@ -349,8 +354,8 @@ function MiniChart({ data }) {
             }}
           />
           <Legend wrapperStyle={{ fontSize: 11 }} />
-          <Line type="monotone" dataKey="history" stroke="#60a5fa" strokeWidth={2} dot={{ r: 3 }} name="History" />
-          <Line type="monotone" dataKey="forecast" stroke="#34d399" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name="Forecast" />
+          <Line type="monotone" dataKey="history" stroke="#60a5fa" strokeWidth={2} dot={{ r: 3 }} name={t('forecast.history')} />
+          <Line type="monotone" dataKey="forecast" stroke="#34d399" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name={t('forecast.result')} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -392,170 +397,125 @@ function setCurrentConversationId(id) {
 // CHAT SIDEBAR COMPONENT (Conversation History)
 // ============================================
 function ChatSidebar({
-  isOpen,
-  onClose,
+  isExpanded,
+  onToggle,
   conversations,
   currentConversationId,
   onNewChat,
   onSelectConversation,
   onDeleteConversation,
   user,
-  onLogout
+  onLogout,
+  onShowSettings,
+  t
 }) {
   return (
-    <>
-      {/* Mobile Overlay */}
-      <div
-        className={`chat-sidebar-overlay ${isOpen ? 'visible' : ''}`}
-        onClick={onClose}
-      />
-
-      {/* Chat Sidebar */}
-      <aside className={`chat-sidebar ${isOpen ? 'open' : ''}`}>
-        {/* Logo Section */}
-        <div className="chat-sidebar-header">
-          <div className="chat-sidebar-logo">
-            <div className="logo-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-            </div>
-            <span className="logo-text">Chat History</span>
-          </div>
-          <button className="chat-sidebar-close-btn" onClick={onClose}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
-          </button>
-        </div>
-
-        {/* New Chat Button */}
-        <button className="new-chat-btn" onClick={onNewChat}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
+    <aside className={`chat-sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}>
+      {/* Logo / Toggle Button */}
+      <div className="sidebar-top">
+        <button className="sidebar-logo-btn" onClick={onToggle} title={isExpanded ? t('common.close') : t('common.open')} aria-label={isExpanded ? t('common.close') : t('common.open')}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
-          <span>New Chat</span>
         </button>
 
-        {/* Projects Section */}
-        <div className="chat-sidebar-section">
-          <div className="section-title">Projects</div>
-          <div className="chat-list">
-            <div className="chat-item">
-              <button className="chat-item-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-                <span className="chat-item-title">Demand Forecasting</span>
-              </button>
-            </div>
-            <div className="chat-item">
-              <button className="chat-item-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-                <span className="chat-item-title">Analytics</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* New Chat */}
+        <button className="sidebar-icon-btn" onClick={onNewChat} title={t('chat.newChat')} aria-label={t('chat.newChat')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          <span>{t('chat.newChat')}</span>
+        </button>
 
-        {/* Recent Chats */}
-        <div className="chat-sidebar-section">
-          <div className="section-title">Recent Chats</div>
-          <div className="chat-list">
-            {conversations.length === 0 ? (
-              <div className="empty-chats">
-                <span>No conversations yet</span>
-              </div>
-            ) : (
-              conversations.slice(0, 10).map(conv => (
-                <div
-                  key={conv.id}
-                  className={`chat-item ${conv.id === currentConversationId ? 'active' : ''}`}
+        {/* Search */}
+        <button className="sidebar-icon-btn" title={t('common.search')} aria-label={t('common.search')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <span>{t('common.search')}</span>
+        </button>
+
+        {/* Projects */}
+        <button className="sidebar-icon-btn" title={t('chat.projects')} aria-label={t('chat.projects')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span>{t('chat.projects')}</span>
+        </button>
+
+        {/* Chat History */}
+        <button className="sidebar-icon-btn" title={t('chat.chatHistory')} aria-label={t('chat.chatHistory')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span>{t('chat.chatHistory')}</span>
+        </button>
+      </div>
+
+      {/* Expanded Content - Recent Chats (always rendered, hidden via CSS) */}
+      <div className="sidebar-expanded-content">
+        <div className="section-title">{t('chat.recentChats')}</div>
+        <div className="chat-list">
+          {conversations.length === 0 ? (
+            <div className="empty-chats">
+              <span>{t('chat.noConversations')}</span>
+            </div>
+          ) : (
+            conversations.slice(0, 10).map(conv => (
+              <div
+                key={conv.id}
+                className={`chat-item ${conv.id === currentConversationId ? 'active' : ''}`}
+              >
+                <button
+                  className="chat-item-btn"
+                  onClick={() => onSelectConversation(conv.id)}
                 >
-                  <button
-                    className="chat-item-btn"
-                    onClick={() => onSelectConversation(conv.id)}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    <span className="chat-item-title">{conv.title || 'New Chat'}</span>
-                  </button>
-                  <button
-                    className="chat-item-delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteConversation(conv.id);
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  <span className="chat-item-title">{conv.title || t('chat.newChat')}</span>
+                </button>
+                <button
+                  className="chat-item-delete"
+                  aria-label={t('common.delete')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteConversation(conv.id);
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            ))
+          )}
         </div>
+      </div>
 
-        {/* Spacer */}
-        <div className="chat-sidebar-spacer" />
+      {/* Spacer */}
+      <div className="chat-sidebar-spacer" />
 
+      {/* Bottom Icons */}
+      <div className="sidebar-bottom">
         {/* Settings */}
-        <div className="chat-sidebar-section">
-          <button className="chat-sidebar-menu-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-            <span>Settings</span>
-          </button>
-        </div>
+        <button className="sidebar-icon-btn" onClick={onShowSettings} title={t('chat.settings')} aria-label={t('chat.settings')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span>{t('chat.settings')}</span>
+        </button>
 
-        {/* Coming Soon Section */}
-        <div className="chat-sidebar-section chat-sidebar-soon">
-          <div className="section-title">Coming Soon</div>
-          <div className="soon-items">
-            <div className="soon-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                <line x1="12" y1="22.08" x2="12" y2="12"/>
-              </svg>
-              <span>Plugins</span>
-            </div>
-            <div className="soon-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-                <line x1="9" y1="9" x2="9.01" y2="9"/>
-                <line x1="15" y1="9" x2="15.01" y2="9"/>
-              </svg>
-              <span>Custom GPTs</span>
-            </div>
-            <div className="soon-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <line x1="3" y1="9" x2="21" y2="9"/>
-                <line x1="9" y1="21" x2="9" y2="9"/>
-              </svg>
-              <span>Workspaces</span>
-            </div>
-          </div>
-        </div>
-
-        {/* User info with logout */}
-        <div className="chat-sidebar-user">
-          <div className="user-avatar">
+        {/* User Avatar with Logout */}
+        <div className="sidebar-user-row">
+          <div className="user-avatar-small">
             {user?.email?.[0]?.toUpperCase() || 'U'}
           </div>
-          <div className="user-info">
-            <span className="user-email">{user?.email || 'User'}</span>
-          </div>
-          <button className="logout-btn" onClick={onLogout} title="Выйти">
+          <span className="user-email-small">{user?.email || 'User'}</span>
+          <button className="sidebar-logout-btn" onClick={onLogout} title={t('nav.logout')} aria-label={t('nav.logout')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
               <polyline points="16 17 21 12 16 7"/>
@@ -563,8 +523,8 @@ function ChatSidebar({
             </svg>
           </button>
         </div>
-      </aside>
-    </>
+      </div>
+    </aside>
   );
 }
 
@@ -574,6 +534,7 @@ function ChatSidebar({
 export default function ChatPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const handleLogout = () => {
     navigate("/");
@@ -586,9 +547,10 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
 
   // UI state
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationIdState] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -620,13 +582,10 @@ export default function ChatPage() {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
 
-    // Open sidebar by default on desktop
+    // Keep sidebar collapsed by default
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setSidebarOpen(true);
-      }
+      // Sidebar starts collapsed, user can expand it
     };
-    handleResize();
     window.addEventListener('resize', handleResize);
 
     // Check for speech recognition support
@@ -694,14 +653,14 @@ export default function ChatPage() {
 
     // Close sidebar on mobile
     if (window.innerWidth < 1024) {
-      setSidebarOpen(false);
+      setSidebarExpanded(false);
     }
   };
 
   const handleSelectConversation = (conversationId) => {
     loadConversation(conversationId);
     if (window.innerWidth < 1024) {
-      setSidebarOpen(false);
+      setSidebarExpanded(false);
     }
   };
 
@@ -726,7 +685,7 @@ export default function ChatPage() {
     setLoading(true);
 
     try {
-      const response = await sendChatMessage(text);
+      const response = await sendChatMessage(text, i18n.language);
       const assistantMessage = {
         role: "assistant",
         content: response.reply,
@@ -743,7 +702,7 @@ export default function ChatPage() {
     } catch (e) {
       const errorMessages = [...newMessages, {
         role: "assistant",
-        content: "Sorry, something went wrong. Please try again.",
+        content: t('auth.serverError'),
       }];
       setMessages(errorMessages);
     } finally {
@@ -794,14 +753,16 @@ export default function ChatPage() {
   const startRecording = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in your browser. Please use Chrome or Edge.");
+      alert(t('chat.speechNotSupported'));
       return;
     }
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'ru-RU'; // Default to Russian, can be changed
+    // Set language based on current i18n language
+    const langMap = { kk: 'kk-KZ', ru: 'ru-RU', en: 'en-US' };
+    recognition.lang = langMap[i18n.language] || 'kk-KZ';
 
     let finalTranscript = inputValue;
 
@@ -822,7 +783,7 @@ export default function ChatPage() {
       console.error('Speech recognition error:', event.error);
       setIsRecording(false);
       if (event.error === 'not-allowed') {
-        alert("Microphone access denied. Please allow microphone access in your browser settings.");
+        alert(t('chat.microphoneDenied'));
       }
     };
 
@@ -852,16 +813,22 @@ export default function ChatPage() {
   };
 
   const toggleSidebar = () => {
-    setSidebarOpen(prev => !prev);
+    setSidebarExpanded(prev => !prev);
   };
 
   return (
     <div className="chat-app-container">
       {/* Chat Area - No global sidebar for regular users */}
       <div className="chat-app">
+        {/* Mobile overlay when sidebar is expanded */}
+        <div
+          className={`sidebar-overlay ${sidebarExpanded ? 'visible' : ''}`}
+          onClick={() => setSidebarExpanded(false)}
+        />
+
         <ChatSidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+          isExpanded={sidebarExpanded}
+          onToggle={toggleSidebar}
           conversations={conversations}
           currentConversationId={currentConversationId}
           onNewChat={handleNewChat}
@@ -869,21 +836,23 @@ export default function ChatPage() {
           onDeleteConversation={handleDeleteConversation}
           user={user}
           onLogout={handleLogout}
+          onShowSettings={() => {
+            setShowSettings(true);
+          }}
+          t={t}
         />
 
         <main className="chat-main">
+        {/* Settings View */}
+        {showSettings ? (
+          <SettingsPanel onClose={() => setShowSettings(false)} />
+        ) : (
+          <>
         {/* Header - Only show in chat mode */}
         {!isEmptyState && (
           <header className="chat-header">
             <div className="header-left">
-              <button className="menu-toggle" onClick={toggleSidebar}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="3" y1="12" x2="21" y2="12"/>
-                  <line x1="3" y1="6" x2="21" y2="6"/>
-                  <line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-              </button>
-              <span className="header-title">AI Assistant</span>
+              <span className="header-title">{t('chat.aiAssistant')}</span>
             </div>
           </header>
         )}
@@ -895,14 +864,6 @@ export default function ChatPage() {
                EMPTY STATE - Centered Layout
                ============================================ */
             <div className="empty-container">
-              {/* Menu toggle for empty state */}
-              <button className="empty-menu-toggle" onClick={toggleSidebar}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="3" y1="12" x2="21" y2="12"/>
-                  <line x1="3" y1="6" x2="21" y2="6"/>
-                  <line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-              </button>
 
               <div className="empty-content">
                 {/* Logo */}
@@ -922,7 +883,7 @@ export default function ChatPage() {
                       ref={inputRef}
                       type="text"
                       className="empty-input"
-                      placeholder="Ask anything..."
+                      placeholder={t('chat.askAnything')}
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyPress={handleKeyPress}
@@ -935,7 +896,7 @@ export default function ChatPage() {
                         className={`mic-btn ${isRecording ? 'recording' : ''}`}
                         onClick={toggleRecording}
                         disabled={loading}
-                        title={isRecording ? "Stop recording" : "Start voice input"}
+                        title={isRecording ? t('chat.stopRecording') : t('chat.voiceInput')}
                       >
                         {isRecording ? (
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -966,12 +927,12 @@ export default function ChatPage() {
                       )}
                     </button>
                   </div>
-                  <p className="empty-disclaimer">AI can make mistakes. Verify important information.</p>
+                  <p className="empty-disclaimer">{t('chat.aiDisclaimer')}</p>
                 </div>
 
                 {/* Quick suggestions */}
                 <div className="empty-suggestions">
-                  {["Top products", "Sales forecast", "Trending items", "Compare products"].map((s, idx) => (
+                  {[t('chat.topProducts'), t('chat.salesForecast'), t('chat.trendingItems'), t('chat.compareProducts')].map((s, idx) => (
                     <button
                       key={idx}
                       className="suggestion-chip"
@@ -1006,15 +967,15 @@ export default function ChatPage() {
                       </div>
                       <div className="message-content">
                         <div className="message-role">
-                          {msg.role === "user" ? "You" : "AI Assistant"}
+                          {msg.role === "user" ? t('chat.you') : t('chat.aiAssistant')}
                         </div>
                         <div className="message-text">
                           {renderMarkdown(msg.content)}
                         </div>
                         {msg.images && msg.images.length > 0 && (
-                          <ProductCarousel images={msg.images} />
+                          <ProductCarousel images={msg.images} t={t} />
                         )}
-                        {msg.data && !msg.response_type?.startsWith('kz_') && <MiniChart data={msg.data} />}
+                        {msg.data && !msg.response_type?.startsWith('kz_') && <MiniChart data={msg.data} t={t} />}
                         {msg.response_type?.startsWith('kz_') && msg.data && msg.response_type !== 'error' && (
                           <KZAnalysisCard
                             data={msg.data}
@@ -1073,7 +1034,7 @@ export default function ChatPage() {
                       ref={inputRef}
                       type="text"
                       className="chat-input"
-                      placeholder="Type a message..."
+                      placeholder={t('chat.typeMessage')}
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyPress={handleKeyPress}
@@ -1085,7 +1046,7 @@ export default function ChatPage() {
                         className={`mic-btn ${isRecording ? 'recording' : ''}`}
                         onClick={toggleRecording}
                         disabled={loading}
-                        title={isRecording ? "Stop recording" : "Start voice input"}
+                        title={isRecording ? t('chat.stopRecording') : t('chat.voiceInput')}
                       >
                         {isRecording ? (
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -1121,6 +1082,8 @@ export default function ChatPage() {
             </>
           )}
         </div>
+        </>
+        )}
       </main>
       </div>
     </div>
