@@ -17,8 +17,12 @@ COPY . .
 # Create data directory if not exists
 RUN mkdir -p data/amazon data/ecommerce
 
+# Copy and configure entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Expose port
 EXPOSE 8000
 
 # Run the application
-CMD sh -c "uvicorn backend:app --host 0.0.0.0 --port ${PORT:-8000}"
+ENTRYPOINT ["/entrypoint.sh"]
