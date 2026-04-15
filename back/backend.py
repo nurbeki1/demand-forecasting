@@ -140,6 +140,7 @@ ALLOWED_ORIGINS = [
     "https://demand-forecasting-orcin.vercel.app",
     "https://demand-forecasting.vercel.app",
     "https://demand-forecasting-chat.vercel.app",  # AI Chat frontend
+    "https://demand-forecasting-2y5v5n25-nurbekhs-projects.vercel.app",
 ]
 
 # Add FRONTEND_URL from environment if set
