@@ -25,4 +25,4 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 8000
 
 # Run the application
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["sh", "-c", "uvicorn backend:app --host 0.0.0.0 --port ${PORT:-8000}"]
