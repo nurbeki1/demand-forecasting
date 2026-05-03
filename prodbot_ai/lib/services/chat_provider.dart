@@ -53,6 +53,13 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clampModelForSubscription(bool premiumUnlocked) {
+    if (!premiumUnlocked && _selectedModel != 'random_forest') {
+      _selectedModel = 'random_forest';
+      notifyListeners();
+    }
+  }
+
   void setModel(String model) {
     if (_selectedModel == model) return;
     _selectedModel = model;

@@ -8,9 +8,10 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
+import { postAuthPath } from "../../utils/postAuthRedirect";
 import { setToken, setCachedUser } from "../../utils/authStorage";
 import { API_URL } from "../../config";
 import "./AuthModal.css";
@@ -33,6 +34,7 @@ export function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
   const [error, setError] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
 
   const handleSubmit = async (e) => {
@@ -43,11 +45,7 @@ export function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
     try {
       const userData = await login(email, password);
       onSuccess();
-      if (userData?.is_admin) {
-        navigate("/admin");
-      } else {
-        navigate("/user");
-      }
+      navigate(postAuthPath(userData?.is_admin, location.state?.from));
     } catch (err) {
       setError(err.message || t('auth.loginError'));
     } finally {
@@ -122,6 +120,7 @@ export function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
   const [countdown, setCountdown] = useState(0);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
 
   // Countdown timer for resend
@@ -218,9 +217,9 @@ export function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
       }
 
       // Auto-login after registration
-      await login(email, password);
+      const userData = await login(email, password);
       onSuccess();
-      navigate("/user");
+      navigate(postAuthPath(userData?.is_admin, location.state?.from));
     } catch (err) {
       setError(err.message);
     } finally {

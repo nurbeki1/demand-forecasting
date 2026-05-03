@@ -30,17 +30,30 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
   final FocusNode _inputFocus = FocusNode();
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  AuthService? _authSvc;
+
+  void _onAuthChanged() {
+    if (!mounted || _authSvc == null) return;
+    context
+        .read<ChatProvider>()
+        .clampModelForSubscription(_authSvc!.canUsePremiumMlModels);
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _authSvc = context.read<AuthService>();
+      _authSvc!.addListener(_onAuthChanged);
       context.read<ChatProvider>().init();
+      _onAuthChanged();
     });
   }
 
   @override
   void dispose() {
+    _authSvc?.removeListener(_onAuthChanged);
     _inputController.dispose();
     _inputFocus.dispose();
     _scrollController.dispose();
@@ -84,6 +97,10 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
     Navigator.of(context).pushNamed(AppRoutes.settings);
   }
 
+  void _openSubscription() {
+    Navigator.of(context).pushNamed(AppRoutes.subscription);
+  }
+
   @override
   Widget build(BuildContext context) {
     final chat = context.watch<ChatProvider>();
@@ -105,6 +122,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
         onSelect: (id) => chat.selectConversation(id),
         onDelete: (id) => chat.deleteConversation(id),
         onSettings: _openSettings,
+        onSubscription: _openSubscription,
         onLogout: _logout,
       ),
       body: SafeArea(
@@ -117,17 +135,17 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
             ),
             Expanded(
               child: isEmpty
-                  ? _emptyState(chat)
+                  ? _emptyState(chat, auth)
                   : _messagesList(chat, initial),
             ),
-            if (!isEmpty) _bottomInput(chat),
+            if (!isEmpty) _bottomInput(chat, auth),
           ],
         ),
       ),
     );
   }
 
-  Widget _emptyState(ChatProvider chat) {
+  Widget _emptyState(ChatProvider chat, AuthService auth) {
     final l10n = AppLocalizations.of(context)!;
     final suggestions = [
       l10n.suggestionTopProducts,
@@ -163,6 +181,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                 hintText: l10n.chatAskAnythingHint,
                 isLarge: true,
                 loading: chat.loading,
+                premiumUnlocked: auth.canUsePremiumMlModels,
                 selectedModel: chat.selectedModel,
                 onModelChanged: chat.setModel,
                 onSend: _send,
@@ -237,7 +256,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
     );
   }
 
-  Widget _bottomInput(ChatProvider chat) {
+  Widget _bottomInput(ChatProvider chat, AuthService auth) {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
@@ -253,6 +272,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
         hintText: l10n.chatMessageHint,
         isLarge: false,
         loading: chat.loading,
+        premiumUnlocked: auth.canUsePremiumMlModels,
         selectedModel: chat.selectedModel,
         onModelChanged: chat.setModel,
         onSend: _send,

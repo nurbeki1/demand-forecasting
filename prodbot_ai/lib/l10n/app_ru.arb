@@ -1,10 +1,10 @@
 {
   "@@locale": "ru",
-  "appTitle": "ProdBot AI",
+  "appTitle": "Forecast AI",
 
   "welcomePoweredByAi": "На базе ИИ",
   "welcomeTitle": "Добро пожаловать",
-  "welcomeBrandHighlight": "ProdBot AI",
+  "welcomeBrandHighlight": "Forecast AI",
   "welcomeSubtitle": "Платформа прогноза спроса. Умный анализ на расстоянии одного вопроса.",
   "welcomeStart": "Начать",
   "welcomeLogin": "Войти",
@@ -57,6 +57,7 @@
   "modelRfDesc": "Стабильная, хорошо работает на любых данных",
   "modelLgbmDesc": "Очень быстрая, для больших данных",
   "modelXgbDesc": "Высокая точность, сложные закономерности",
+  "modelRequiresSubscription": "Доступно по подписке",
 
   "miniChartTitle": "Прогноз спроса",
   "miniChartHistory": "История",
@@ -66,6 +67,14 @@
   "productPriceUnknown": "Цена не указана",
 
   "chatErrorGeneric": "Ошибка: не удалось связаться с сервером. Попробуйте позже.",
+
+  "settingsSubscriptionButton": "Подписка",
+  "subscriptionScreenTitle": "Подписка",
+  "subscriptionSignedInAs": "Вы вошли как",
+  "subscriptionCurrentPlan": "Текущий тариф",
+  "subscriptionPlanFree": "Бесплатный",
+  "subscriptionPlanPremium": "Подписка (premium)",
+  "subscriptionPlaceholderBody": "Здесь позже появится покупка и продление подписки. Экран доступен, пока вы авторизованы — повторный вход не требуется.",
 
   "routerPageNotFound": "Страница не найдена",
   "routerUnknownRoute": "Неизвестный маршрут",

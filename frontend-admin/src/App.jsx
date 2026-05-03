@@ -34,6 +34,7 @@ import ForecastComparisonPage from "./pages/ForecastComparisonPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import ProfilePage from "./pages/ProfilePage";
 import SubscriptionPage from "./pages/SubscriptionPage";
+import SubscriptionPaymentPage from "./pages/SubscriptionPaymentPage";
 
 // Styles
 import "./styles/dashboard.css";
@@ -150,6 +151,18 @@ function UserRoute({ children }) {
   return children;
 }
 
+/** Any logged-in user (admin or regular) — e.g. demo checkout */
+function AuthenticatedRoute({ children }) {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search || ""}` }} />;
+  }
+
+  return children;
+}
+
 /**
  * RoleBasedRedirect - Redirects to appropriate area based on role
  * Used for catch-all routes
@@ -182,6 +195,14 @@ function AppRoutes() {
 
       {/* Pricing — open to guests and logged-in users */}
       <Route path="/subscriptions" element={<SubscriptionPage />} />
+      <Route
+        path="/subscriptions/payment"
+        element={
+          <AuthenticatedRoute>
+            <SubscriptionPaymentPage />
+          </AuthenticatedRoute>
+        }
+      />
 
       {/* ============================================
           PUBLIC ROUTES

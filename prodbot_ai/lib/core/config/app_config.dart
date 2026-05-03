@@ -63,7 +63,7 @@ class AppConfig {
   );
 
   // ============== APP INFO ==============
-  static const String appName = 'ProdBot AI';
+  static const String appName = 'Forecast AI';
   static const String appVersion = '1.0.0';
 
   /// Print current configuration (for debugging)

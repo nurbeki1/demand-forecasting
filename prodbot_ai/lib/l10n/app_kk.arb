@@ -1,10 +1,10 @@
 {
   "@@locale": "kk",
-  "appTitle": "ProdBot AI",
+  "appTitle": "Forecast AI",
 
   "welcomePoweredByAi": "AI-демеу",
   "welcomeTitle": "Қош келдіңіз",
-  "welcomeBrandHighlight": "ProdBot AI",
+  "welcomeBrandHighlight": "Forecast AI",
   "welcomeSubtitle": "Сұраныс болжам платформасы.\nАқылды талдау бір сұрау қашықтықта.",
   "welcomeStart": "Бастау",
   "welcomeLogin": "Кіру",
@@ -57,6 +57,7 @@
   "modelRfDesc": "Тұрақты, кез-келген деректе жақсы жұмыс істейді",
   "modelLgbmDesc": "Өте жылдам, үлкен деректер үшін оңтайлы",
   "modelXgbDesc": "Жоғары дәлдік, күрделі үлгілерді анықтайды",
+  "modelRequiresSubscription": "Жазылыммен қолжетімді",
 
   "miniChartTitle": "Сұраныс болжамы",
   "miniChartHistory": "Тарих",
@@ -66,6 +67,14 @@
   "productPriceUnknown": "Бағасы көрсетілмеген",
 
   "chatErrorGeneric": "Қате: серверге қосылу мүмкін болмады. Кейінірек қайталап көріңіз.",
+
+  "settingsSubscriptionButton": "Жазылым",
+  "subscriptionScreenTitle": "Жазылым",
+  "subscriptionSignedInAs": "Кірген аккаунт",
+  "subscriptionCurrentPlan": "Ағымдағы тариф",
+  "subscriptionPlanFree": "Тегін",
+  "subscriptionPlanPremium": "Жазылым (premium)",
+  "subscriptionPlaceholderBody": "Мұнда жазылымды сатып алу және ұзарту кейін қосылады. Сіз жүйеде кіріп тұрғанда осы бет ашылады — қайта кіруді талап етпейді.",
 
   "routerPageNotFound": "Бет табылмады",
   "routerUnknownRoute": "Белгісіз маршрут",

@@ -21,8 +21,10 @@ class User(Base):
     avatar_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     full_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # "free" | "paid" (or "pro"); controls ML model picker in chat / APIs
+    subscription_plan: Mapped[str] = mapped_column(String(32), default="free")
 
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 class UserSettings(Base):
     """User-specific settings stored as JSON text"""

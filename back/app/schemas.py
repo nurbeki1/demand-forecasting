@@ -60,6 +60,7 @@ class UserResponse(BaseModel):
     is_active: bool
     is_admin: bool
     is_verified: bool = True
+    subscription_plan: str = "free"
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
     created_at: Optional[datetime] = None
@@ -79,3 +80,9 @@ class MessageResponse(BaseModel):
     """Simple message response"""
     message: str
     success: bool = True
+
+
+class MockSubscribeRequest(BaseModel):
+    """Demo checkout — no real payment processor."""
+
+    plan: str = Field(default="pro", pattern="^(pro|enterprise)$")

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -235,6 +235,13 @@ function processInline(text) {
 // ============================================
 // MODEL SELECTOR COMPONENT
 // ============================================
+
+function userAllowsPremiumModels(user) {
+  if (!user) return false;
+  const p = String(user.subscription_plan ?? "free").toLowerCase();
+  return p === "paid" || p === "pro" || p === "subscriber";
+}
+
 const MODEL_OPTIONS = [
   {
     value: "random_forest",
@@ -259,7 +266,7 @@ const MODEL_OPTIONS = [
   },
 ];
 
-function ModelSelector({ value, onChange }) {
+function ModelSelector({ value, onChange, premiumUnlocked }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -299,26 +306,36 @@ function ModelSelector({ value, onChange }) {
 
       {open && (
         <div className="model-selector-dropdown">
-          {MODEL_OPTIONS.map((m) => (
-            <button
-              key={m.value}
-              className={`model-option ${value === m.value ? "active" : ""}`}
-              onClick={() => { onChange(m.value); setOpen(false); }}
-              type="button"
-            >
-              <div className="model-option-top">
-                <span className="model-option-name" style={{ color: m.color }}>
-                  {m.name}
+          {MODEL_OPTIONS.map((m) => {
+            const locked = !premiumUnlocked && m.value !== "random_forest";
+            return (
+              <button
+                key={m.value}
+                className={`model-option ${value === m.value ? "active" : ""} ${locked ? "locked" : ""}`}
+                disabled={locked}
+                onClick={() => {
+                  if (locked) return;
+                  onChange(m.value);
+                  setOpen(false);
+                }}
+                type="button"
+              >
+                <div className="model-option-top">
+                  <span className="model-option-name" style={{ color: locked ? "var(--text-tertiary, #6b7280)" : m.color }}>
+                    {m.name}
+                  </span>
+                  {value === m.value && !locked && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2.5">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+                <span className="model-option-desc">
+                  {locked ? "Жазылыммен қолжетімді (LightGBM, XGBoost)" : m.description}
                 </span>
-                {value === m.value && (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2.5">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
-              </div>
-              <span className="model-option-desc">{m.description}</span>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -500,6 +517,7 @@ function ChatSidebar({
   user,
   onLogout,
   onShowSettings,
+  onOpenSubscription,
   onProfile,
   t
 }) {
@@ -603,6 +621,20 @@ function ChatSidebar({
           <span>{t('chat.settings')}</span>
         </button>
 
+        <button
+          type="button"
+          className="sidebar-icon-btn sidebar-subscription-btn"
+          onClick={onOpenSubscription}
+          title={t('chat.subscription')}
+          aria-label={t('chat.subscription')}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="2" y="5" width="20" height="14" rx="2" />
+            <line x1="2" y1="10" x2="22" y2="10" />
+          </svg>
+          <span>{t('chat.subscription')}</span>
+        </button>
+
         {/* User Avatar with Logout */}
         <div className="sidebar-user-row">
           <button
@@ -647,13 +679,20 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
 
   // UI state
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationIdState] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Model selection
+  // Model selection (RF-only on free tier; full list when subscribed / admin)
   const [selectedModel, setSelectedModel] = useState("random_forest");
+  const premiumUnlocked = useMemo(() => userAllowsPremiumModels(user), [user]);
+
+  useEffect(() => {
+    if (!premiumUnlocked && selectedModel !== "random_forest") {
+      setSelectedModel("random_forest");
+    }
+  }, [premiumUnlocked, selectedModel]);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -685,19 +724,11 @@ export default function ChatPage() {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
 
-    // Keep sidebar collapsed by default
-    const handleResize = () => {
-      // Sidebar starts collapsed, user can expand it
-    };
-    window.addEventListener('resize', handleResize);
-
     // Check for speech recognition support
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setSpeechSupported(false);
     }
-
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -942,6 +973,10 @@ export default function ChatPage() {
           onShowSettings={() => {
             setShowSettings(true);
           }}
+          onOpenSubscription={() => {
+            setSidebarExpanded(false);
+            navigate("/subscriptions");
+          }}
           onProfile={() => navigate("/user/profile")}
           t={t}
         />
@@ -995,7 +1030,7 @@ export default function ChatPage() {
                       autoFocus
                     />
                     {/* Model Selector */}
-                    <ModelSelector value={selectedModel} onChange={setSelectedModel} />
+                    <ModelSelector value={selectedModel} onChange={setSelectedModel} premiumUnlocked={premiumUnlocked} />
                     {/* Microphone Button */}
                     {speechSupported && (
                       <button
@@ -1147,7 +1182,7 @@ export default function ChatPage() {
                       disabled={loading || isRecording}
                     />
                     {/* Model Selector */}
-                    <ModelSelector value={selectedModel} onChange={setSelectedModel} />
+                    <ModelSelector value={selectedModel} onChange={setSelectedModel} premiumUnlocked={premiumUnlocked} />
                     {/* Microphone Button */}
                     {speechSupported && (
                       <button

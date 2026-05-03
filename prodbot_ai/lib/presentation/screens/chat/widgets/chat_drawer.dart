@@ -15,6 +15,7 @@ class ChatDrawer extends StatefulWidget {
   final ValueChanged<String> onSelect;
   final ValueChanged<String> onDelete;
   final VoidCallback onSettings;
+  final VoidCallback onSubscription;
   final VoidCallback onLogout;
 
   const ChatDrawer({
@@ -26,6 +27,7 @@ class ChatDrawer extends StatefulWidget {
     required this.onSelect,
     required this.onDelete,
     required this.onSettings,
+    required this.onSubscription,
     required this.onLogout,
   });
 
@@ -173,6 +175,16 @@ class _ChatDrawerState extends State<ChatDrawer> {
                     onTap: () {
                       Navigator.of(context).maybePop();
                       widget.onSettings();
+                    },
+                  ),
+                  const SizedBox(height: 6),
+                  _PrimaryActionTile(
+                    icon: Icons.credit_card_outlined,
+                    label: l10n.settingsSubscriptionButton,
+                    subtle: true,
+                    onTap: () {
+                      Navigator.of(context).maybePop();
+                      widget.onSubscription();
                     },
                   ),
                   const SizedBox(height: 6),

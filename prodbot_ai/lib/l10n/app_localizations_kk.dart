@@ -9,7 +9,7 @@ class AppLocalizationsKk extends AppLocalizations {
   AppLocalizationsKk([String locale = 'kk']) : super(locale);
 
   @override
-  String get appTitle => 'ProdBot AI';
+  String get appTitle => 'Forecast AI';
 
   @override
   String get welcomePoweredByAi => 'AI-демеу';
@@ -18,7 +18,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get welcomeTitle => 'Қош келдіңіз';
 
   @override
-  String get welcomeBrandHighlight => 'ProdBot AI';
+  String get welcomeBrandHighlight => 'Forecast AI';
 
   @override
   String get welcomeSubtitle =>
@@ -164,6 +164,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get modelXgbDesc => 'Жоғары дәлдік, күрделі үлгілерді анықтайды';
 
   @override
+  String get modelRequiresSubscription => 'Жазылыммен қолжетімді';
+
+  @override
   String get miniChartTitle => 'Сұраныс болжамы';
 
   @override
@@ -183,6 +186,28 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get chatErrorGeneric =>
       'Қате: серверге қосылу мүмкін болмады. Кейінірек қайталап көріңіз.';
+
+  @override
+  String get settingsSubscriptionButton => 'Жазылым';
+
+  @override
+  String get subscriptionScreenTitle => 'Жазылым';
+
+  @override
+  String get subscriptionSignedInAs => 'Кірген аккаунт';
+
+  @override
+  String get subscriptionCurrentPlan => 'Ағымдағы тариф';
+
+  @override
+  String get subscriptionPlanFree => 'Тегін';
+
+  @override
+  String get subscriptionPlanPremium => 'Жазылым (premium)';
+
+  @override
+  String get subscriptionPlaceholderBody =>
+      'Мұнда жазылымды сатып алу және ұзарту кейін қосылады. Сіз жүйеде кіріп тұрғанда осы бет ашылады — қайта кіруді талап етпейді.';
 
   @override
   String get routerPageNotFound => 'Бет табылмады';

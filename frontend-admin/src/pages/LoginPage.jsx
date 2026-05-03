@@ -7,6 +7,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LoginForm, RegisterForm } from "../components/landing/AuthModal";
 import { setToken, setCachedUser } from "../utils/authStorage";
+import { postAuthPath } from "../utils/postAuthRedirect";
 import { API_URL } from "../config";
 import "../components/landing/AuthModal.css";
 
@@ -47,7 +48,7 @@ export default function LoginPage() {
           is_admin: data.is_admin,
           email: data.email || "",
         });
-        const targetPath = data.is_admin ? "/admin" : "/user";
+        const targetPath = postAuthPath(data.is_admin, location.state?.from);
         window.location.href = targetPath;
       } catch (err) {
         setGoogleError(err.message || t("auth.serverError"));
@@ -55,7 +56,7 @@ export default function LoginPage() {
         setLoading(false);
       }
     },
-    [t]
+    [t, location.state]
   );
 
   useEffect(() => {

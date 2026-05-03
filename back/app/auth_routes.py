@@ -20,7 +20,7 @@ from .schemas import (
     RegisterRequest, LoginRequest, TokenResponse, UserResponse,
     SendCodeRequest, VerifyCodeRequest, CompleteRegistrationRequest,
     GoogleAuthRequest, MessageResponse, TokenPairResponse, RefreshTokenRequest,
-    UpdateProfileRequest
+    UpdateProfileRequest, MockSubscribeRequest,
 )
 from .security import (
     hash_password, verify_password, create_access_token,
@@ -28,6 +28,7 @@ from .security import (
 )
 from .email_service import generate_verification_code, send_verification_email, get_code_expiry
 from .rate_limiter import limiter, RateLimits
+from .demo_billing import apply_mock_subscription
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -354,10 +355,24 @@ def get_me(user: User = Depends(get_current_user)):
         is_active=user.is_active,
         is_admin=user.is_admin,
         is_verified=user.is_verified,
+        subscription_plan=getattr(user, "subscription_plan", None) or "free",
         full_name=user.full_name,
         avatar_url=user.avatar_url,
         created_at=user.created_at,
     )
+
+
+@router.post("/mock-subscribe", response_model=UserResponse)
+def mock_subscribe(
+    data: MockSubscribeRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Demo only: pretend payment succeeded and unlock premium (subscription_plan = paid).
+    Same logic as POST /subscription/mock-checkout on the main app.
+    """
+    return apply_mock_subscription(db, user, data)
 
 
 @router.patch("/me", response_model=UserResponse)
@@ -377,6 +392,7 @@ def update_me(
         is_active=user.is_active,
         is_admin=user.is_admin,
         is_verified=user.is_verified,
+        subscription_plan=getattr(user, "subscription_plan", None) or "free",
         full_name=user.full_name,
         avatar_url=user.avatar_url,
         created_at=user.created_at,

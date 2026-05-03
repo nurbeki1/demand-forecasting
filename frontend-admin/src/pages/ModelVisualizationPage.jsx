@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { API_URL } from "../config";
+import { useTheme } from "../context/ThemeContext";
 import Sidebar from "../components/layout/Sidebar";
 import Topbar from "../components/layout/Topbar";
 import "../styles/dashboard.css";
@@ -8,6 +9,7 @@ import "../styles/neural-graph.css";
 
 export default function ModelVisualizationPage() {
   const { t } = useTranslation();
+  const { darkMode } = useTheme();
   const [structure, setStructure] = useState(null);
   const [error, setError] = useState(null);
   const [showSettings, setShowSettings] = useState(true);
@@ -23,6 +25,8 @@ export default function ModelVisualizationPage() {
   const dragRef = useRef(null);
   const isPanningRef = useRef(false);
   const lastMouseRef = useRef({ x: 0, y: 0 });
+  const darkModeRef = useRef(darkMode);
+  useEffect(() => { darkModeRef.current = darkMode; }, [darkMode]);
 
   // Load structure on mount
   useEffect(() => {
@@ -51,14 +55,14 @@ export default function ModelVisualizationPage() {
     const links = [];
 
     const colors = {
-      categorical: "#3b82f6",
-      numerical: "#8b5cf6",
-      temporal: "#f97316",
-      lag: "#22c55e",
-      cyclic: "#ec4899",
-      transform: "#eab308",
-      model: "#10a37f",
-      output: "#ef4444",
+      categorical: "#60a5fa",
+      numerical: "#a78bfa",
+      temporal: "#fb923c",
+      lag: "#4ade80",
+      cyclic: "#f472b6",
+      transform: "#fbbf24",
+      model: "#34d399",
+      output: "#f87171",
     };
 
     const inputFeatures = structure.layers?.[0]?.features || {};
@@ -125,7 +129,7 @@ export default function ModelVisualizationPage() {
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
       nodes.push({
-        id: `tree_${i}`, label: `T${i + 1}`, color: "#22c55e", size: 14,
+        id: `tree_${i}`, label: `T${i + 1}`, color: "#4ade80", size: 14,
         x: centerX + 200 + Math.cos(angle) * 100,
         y: centerY + Math.sin(angle) * 100,
       });
@@ -158,10 +162,13 @@ export default function ModelVisualizationPage() {
     links.push({ source: "passthrough", target: "forest", color: colors.transform, width: 4 });
 
     for (let i = 0; i < 8; i++) {
-      links.push({ source: `tree_${i}`, target: "forest", color: "#22c55e" });
+      links.push({ source: `tree_${i}`, target: "forest", color: "#4ade80" });
     }
 
-    links.push({ source: "forest", target: "output", color: colors.model, width: 5 });
+    links.push({ source: "forest", target: "output", color: colors.model, width: 3 });
+
+    // Stagger pulse animation offsets per link
+    links.forEach((link, i) => { link._offset = i * 280; });
 
     nodesRef.current = nodes;
     linksRef.current = links;
@@ -197,24 +204,21 @@ export default function ModelVisualizationPage() {
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Clear - clean dark background for better contrast
-      ctx.fillStyle = "#1a1a2e";
+      const dark = darkModeRef.current;
+
+      // Background
+      ctx.fillStyle = "#08080f";
       ctx.fillRect(0, 0, width, height);
 
-      // Grid - subtle grid
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
-      ctx.lineWidth = 1;
-      for (let x = 0; x < width; x += 50) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-      }
-      for (let y = 0; y < height; y += 50) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
+      // Dot grid
+      const dotColor = "rgba(255,255,255,0.03)";
+      for (let gx = 0; gx <= width; gx += 36) {
+        for (let gy = 0; gy <= height; gy += 36) {
+          ctx.beginPath();
+          ctx.fillStyle = dotColor;
+          ctx.arc(gx, gy, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       // Apply zoom and pan
@@ -222,7 +226,7 @@ export default function ModelVisualizationPage() {
       ctx.save();
       ctx.translate(width / 2 + panRef.current.x, height / 2 + panRef.current.y);
       ctx.scale(scale, scale);
-      ctx.translate(-600, -350); // Center the graph
+      ctx.translate(-600, -350);
 
       const nodes = nodesRef.current;
       const links = linksRef.current;
@@ -233,138 +237,121 @@ export default function ModelVisualizationPage() {
         const target = nodes.find(n => n.id === link.target);
         if (!source || !target) return;
 
-        // Line glow
+        // Clean single line
         ctx.beginPath();
-        ctx.strokeStyle = link.color + "25";
-        ctx.lineWidth = (link.width || 2) + 6;
+        ctx.strokeStyle = link.color + "28";
+        ctx.lineWidth = link.width || 1.5;
         ctx.lineCap = "round";
         ctx.moveTo(source.x, source.y);
         ctx.lineTo(target.x, target.y);
         ctx.stroke();
 
-        // Main line
-        ctx.beginPath();
-        ctx.strokeStyle = link.color + "80";
-        ctx.lineWidth = link.width || 2;
-        ctx.moveTo(source.x, source.y);
-        ctx.lineTo(target.x, target.y);
-        ctx.stroke();
-
-        // Animated pulse
-        const t = (Date.now() % 2500) / 2500;
-        const px = source.x + (target.x - source.x) * t;
-        const py = source.y + (target.y - source.y) * t;
+        // Staggered pulse dot
+        const progress = ((Date.now() + (link._offset || 0)) % 2200) / 2200;
+        const px = source.x + (target.x - source.x) * progress;
+        const py = source.y + (target.y - source.y) * progress;
 
         ctx.beginPath();
-        ctx.fillStyle = "#ffffff";
-        ctx.shadowColor = link.color;
-        ctx.shadowBlur = 12;
-        ctx.arc(px, py, 5, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.arc(px, py, 2.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
       });
 
       // Draw nodes
       nodes.forEach(node => {
-        const { x, y, size, color, label } = node;
+        const { x, y, label, color } = node;
         const isSelected = selectedNode === node.id;
 
-        // Outer glow
-        const glow = ctx.createRadialGradient(x, y, 0, x, y, size * 2.5);
-        glow.addColorStop(0, color + "50");
-        glow.addColorStop(1, "transparent");
-        ctx.beginPath();
-        ctx.fillStyle = glow;
-        ctx.arc(x, y, size * 2.5, 0, Math.PI * 2);
-        ctx.fill();
+        // Breathing animation on forest node
+        const breathe = node.id === "forest"
+          ? 1 + Math.sin(Date.now() / 900) * 0.05
+          : 1;
+        const r = node.size * breathe;
 
-        // Selection ring
+        // Selection dashed ring
         if (isSelected) {
           ctx.beginPath();
-          ctx.strokeStyle = "#ffffff";
-          ctx.lineWidth = 2;
-          ctx.arc(x, y, size + 8, 0, Math.PI * 2);
+          ctx.strokeStyle = color + "55";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.arc(x, y, r + 10, 0, Math.PI * 2);
           ctx.stroke();
+          ctx.setLineDash([]);
         }
 
-        // Node border
+        // Fill
         ctx.beginPath();
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 20;
-        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fillStyle = color + "1a";
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Border
+        ctx.beginPath();
+        ctx.strokeStyle = color + "bb";
+        ctx.lineWidth = isSelected ? 2 : 1.5;
+        ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        // Node fill
-        ctx.beginPath();
-        ctx.fillStyle = color + "35";
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Inner core
-        ctx.beginPath();
-        ctx.fillStyle = color + "90";
-        ctx.arc(x, y, size * 0.4, 0, Math.PI * 2);
-        ctx.fill();
 
         // Label
-        ctx.font = size > 30 ? "bold 13px -apple-system, BlinkMacSystemFont, sans-serif" : "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
+        const labelColor = "rgba(255,255,255,0.82)";
+        ctx.font = node.size > 30
+          ? "600 12px -apple-system, BlinkMacSystemFont, sans-serif"
+          : "500 10px -apple-system, BlinkMacSystemFont, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillStyle = "#ffffff";
-        ctx.shadowColor = "rgba(0,0,0,0.5)";
-        ctx.shadowBlur = 4;
+        ctx.fillStyle = labelColor;
 
-        if (size > 30) {
+        if (node.size > 30) {
           ctx.fillText(label, x, y + 4);
         } else {
-          ctx.fillText(label, x, y + size + 16);
+          ctx.fillText(label, x, y + r + 14);
         }
-        ctx.shadowBlur = 0;
       });
 
       ctx.restore();
 
-      // Draw legend (not affected by zoom/pan)
+      // Legend
       const legendItems = [
-        { color: "#3b82f6", label: t('model.categorical') },
-        { color: "#8b5cf6", label: t('model.numerical') },
-        { color: "#f97316", label: t('model.temporal') },
-        { color: "#22c55e", label: t('model.lagFeatures') },
-        { color: "#ec4899", label: t('model.cyclic') },
-        { color: "#eab308", label: t('model.transform') },
-        { color: "#10a37f", label: "Trees" },
+        { color: "#60a5fa", label: t('model.categorical') },
+        { color: "#a78bfa", label: t('model.numerical') },
+        { color: "#fb923c", label: t('model.temporal') },
+        { color: "#4ade80", label: t('model.lagFeatures') },
+        { color: "#f472b6", label: t('model.cyclic') },
+        { color: "#fbbf24", label: t('model.transform') },
+        { color: "#34d399", label: "Trees" },
       ];
 
-      ctx.fillStyle = "rgba(26, 26, 46, 0.95)";
-      ctx.fillRect(15, 15, 130, legendItems.length * 24 + 25);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(15, 15, 130, legendItems.length * 24 + 25);
+      const lx = 16, ly = 16, lw = 126, lh = legendItems.length * 22 + 30;
+      ctx.fillStyle = "rgba(8,8,15,0.88)";
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(lx, ly, lw, lh, 8);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.07)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        ctx.fillRect(lx, ly, lw, lh);
+      }
 
-      ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillStyle = "#6b7280";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "#4b5563";
       ctx.textAlign = "left";
-      ctx.fillText(t('model.legend').toUpperCase(), 25, 34);
+      ctx.fillText(t('model.legend').toUpperCase(), lx + 12, ly + 18);
 
       legendItems.forEach((item, i) => {
-        const ly = 52 + i * 24;
+        const iy = ly + 30 + i * 22;
         ctx.beginPath();
         ctx.fillStyle = item.color;
-        ctx.shadowColor = item.color;
-        ctx.shadowBlur = 6;
-        ctx.arc(30, ly, 6, 0, Math.PI * 2);
+        ctx.arc(lx + 18, iy, 4, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = "#e5e7eb";
-        ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
-        ctx.fillText(item.label, 45, ly + 4);
+        ctx.fillStyle = "#d1d5db";
+        ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText(item.label, lx + 30, iy + 4);
       });
 
-      // Instructions
+      // Hint
       ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillStyle = "#6b7280";
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
       ctx.textAlign = "right";
       ctx.fillText(t('model.dragInstructions'), width - 15, height - 15);
 
@@ -496,15 +483,23 @@ export default function ModelVisualizationPage() {
                 <div className="metrics-panel">
                   <div className="metric-row">
                     <span>{t('model.type')}</span>
-                    <span className="metric-value">RandomForest</span>
+                    <span className="metric-value">
+                      {structure?.model_type || '—'}
+                    </span>
                   </div>
                   <div className="metric-row">
                     <span>{t('model.trees')}</span>
-                    <span className="metric-value">300</span>
+                    <span className="metric-value">
+                      {structure?.layers?.[2]?.config?.n_estimators ?? '—'}
+                    </span>
                   </div>
                   <div className="metric-row">
                     <span>{t('model.features')}</span>
-                    <span className="metric-value">25+</span>
+                    <span className="metric-value">
+                      {structure
+                        ? Object.values(structure.layers?.[0]?.features || {}).flat().length
+                        : '—'}
+                    </span>
                   </div>
                   <div className="metric-row">
                     <span>{t('common.status')}</span>

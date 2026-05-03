@@ -73,7 +73,7 @@
 
 .canvas-wrapper {
   flex: 1;
-  background: var(--bg-primary);
+  background: transparent;
   position: relative;
   overflow: hidden;
 }

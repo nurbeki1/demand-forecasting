@@ -194,6 +194,7 @@ export function AuthProvider({ children }) {
     register,
     logout,
     checkAuth,
+    refreshUser: checkAuth,
   };
 
   return (

@@ -9,7 +9,7 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
-  String get appTitle => 'ProdBot AI';
+  String get appTitle => 'Forecast AI';
 
   @override
   String get welcomePoweredByAi => 'На базе ИИ';
@@ -18,7 +18,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get welcomeTitle => 'Добро пожаловать';
 
   @override
-  String get welcomeBrandHighlight => 'ProdBot AI';
+  String get welcomeBrandHighlight => 'Forecast AI';
 
   @override
   String get welcomeSubtitle =>
@@ -164,6 +164,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get modelXgbDesc => 'Высокая точность, сложные закономерности';
 
   @override
+  String get modelRequiresSubscription => 'Доступно по подписке';
+
+  @override
   String get miniChartTitle => 'Прогноз спроса';
 
   @override
@@ -183,6 +186,28 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get chatErrorGeneric =>
       'Ошибка: не удалось связаться с сервером. Попробуйте позже.';
+
+  @override
+  String get settingsSubscriptionButton => 'Подписка';
+
+  @override
+  String get subscriptionScreenTitle => 'Подписка';
+
+  @override
+  String get subscriptionSignedInAs => 'Вы вошли как';
+
+  @override
+  String get subscriptionCurrentPlan => 'Текущий тариф';
+
+  @override
+  String get subscriptionPlanFree => 'Бесплатный';
+
+  @override
+  String get subscriptionPlanPremium => 'Подписка (premium)';
+
+  @override
+  String get subscriptionPlaceholderBody =>
+      'Здесь позже появится покупка и продление подписки. Экран доступен, пока вы авторизованы — повторный вход не требуется.';
 
   @override
   String get routerPageNotFound => 'Страница не найдена';

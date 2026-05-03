@@ -1,10 +1,10 @@
 {
   "@@locale": "en",
-  "appTitle": "ProdBot AI",
+  "appTitle": "Forecast AI",
 
   "welcomePoweredByAi": "AI-powered",
   "welcomeTitle": "Welcome",
-  "welcomeBrandHighlight": "ProdBot AI",
+  "welcomeBrandHighlight": "Forecast AI",
   "welcomeSubtitle": "Demand forecasting platform. Smart analysis one question away.",
   "welcomeStart": "Get started",
   "welcomeLogin": "Log in",
@@ -57,6 +57,7 @@
   "modelRfDesc": "Stable, works well on most data",
   "modelLgbmDesc": "Very fast, ideal for large datasets",
   "modelXgbDesc": "High accuracy, finds complex patterns",
+  "modelRequiresSubscription": "Available with a subscription",
 
   "miniChartTitle": "Demand forecast",
   "miniChartHistory": "History",
@@ -71,6 +72,14 @@
   "productPriceUnknown": "No price",
 
   "chatErrorGeneric": "Error: could not reach the server. Try again later.",
+
+  "settingsSubscriptionButton": "Subscription",
+  "subscriptionScreenTitle": "Subscription",
+  "subscriptionSignedInAs": "Signed in as",
+  "subscriptionCurrentPlan": "Current plan",
+  "subscriptionPlanFree": "Free",
+  "subscriptionPlanPremium": "Premium",
+  "subscriptionPlaceholderBody": "Here you will be able to buy or renew your subscription. This screen is available while you stay logged in — no need to sign in again.",
 
   "routerPageNotFound": "Page not found",
   "routerUnknownRoute": "Unknown route",

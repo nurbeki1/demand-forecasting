@@ -3,6 +3,7 @@ import 'api/api_client.dart';
 import 'api/api_exception.dart';
 import 'storage_service.dart';
 import '../core/config/app_config.dart';
+import '../data/models/current_user.dart';
 
 /// Authentication result model
 class AuthResult {
@@ -48,16 +49,34 @@ class AuthService extends ChangeNotifier {
 
   bool _isLoading = false;
   bool _isAuthenticated = false;
+  CurrentUser? _profile;
   String? _currentUserEmail;
   String? _currentUserId;
   String? _error;
 
-  // Getters
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
+  CurrentUser? get profile => _profile;
   String? get currentUserEmail => _currentUserEmail;
   String? get currentUserId => _currentUserId;
   String? get error => _error;
+
+  /// Mirrors ML model access rules on the backend (`subscription_plan` only).
+  bool get canUsePremiumMlModels => _profile?.canUsePremiumMlModels ?? false;
+
+  Future<void> refreshProfile() async {
+    try {
+      final json = await _apiClient.get<Map<String, dynamic>>('/auth/me');
+      final u = CurrentUser.fromJson(json);
+      _profile = u;
+      _currentUserEmail = u.email;
+      _currentUserId = u.id.toString();
+      await StorageService.saveUserData(u.toStorageMap());
+      notifyListeners();
+    } catch (e) {
+      debugPrint('refreshProfile: $e');
+    }
+  }
 
   /// Initialize auth state from storage
   Future<void> init() async {
@@ -70,12 +89,15 @@ class AuthService extends ChangeNotifier {
         _isAuthenticated = true;
         _apiClient.setAuthToken(token);
 
-        // Load user data from storage
         final userData = StorageService.getUserData();
-        if (userData != null) {
-          _currentUserEmail = userData['email'];
-          _currentUserId = userData['id'];
+        if (userData != null && userData['email'] != null) {
+          final u = CurrentUser.fromStored(userData);
+          _profile = u;
+          _currentUserEmail = u.email.isNotEmpty ? u.email : userData['email'] as String?;
+          _currentUserId =
+              u.id > 0 ? u.id.toString() : userData['id']?.toString();
         }
+        await refreshProfile();
       }
     } catch (e) {
       debugPrint('Auth init error: $e');
@@ -104,23 +126,22 @@ class AuthService extends ChangeNotifier {
       final refreshToken = response['refresh_token'] as String?;
       final userId = response['user_id']?.toString();
 
-      // Save tokens
       await StorageService.saveTokens(
         accessToken: accessToken,
         refreshToken: refreshToken,
       );
 
-      // Save user data
-      await StorageService.saveUserData({
-        'email': email,
-        'id': userId,
-      });
-
-      // Update state
       _isAuthenticated = true;
-      _currentUserEmail = email;
-      _currentUserId = userId;
       _apiClient.setAuthToken(accessToken);
+      await refreshProfile();
+
+      if (_profile != null) {
+        _currentUserEmail = _profile!.email;
+        _currentUserId = _profile!.id.toString();
+      } else {
+        _currentUserEmail = email;
+        _currentUserId = userId;
+      }
 
       _isLoading = false;
       notifyListeners();
@@ -128,8 +149,8 @@ class AuthService extends ChangeNotifier {
       return AuthResult.success(
         accessToken: accessToken,
         refreshToken: refreshToken,
-        userId: userId,
-        email: email,
+        userId: _currentUserId,
+        email: _currentUserEmail ?? email,
       );
     } on ApiException catch (e) {
       _error = e.userMessage;
@@ -162,7 +183,6 @@ class AuthService extends ChangeNotifier {
         },
       );
 
-      // Auto login after registration
       return await login(email, password);
     } on ApiException catch (e) {
       _error = e.userMessage;
@@ -183,19 +203,16 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Try to logout on server (optional)
       try {
         await _apiClient.post('/auth/logout');
-      } catch (_) {
-        // Ignore logout API errors
-      }
+      } catch (_) {}
 
-      // Clear local data
       await StorageService.clearTokens();
       await StorageService.clearUserData();
       _apiClient.clearAuthToken();
 
       _isAuthenticated = false;
+      _profile = null;
       _currentUserEmail = null;
       _currentUserId = null;
       _error = null;

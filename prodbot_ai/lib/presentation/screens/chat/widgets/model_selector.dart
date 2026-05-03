@@ -47,15 +47,24 @@ List<ModelOption> modelOptions(AppLocalizations l10n) => [
 class ModelSelector extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
-  const ModelSelector(
-      {super.key, required this.value, required this.onChanged});
+  /// When false, only `random_forest` is selectable (free tier).
+  final bool premiumUnlocked;
+
+  const ModelSelector({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.premiumUnlocked = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final options = modelOptions(l10n);
+    final effectiveValue =
+        premiumUnlocked ? value : 'random_forest';
     final selected = options.firstWhere(
-      (m) => m.value == value,
+      (m) => m.value == effectiveValue,
       orElse: () => options.first,
     );
     return InkWell(
@@ -100,6 +109,7 @@ class ModelSelector extends StatelessWidget {
       builder: (ctx) {
         final sheetL10n = AppLocalizations.of(ctx)!;
         final opts = modelOptions(sheetL10n);
+        final sheetValue = premiumUnlocked ? value : 'random_forest';
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -126,53 +136,64 @@ class ModelSelector extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 ...opts.map((m) {
-                  final selected = m.value == value;
+                  final locked =
+                      !premiumUnlocked && m.value != 'random_forest';
+                  final selected = m.value == sheetValue;
                   return InkWell(
-                    onTap: () {
-                      onChanged(m.value);
-                      Navigator.of(ctx).pop();
-                    },
+                    onTap: locked
+                        ? null
+                        : () {
+                            onChanged(m.value);
+                            Navigator.of(ctx).pop();
+                          },
                     borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? m.color.withValues(alpha: 0.10)
-                            : AppColors.surfaceVariant,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
+                    child: Opacity(
+                      opacity: locked ? 0.5 : 1,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
                           color: selected
-                              ? m.color.withValues(alpha: 0.45)
-                              : AppColors.borderSubtle,
+                              ? m.color.withValues(alpha: 0.10)
+                              : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: selected
+                                ? m.color.withValues(alpha: 0.45)
+                                : AppColors.borderSubtle,
+                          ),
                         ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                m.name,
-                                style: AppTextStyles.titleSmall.copyWith(
-                                  color: m.color,
-                                  fontWeight: FontWeight.w700,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  m.name,
+                                  style: AppTextStyles.titleSmall.copyWith(
+                                    color: locked
+                                        ? AppColors.textSecondary
+                                        : m.color,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                              ),
-                              const Spacer(),
-                              if (selected)
-                                Icon(Icons.check_rounded,
-                                    size: 18, color: m.color),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            m.description,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
+                                const Spacer(),
+                                if (selected && !locked)
+                                  Icon(Icons.check_rounded,
+                                      size: 18, color: m.color),
+                              ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              locked
+                                  ? sheetL10n.modelRequiresSubscription
+                                  : m.description,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );

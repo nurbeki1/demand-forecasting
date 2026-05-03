@@ -103,7 +103,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'ProdBot AI'**
+  /// **'Forecast AI'**
   String get appTitle;
 
   /// No description provided for @welcomePoweredByAi.
@@ -121,7 +121,7 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeBrandHighlight.
   ///
   /// In en, this message translates to:
-  /// **'ProdBot AI'**
+  /// **'Forecast AI'**
   String get welcomeBrandHighlight;
 
   /// No description provided for @welcomeSubtitle.
@@ -406,6 +406,12 @@ abstract class AppLocalizations {
   /// **'High accuracy, finds complex patterns'**
   String get modelXgbDesc;
 
+  /// No description provided for @modelRequiresSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Available with a subscription'**
+  String get modelRequiresSubscription;
+
   /// No description provided for @miniChartTitle.
   ///
   /// In en, this message translates to:
@@ -441,6 +447,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error: could not reach the server. Try again later.'**
   String get chatErrorGeneric;
+
+  /// No description provided for @settingsSubscriptionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get settingsSubscriptionButton;
+
+  /// No description provided for @subscriptionScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get subscriptionScreenTitle;
+
+  /// No description provided for @subscriptionSignedInAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as'**
+  String get subscriptionSignedInAs;
+
+  /// No description provided for @subscriptionCurrentPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Current plan'**
+  String get subscriptionCurrentPlan;
+
+  /// No description provided for @subscriptionPlanFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get subscriptionPlanFree;
+
+  /// No description provided for @subscriptionPlanPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get subscriptionPlanPremium;
+
+  /// No description provided for @subscriptionPlaceholderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Here you will be able to buy or renew your subscription. This screen is available while you stay logged in — no need to sign in again.'**
+  String get subscriptionPlaceholderBody;
 
   /// No description provided for @routerPageNotFound.
   ///

@@ -13,6 +13,8 @@ class PillInput extends StatelessWidget {
   final bool isLarge;
   final String selectedModel;
   final ValueChanged<String> onModelChanged;
+  /// Backend-aligned: free tier only RF; paid subscription unlocks LightGBM/XGBoost.
+  final bool premiumUnlocked;
   final VoidCallback onSend;
   final FocusNode? focusNode;
 
@@ -23,6 +25,7 @@ class PillInput extends StatelessWidget {
     required this.selectedModel,
     required this.onModelChanged,
     required this.onSend,
+    this.premiumUnlocked = false,
     this.loading = false,
     this.isLarge = false,
     this.focusNode,
@@ -84,7 +87,11 @@ class PillInput extends StatelessWidget {
               ],
             ),
           ),
-          ModelSelector(value: selectedModel, onChanged: onModelChanged),
+          ModelSelector(
+            value: selectedModel,
+            onChanged: onModelChanged,
+            premiumUnlocked: premiumUnlocked,
+          ),
           const SizedBox(width: 6),
           _SendButton(loading: loading, onTap: onSend),
         ],

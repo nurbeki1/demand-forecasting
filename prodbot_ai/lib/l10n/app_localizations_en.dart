@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'ProdBot AI';
+  String get appTitle => 'Forecast AI';
 
   @override
   String get welcomePoweredByAi => 'AI-powered';
@@ -18,7 +18,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeTitle => 'Welcome';
 
   @override
-  String get welcomeBrandHighlight => 'ProdBot AI';
+  String get welcomeBrandHighlight => 'Forecast AI';
 
   @override
   String get welcomeSubtitle =>
@@ -164,6 +164,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelXgbDesc => 'High accuracy, finds complex patterns';
 
   @override
+  String get modelRequiresSubscription => 'Available with a subscription';
+
+  @override
   String get miniChartTitle => 'Demand forecast';
 
   @override
@@ -183,6 +186,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatErrorGeneric =>
       'Error: could not reach the server. Try again later.';
+
+  @override
+  String get settingsSubscriptionButton => 'Subscription';
+
+  @override
+  String get subscriptionScreenTitle => 'Subscription';
+
+  @override
+  String get subscriptionSignedInAs => 'Signed in as';
+
+  @override
+  String get subscriptionCurrentPlan => 'Current plan';
+
+  @override
+  String get subscriptionPlanFree => 'Free';
+
+  @override
+  String get subscriptionPlanPremium => 'Premium';
+
+  @override
+  String get subscriptionPlaceholderBody =>
+      'Here you will be able to buy or renew your subscription. This screen is available while you stay logged in — no need to sign in again.';
 
   @override
   String get routerPageNotFound => 'Page not found';

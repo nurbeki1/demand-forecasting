@@ -23,11 +23,11 @@ void main() async {
   // Initialize storage
   await StorageService.init();
 
-  runApp(const ProdBotApp());
+  runApp(const ForecastApp());
 }
 
-class ProdBotApp extends StatelessWidget {
-  const ProdBotApp({super.key});
+class ForecastApp extends StatelessWidget {
+  const ForecastApp({super.key});
 
   @override
   Widget build(BuildContext context) {

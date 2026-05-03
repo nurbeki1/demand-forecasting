@@ -21,7 +21,11 @@ from app.rate_limiter import limiter, RateLimits
 from sqlalchemy import text, inspect
 from app.database import engine, Base
 from app.auth_routes import router as auth_router
-from app.deps import get_current_user, get_admin_user
+from app.deps import get_current_user, get_admin_user, get_db
+from app.subscription_utils import enforce_chat_model_type
+from app.models import User
+from app.schemas import MockSubscribeRequest, UserResponse
+from app.demo_billing import apply_mock_subscription
 
 # ===== ROUTERS =====
 from app.routers.dashboard import router as dashboard_router
@@ -95,6 +99,7 @@ def run_migrations():
                     ("google_id", "ALTER TABLE users ADD COLUMN google_id VARCHAR UNIQUE"),
                     ("avatar_url", "ALTER TABLE users ADD COLUMN avatar_url VARCHAR"),
                     ("full_name", "ALTER TABLE users ADD COLUMN full_name VARCHAR"),
+                    ("subscription_plan", "ALTER TABLE users ADD COLUMN subscription_plan VARCHAR(32) DEFAULT 'free'"),
                     ("created_at", "ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
                 ]
 
@@ -127,6 +132,17 @@ app.include_router(telegram_router)
 app.include_router(report_router)
 app.include_router(user_router)
 app.include_router(settings_router)
+
+
+@app.post("/subscription/mock-checkout", response_model=UserResponse, tags=["subscription"])
+def subscription_mock_checkout(
+    data: MockSubscribeRequest,
+    user: User = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """Demo checkout (same as POST /auth/mock-subscribe). Registered here so it ships with the main app."""
+    return apply_mock_subscription(db, user, data)
+
 
 # CORS - allow frontend domains
 ALLOWED_ORIGINS = [
@@ -621,7 +637,8 @@ def get_active_alerts(
 @limiter.limit(RateLimits.CHAT)
 def chat(request: Request, payload: ChatRequest, user=Depends(get_current_user)):
     """AI чат с RAG для анализа спроса"""
-    return handle_ai_chat(payload.message, user.id, language=payload.language, model_type=payload.model_type)
+    mt = enforce_chat_model_type(user, payload.model_type)
+    return handle_ai_chat(payload.message, user.id, language=payload.language, model_type=mt)
 
 
 @app.get("/chat/history")

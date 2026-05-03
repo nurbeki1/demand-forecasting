@@ -18,6 +18,7 @@ import '../presentation/screens/products/widgets/product_card.dart';
 import '../presentation/screens/analytics/analytics_screen.dart';
 import '../presentation/screens/profile/profile_screen.dart';
 import '../presentation/screens/profile/settings_screen.dart';
+import '../presentation/screens/profile/subscription_screen.dart';
 
 /// Route names
 class AppRoutes {
@@ -40,6 +41,7 @@ class AppRoutes {
   static const String analytics = '/analytics';
   static const String profile = '/profile';
   static const String settings = '/settings';
+  static const String subscription = '/subscription';
 }
 
 /// App Router - handles all navigation
@@ -118,6 +120,9 @@ class AppRouter {
 
       case AppRoutes.settings:
         return _slideRoute(const SettingsScreen(), settings);
+
+      case AppRoutes.subscription:
+        return _slideRoute(const SubscriptionScreen(), settings);
 
       default:
         return _fadeRoute(
