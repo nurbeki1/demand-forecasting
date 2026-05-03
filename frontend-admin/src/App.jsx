@@ -83,12 +83,6 @@ function LoadingScreen() {
  * This prevents flash of wrong content
  */
 function AuthGuard({ children }) {
-  const { isLoading } = useAuth();
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
   return children;
 }
 
@@ -182,102 +176,25 @@ function AppRoutes() {
       {/* ============================================
           PUBLIC ROUTES
           ============================================ */}
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <LoginPage />
-          </PublicRoute>
-        }
-      />
+      <Route path="/login" element={<LoginPage />} />
 
       {/* ============================================
           USER ROUTES - AI Chat
           ============================================ */}
-      <Route
-        path="/user"
-        element={
-          <UserRoute>
-            <ChatPage />
-          </UserRoute>
-        }
-      />
-      <Route
-        path="/user/profile"
-        element={
-          <UserRoute>
-            <ProfilePage />
-          </UserRoute>
-        }
-      />
+      <Route path="/user" element={<ChatPage />} />
+      <Route path="/user/profile" element={<ProfilePage />} />
 
       {/* ============================================
           ADMIN ROUTES
           ============================================ */}
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
-            <ExecutiveDashboardPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/forecast"
-        element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/users"
-        element={
-          <AdminRoute>
-            <UserManagementPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/table"
-        element={
-          <AdminRoute>
-            <TablePage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/upload"
-        element={
-          <AdminRoute>
-            <UploadPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/compare"
-        element={
-          <AdminRoute>
-            <ForecastComparisonPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/reports"
-        element={
-          <AdminRoute>
-            <ReportsPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/model"
-        element={
-          <AdminRoute>
-            <ModelVisualizationPage />
-          </AdminRoute>
-        }
-      />
+      <Route path="/admin" element={<ExecutiveDashboardPage />} />
+      <Route path="/admin/forecast" element={<AdminDashboard />} />
+      <Route path="/admin/users" element={<UserManagementPage />} />
+      <Route path="/admin/table" element={<TablePage />} />
+      <Route path="/admin/upload" element={<UploadPage />} />
+      <Route path="/admin/compare" element={<ForecastComparisonPage />} />
+      <Route path="/admin/reports" element={<ReportsPage />} />
+      <Route path="/admin/model" element={<ModelVisualizationPage />} />
 
       {/* ============================================
           LEGACY ROUTES - Redirect to new paths
