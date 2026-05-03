@@ -51,7 +51,29 @@
     "settings": "Settings",
     "logout": "Logout",
     "login": "Login",
-    "register": "Register"
+    "register": "Register",
+    "support": "Support",
+    "forecastCompare": "Forecast & comparison"
+  },
+  "adminSupport": {
+    "bannerTitle": "Telegram support",
+    "bannerSubtitle": "User tickets (Отзыв / Запрос) — reply in the internal group to answer in DM.",
+    "bannerDetails": "Guide",
+    "title": "Telegram support (admin)",
+    "subtitle": "Open the bot, pricing link, and operator checklist.",
+    "actionsTitle": "Quick actions",
+    "actionsSub": "Same link as Enterprise on the pricing page.",
+    "openTelegram": "Open support bot",
+    "openPricing": "Subscriptions / Enterprise",
+    "backDashboard": "Back to dashboard",
+    "operatorTitle": "For operators",
+    "operatorSub": "Human replies only — no AI in this flow.",
+    "step1": "The user chooses Отзыв or Запрос in the bot and sends a message.",
+    "step2": "The ticket appears in your Telegram support group (TELEGRAM_SUPPORT_GROUP_ID on the backend).",
+    "step3": "Reply to the bot’s ticket message — your reply is copied to the user’s chat.",
+    "envTitle": "Environment variables",
+    "envSub": "Do not commit secrets. Examples:",
+    "docsRepo": "Full setup: docs/TELEGRAM_BOT_SETUP.md in the repository."
   },
   "compare": {
     "title": "Model Comparison",
@@ -143,7 +165,12 @@
     "signedInAs": "Signed in as",
     "currentPlan": "Current plan",
     "planFree": "Free",
-    "planPremium": "Premium"
+    "planPremium": "Premium",
+    "activeBadge": "Active",
+    "proActiveTagline": "This is your current plan — all Pro features are unlocked.",
+    "proActiveFootnote": "Need Enterprise or higher limits? Check the card on the right or contact us.",
+    "currentPlanButton": "Back to app",
+    "telegramSupportMissing": "Telegram support link is not configured. Set VITE_TELEGRAM_SUPPORT_URL in the frontend env."
   },
   "payment": {
     "title": "Checkout",
@@ -278,6 +305,9 @@
     "noConversations": "No conversations yet",
     "settings": "Settings",
     "subscription": "Subscription",
+    "subscriptionPro": "Subscription · PRO",
+    "subscriptionProHint": "PRO subscription is active — open plans",
+    "proPlanStatusTop": "PRO subscription active",
     "comingSoon": "Coming Soon",
     "plugins": "Plugins",
     "customGPTs": "Custom GPTs",
@@ -344,6 +374,10 @@
   },
   "forecast": {
     "title": "Forecast",
+    "workspaceTitle": "Forecast & comparison",
+    "workspaceSubtitle": "Run demand forecasts or compare model versions side by side.",
+    "tabForecast": "Forecast",
+    "tabCompare": "Compare models",
     "selectProduct": "Select Product",
     "horizon": "Forecast Horizon",
     "days": "days",

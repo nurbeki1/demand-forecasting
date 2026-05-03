@@ -5,7 +5,9 @@ Handles intent classification, context building, LLM calls, and memory managemen
 NEW: Routes forecast-related intents to structured Decision Assistant responses
 instead of plain LLM text.
 """
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
+import asyncio
+import json
 import pandas as pd
 
 from services.intent_classifier import (
@@ -22,6 +24,7 @@ from services.model_service import (
     get_or_train_model,
     predict,
     get_feature_importance,
+    predict_from_market_data,
     DATE_COL,
     TARGET_COL,
 )
@@ -73,6 +76,85 @@ KZ_INTENTS = {
 # Store last KZ analysis result for progressive disclosure follow-ups
 # Key: user_id, Value: {product_name, result, timestamp}
 _kz_analysis_cache: Dict[int, Dict[str, Any]] = {}
+
+# =========================================================
+# DB PERSISTENCE HELPERS
+# =========================================================
+
+def _db_save_message(
+    user_id: int,
+    role: str,
+    content: str,
+    intent: Optional[str] = None,
+    data: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Save a chat message to the database (fire-and-forget, never raises)."""
+    try:
+        from app.database import SessionLocal
+        from app.models import ChatHistory
+        db = SessionLocal()
+        try:
+            msg = ChatHistory(
+                user_id=user_id,
+                role=role,
+                content=content[:4000],  # cap to avoid huge DB entries
+                intent=intent,
+                data_json=json.dumps(data, ensure_ascii=False, default=str) if data else None,
+            )
+            db.add(msg)
+            db.commit()
+        finally:
+            db.close()
+    except Exception:
+        pass  # DB unavailable — in-memory still works
+
+
+def _db_load_history(user_id: int, limit: int = 50) -> List[Dict[str, Any]]:
+    """Load recent chat history from the database."""
+    try:
+        from app.database import SessionLocal
+        from app.models import ChatHistory
+        from sqlalchemy import desc
+        db = SessionLocal()
+        try:
+            rows = (
+                db.query(ChatHistory)
+                .filter(ChatHistory.user_id == user_id)
+                .order_by(desc(ChatHistory.created_at))
+                .limit(limit)
+                .all()
+            )
+            rows = list(reversed(rows))  # oldest first
+            return [
+                {
+                    "role": r.role,
+                    "content": r.content,
+                    "intent": r.intent,
+                    "timestamp": r.created_at.isoformat(),
+                    "data": json.loads(r.data_json) if r.data_json else None,
+                }
+                for r in rows
+            ]
+        finally:
+            db.close()
+    except Exception:
+        return []
+
+
+def _db_clear_history(user_id: int) -> int:
+    """Delete all chat messages for user. Returns count deleted."""
+    try:
+        from app.database import SessionLocal
+        from app.models import ChatHistory
+        db = SessionLocal()
+        try:
+            count = db.query(ChatHistory).filter(ChatHistory.user_id == user_id).delete()
+            db.commit()
+            return count
+        finally:
+            db.close()
+    except Exception:
+        return 0
 
 from services.data_service import (
     get_product_summary,
@@ -1073,60 +1155,151 @@ async def build_kz_response(
             }
 
     if intent == Intent.KZ_ANALYSIS:
-        # Get competitor prices first
-        competitors = await web_search_service.get_competitor_prices(
-            search_query or "iPhone 15",
-            market="kaspi",
-        )
+        product_name = search_query or "iPhone 15"
+
+        # === STEP 1: Web search — find ALL market info ===
+        market_data = await web_search_service.comprehensive_product_analysis(product_name)
+
+        # === STEP 2: Get competitor prices for city analysis ===
+        competitors = await web_search_service.get_competitor_prices(product_name, market="kaspi")
         competitor_prices = [c.price_kzt for c in competitors if c.price_kzt > 0]
 
-        # Full regional analysis
+        # === STEP 3: Determine wholesale price ===
         if price_usd:
-            # User provided price - assume it's already wholesale
-            result = profit_calculator.analyze_all_cities(
-                product_cost_usd=price_usd,
-                category=category.lower() if category else "electronics",
-                markup_percent=markup_percent,
-                product_name=search_query or "Product",
-                competitor_prices=competitor_prices,
-            )
+            wholesale_price_usd = price_usd
             retail_price_usd = price_usd
         else:
-            # Search for price online (returns retail, we apply wholesale discount)
-            price_info = await web_search_service.search_product_price(search_query or "iPhone 15")
-            retail_price_usd = price_info.price_usd
+            retail_price_usd = market_data.get("wholesale_price_usd", 100.0)
+            wholesale_price_usd = profit_calculator.apply_wholesale_discount(retail_price_usd)
 
-            # Apply wholesale discount (-20% from retail)
-            wholesale_price_usd = profit_calculator.apply_wholesale_discount(price_info.price_usd)
+        # === STEP 4: ML Model — predict demand score from ALL market features ===
+        competitor_price_usd = market_data.get("avg_retail_price_kzt", wholesale_price_usd * 1.3 * 450) / 450
+        kaspi_data = market_data.get("kaspi", {})
+        news_data = market_data.get("news", {})
+        mkt_data = market_data.get("market", {})
 
-            result = profit_calculator.analyze_all_cities(
-                product_cost_usd=wholesale_price_usd,
-                category=category.lower() if category else "electronics",
-                markup_percent=markup_percent,
-                product_name=search_query or price_info.product_name,
-                competitor_prices=competitor_prices,
-            )
-            result.retail_price_usd = retail_price_usd
-            result.wholesale_discount_applied = True
+        ml_result = predict_from_market_data(
+            price_usd=wholesale_price_usd,
+            competitor_price_usd=max(competitor_price_usd, wholesale_price_usd * 0.8),
+            rating=market_data.get("avg_rating", 3.5),
+            review_count=market_data.get("review_count", 0),
+            trend_direction=market_data.get("trend_direction", "stable"),
+            popularity_score=market_data.get("popularity_score", 50),
+            # KZ-specific signals
+            has_kaspi_installment=kaspi_data.get("has_installment", False),
+            kaspi_sellers=kaspi_data.get("kaspi_sellers", 0),
+            news_sentiment_score=news_data.get("sentiment_score", 0),
+            market_saturation_score=mkt_data.get("saturation_score", 0.5),
+            is_new_model=news_data.get("is_new_model", False),
+            has_supply_issue=news_data.get("has_supply_issue", False),
+            yoy_growth_percent=mkt_data.get("yoy_growth_percent", 0.0),
+        )
+
+        # === STEP 5: City-level profitability analysis ===
+        kz_result = profit_calculator.analyze_all_cities(
+            product_cost_usd=wholesale_price_usd,
+            category=category.lower() if category else "electronics",
+            markup_percent=markup_percent,
+            product_name=product_name,
+            competitor_prices=competitor_prices,
+        )
+        kz_result.retail_price_usd = retail_price_usd
+        kz_result.wholesale_discount_applied = not bool(price_usd)
 
         # === CACHE RESULT FOR PROGRESSIVE DISCLOSURE ===
-        _cache_kz_result(user_id, search_query or result.product_name, result)
+        _cache_kz_result(user_id, product_name, kz_result)
 
-        # === BUILD SHORT RESPONSE (Progressive Disclosure) ===
-        reply = _format_short_kz_response(result, markup_percent)
+        # === STEP 6: Claude formats the combined analysis ===
+        ml_grade = ml_result["market_grade"]
+        ml_score = ml_result["demand_score"]
+        ml_percentile = ml_result["demand_percentile"]
+        top_factor = ml_result["key_factors"][0] if ml_result["key_factors"] else {}
+
+        kz_sigs = ml_result.get("kz_signals", {})
+        key_events = news_data.get("key_events", [])
+        llm_context = f"""Өнім: {product_name}
+
+=== БАҒА ДЕРЕКТЕРІ ===
+Ұтым баға (оптом): ${wholesale_price_usd:.0f} = {wholesale_price_usd * market_data.get('usd_kzt_rate', 450):,.0f} ₸
+Бәсекелестер орт. бағасы: {market_data.get('avg_retail_price_kzt', 0):,.0f} ₸
+Маржа: {market_data.get('profit_margin_percent', 0):.1f}%
+Бәсекелестер саны: {market_data.get('competitor_count', 0)}
+
+=== РЕЙТИНГ ЖӘНЕ ПІКІРЛЕР ===
+Жалпы рейтинг: {market_data.get('avg_rating', 0)}/5
+Пікірлер (global + Kaspi): {market_data.get('review_count', 0):,}
+Kaspi рейтинг: {kaspi_data.get('kaspi_rating', 0)}/5 ({kaspi_data.get('kaspi_reviews', 0)} пікір)
+Kaspi сатушылар: {kaspi_data.get('kaspi_sellers', 0)}
+Kaspi рассрочка: {'✅ бар' if kaspi_data.get('has_installment') else '❌ жоқ'}
+
+=== ТРЕНД ЖӘНЕ ЖАҢАЛЫҚТАР ===
+Тренд: {market_data.get('trend_direction', 'stable')} | Танымалдық: {market_data.get('popularity_score', 50)}/100
+Жаңалықтар сентименті: {news_data.get('sentiment', 'neutral')} ({news_data.get('sentiment_score', 0):+d})
+Маңызды оқиғалар: {', '.join(key_events) if key_events else 'жоқ'}
+Жаңа модель шықты ма: {'✅ иә' if news_data.get('is_new_model') else 'жоқ'}
+Тапшылық: {'⚠️ иә' if news_data.get('has_supply_issue') else 'жоқ'}
+
+=== НАРЫҚ ӨЛШЕМІ ===
+Категория: {mkt_data.get('category', '')}
+Нарық өлшемі: {mkt_data.get('size_level', 'medium')}
+Бәсекелестік деңгейі: {mkt_data.get('saturation_level', 'medium')}
+Жылдық өсім: {mkt_data.get('yoy_growth_percent', 0):.1f}%
+
+=== ML МОДЕЛЬ НӘТИЖЕСІ (Amazon 551K датасетінде оқытылған) ===
+Сұраныс ұпайы: {ml_score}/100 | Баға: {ml_grade} | Үздік {100 - ml_percentile:.0f}%-да
+Модель сенімділігі: {ml_result['ml_confidence'] * 100:.0f}%
+KZ коррекциялары:
+  - Kaspi рассрочка: {kz_sigs.get('kaspi_installment_boost', 0):+.1f}
+  - Жаңалықтар әсері: {kz_sigs.get('news_impact', 0):+.1f}
+  - Нарық тапшылығы: {kz_sigs.get('saturation_penalty', 0):+.1f}
+  - Санаттың өсімі: {kz_sigs.get('category_growth_boost', 0):+.1f}
+Басты фактор: {top_factor.get('label', '')}
+ML ұсынысы: {ml_result['recommendation']}
+
+=== ҚАЗАҚСТАН ҚАЛАЛАРЫ ===
+Ең жақсы қалалар: {', '.join(kz_result.best_cities[:3]) if kz_result.best_cities else 'анықталмады'}
+Болдырмауға тиіс: {', '.join(kz_result.avoid_cities[:2]) if kz_result.avoid_cities else 'жоқ'}
+Пайдалы қалалар: {kz_result.profitable_cities_count}/{len(kz_result.cities)}
+ROI: {kz_result.investment.roi_percent:.0f}%
+
+=== ТӘУЕКЕЛДЕР ===
+{chr(10).join('- ' + r for r in market_data.get('risks', ['жоқ'])[:4])}"""
+
+        llm_prompt = f"""{llm_context}
+
+Жоғарыдағы деректерге сүйене отырып, {product_name} өнімін Қазақстанда сату туралы қысқаша талдау жаса (қазақша жауап бер). Мыналарды қамти: сұраныс деңгейі, ең тиімді қалалар, тәуекелдер, және жалпы ұсыныс."""
+
+        llm_system = (
+            "Сен – Қазақстан нарығын зерттейтін сарапшы AI. "
+            "Берілген деректер негізінде қысқаша, нақты, қазақша талдау жаса. "
+            "Маркдаун форматында жауап бер (тақырыптар, тізімдер). "
+            "Жалпы ұсыныс, сұраныс деңгейі, тәуекелдер — міндетті түрде."
+        )
+        llm_reply = ask_llm(
+            system_prompt=llm_system,
+            user_prompt=llm_prompt,
+        )
+
+        # Append structured details after LLM response
+        city_summary = _format_cities_detail(kz_result)
+        full_reply = f"{llm_reply}\n\n---\n\n{city_summary}"
 
         return {
-            "reply": reply,
-            "response_type": "kz_analysis_short",
+            "reply": full_reply,
+            "response_type": "kz_analysis_ml",
             "intent": intent.value,
             "entities": entities,
-            "data": result.to_dict(),
+            "data": {
+                **kz_result.to_dict(),
+                "ml_analysis": ml_result,
+                "market_data": market_data,
+            },
             "available_details": ["cities", "sales_tips", "risk_detail", "full"],
             "suggested_questions": [
-                {"text": "🏙️ Анализ по городам", "prompt": "Покажи анализ по городам"},
-                {"text": "💡 Советы по продаже", "prompt": "Советы по продаже"},
-                {"text": "⚠️ Детальные риски", "prompt": "Детальный анализ рисков"},
-                {"text": "📊 Полный анализ", "prompt": "Покажи всю информацию"},
+                {"text": "🏙️ Қалалар бойынша талдау", "prompt": "Қалалар бойынша талдауды көрсет"},
+                {"text": "💡 Сату кеңестері", "prompt": "Сату кеңестері"},
+                {"text": "⚠️ Тәуекелдер", "prompt": "Тәуекелдерді толық талда"},
+                {"text": "📊 Толық талдау", "prompt": "Барлық ақпаратты көрсет"},
             ],
         }
 
@@ -1321,7 +1494,7 @@ def _track_and_store(
     entities: Dict[str, Any],
     data: Optional[Dict] = None,
 ):
-    """Helper to track entities and store messages in chat memory"""
+    """Helper to track entities and store messages in chat memory + DB"""
     chat_memory.track_entities(
         user_id=user_id,
         product_ids=entities.get("product_ids"),
@@ -1331,20 +1504,12 @@ def _track_and_store(
         intent=intent.value
     )
 
-    chat_memory.add_message(
-        user_id=user_id,
-        role="user",
-        content=message,
-        intent=intent.value
-    )
+    chat_memory.add_message(user_id=user_id, role="user", content=message, intent=intent.value)
+    chat_memory.add_message(user_id=user_id, role="assistant", content=response, data=data, intent=intent.value)
 
-    chat_memory.add_message(
-        user_id=user_id,
-        role="assistant",
-        content=response,
-        data=data,
-        intent=intent.value
-    )
+    # Persist to DB
+    _db_save_message(user_id, "user", message, intent=intent.value)
+    _db_save_message(user_id, "assistant", response, intent=intent.value, data=data)
 
 
 # =========================================================
@@ -1366,10 +1531,22 @@ def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type:
     Returns:
         Response dictionary with reply, intent, data, suggestions
     """
+    # Step 0: Restore session from DB if in-memory is empty (after restart / new login)
+    session_info = chat_memory.get_session_info(user_id)
+    if not session_info.get("exists") or session_info.get("message_count", 0) == 0:
+        db_history = _db_load_history(user_id, limit=30)
+        for msg in db_history:
+            chat_memory.add_message(
+                user_id=user_id,
+                role=msg["role"],
+                content=msg["content"],
+                intent=msg.get("intent"),
+                data=msg.get("data"),
+            )
+
     # Step 1: Check for pronoun references ("it", "this product", etc.)
     resolved_reference = chat_memory.resolve_reference(user_id, message)
     if resolved_reference:
-        # If no product mentioned but reference found, add it to search
         entities_pre = {}
         entities_pre["search_query"] = resolved_reference
 
@@ -1457,13 +1634,18 @@ def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type:
     # LLM TEXT RESPONSE FLOW (for TEXT_INTENTS or fallback)
     # =========================================================
 
-    # Step 4: Get smart conversation history with entity context
-    history = chat_memory.get_smart_context_window(user_id)
+    # Step 4: Get conversation history (OpenAI messages format for proper multi-turn)
+    raw_history = chat_memory.get_history(user_id, limit=12)
+    llm_history = [
+        {"role": m["role"], "content": m["content"]}
+        for m in raw_history
+        if m.get("role") in ("user", "assistant")
+    ]
 
     # Step 5: Build RAG context
     context = build_rag_context(intent, entities)
 
-    # Step 6: Build system prompt with context and language
+    # Step 6: Build system prompt
     lang_instructions = {
         "kk": "МАҢЫЗДЫ: Қазақ тілінде жауап беріңіз. Барлық жауаптар қазақша болуы керек.",
         "ru": "ВАЖНО: Отвечайте на русском языке. Все ответы должны быть на русском.",
@@ -1471,14 +1653,20 @@ def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type:
     }
     lang_instruction = lang_instructions.get(language, lang_instructions["kk"])
 
-    system_prompt = f"{lang_instruction}\n\n" + SYSTEM_PROMPT.format(
+    # Pass entity context in system prompt (not as fake conversation turns)
+    entity_ctx = chat_memory.get_entity_context(user_id)
+    entity_hint = ""
+    if entity_ctx.get("last_product"):
+        entity_hint = f"\n[Соңғы талқыланған өнім: {entity_ctx['last_product']}]"
+
+    system_prompt = f"{lang_instruction}{entity_hint}\n\n" + SYSTEM_PROMPT.format(
         context=context,
-        history=history
+        history="",  # history now passed as messages, not string
     )
 
-    # Step 7: Call LLM
+    # Step 7: Call LLM with proper message history
     try:
-        response = ask_llm(system_prompt, message)
+        response = ask_llm(system_prompt, message, history=llm_history)
     except Exception as e:
         error_messages = {
             "kk": "Кешіріңіз, қате орын алды",
@@ -1515,21 +1703,11 @@ def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type:
         intent=intent.value
     )
 
-    # Step 11: Store messages in memory
-    chat_memory.add_message(
-        user_id=user_id,
-        role="user",
-        content=message,
-        intent=intent.value
-    )
-
-    chat_memory.add_message(
-        user_id=user_id,
-        role="assistant",
-        content=response,
-        data=chart_data,
-        intent=intent.value
-    )
+    # Step 11: Store messages in memory + DB
+    chat_memory.add_message(user_id=user_id, role="user", content=message, intent=intent.value)
+    chat_memory.add_message(user_id=user_id, role="assistant", content=response, data=chart_data, intent=intent.value)
+    _db_save_message(user_id, "user", message, intent=intent.value)
+    _db_save_message(user_id, "assistant", response, intent=intent.value, data=chart_data)
 
     # Step 12: Get product images if applicable
     product_images = get_product_images(intent, entities)
@@ -1554,32 +1732,24 @@ def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type:
 
 def get_chat_history(user_id: int, limit: Optional[int] = None) -> List[Dict[str, Any]]:
     """
-    Get chat history for user
-
-    Args:
-        user_id: User ID
-        limit: Optional limit on messages
-
-    Returns:
-        List of chat messages
+    Get chat history for user — reads from DB (persistent across restarts).
+    Falls back to in-memory if DB unavailable.
     """
+    db_history = _db_load_history(user_id, limit=limit or 100)
+    if db_history:
+        return db_history
     return chat_memory.get_history(user_id, limit=limit)
 
 
 def clear_chat_history(user_id: int) -> Dict[str, Any]:
     """
-    Clear chat history for user
-
-    Args:
-        user_id: User ID
-
-    Returns:
-        Result with count of cleared messages
+    Clear chat history for user — clears both DB and in-memory.
     """
-    count = chat_memory.clear_history(user_id)
+    db_count = _db_clear_history(user_id)
+    mem_count = chat_memory.clear_history(user_id)
     return {
         "message": "History cleared",
-        "cleared_messages": count
+        "cleared_messages": max(db_count, mem_count),
     }
 
 
@@ -1617,3 +1787,19 @@ def get_analytics_trends() -> Dict[str, Any]:
         "declining": declining,
         "stable": stable,
     }
+
+
+class AIChatService:
+    """Async wrapper for Telegram bot (python-telegram-bot) and similar callers."""
+
+    async def process_message(
+        self,
+        message: str,
+        user_id: Union[str, int],
+        language: str = "kk",
+        model_type: str = "random_forest",
+    ) -> Dict[str, Any]:
+        uid = int(user_id) if not isinstance(user_id, int) else user_id
+        return await asyncio.to_thread(
+            handle_ai_chat, message, uid, language, model_type
+        )

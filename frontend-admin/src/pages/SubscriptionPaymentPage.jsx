@@ -54,7 +54,7 @@ export default function SubscriptionPaymentPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { user, isAdmin, refreshUser } = useAuth();
+  const { user, isAdmin, isAuthenticated, refreshUser } = useAuth();
 
   const planParam = (params.get("plan") || "pro").toLowerCase();
   const plan = planParam === "enterprise" ? "enterprise" : "pro";
@@ -146,6 +146,14 @@ export default function SubscriptionPaymentPage() {
     }
   };
 
+  const goBackFromPayment = () => {
+    if (isAuthenticated) {
+      navigate(isAdmin ? "/admin" : "/user");
+      return;
+    }
+    navigate("/");
+  };
+
   return (
     <div className="subscription-page subscription-pay-page">
       <div className="subscription-page__glow" aria-hidden />
@@ -155,7 +163,7 @@ export default function SubscriptionPaymentPage() {
           <button
             type="button"
             className="subscription-page__back"
-            onClick={() => navigate("/subscriptions")}
+            onClick={goBackFromPayment}
             aria-label={t("payment.back")}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

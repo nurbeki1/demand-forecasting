@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy import Integer, String, Boolean, DateTime, Text, ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 from typing import Optional
@@ -34,6 +34,23 @@ class UserSettings(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
     settings_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ChatHistory(Base):
+    """Persistent chat message storage per user"""
+    __tablename__ = "chat_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(16), nullable=False)          # "user" | "assistant"
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    intent: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    data_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON string for chart/structured data
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+    __table_args__ = (
+        Index("ix_chat_history_user_created", "user_id", "created_at"),
+    )
 
 
 class VerificationCode(Base):

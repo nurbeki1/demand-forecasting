@@ -25,3 +25,14 @@ const resolvedRaw = viteExplicit
     : PRODUCTION_DEFAULT;
 
 export const API_URL = normalizeApiBase(resolvedRaw);
+
+/**
+ * Enterprise “Contact us” → opens Telegram (support). Set VITE_TELEGRAM_SUPPORT_URL to full https://t.me/YourBot or bare username (with or without @).
+ */
+export const TELEGRAM_SUPPORT_URL = (() => {
+  const raw = import.meta.env.VITE_TELEGRAM_SUPPORT_URL?.trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw.replace(/\/+$/, "");
+  const u = raw.replace(/^@/, "").trim();
+  return u ? `https://t.me/${u}` : "";
+})();

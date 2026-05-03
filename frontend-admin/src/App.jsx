@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { postAuthPath } from "./utils/postAuthRedirect";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -30,11 +31,11 @@ import TablePage from "./pages/TablePage";
 import UploadPage from "./pages/UploadPage";
 import ModelVisualizationPage from "./pages/ModelVisualizationPage";
 import ReportsPage from "./pages/ReportsPage";
-import ForecastComparisonPage from "./pages/ForecastComparisonPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import ProfilePage from "./pages/ProfilePage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import SubscriptionPaymentPage from "./pages/SubscriptionPaymentPage";
+import AdminSupportPage from "./pages/AdminSupportPage";
 
 // Styles
 import "./styles/dashboard.css";
@@ -103,9 +104,9 @@ function PublicRoute({ children }) {
   const location = useLocation();
 
   if (isAuthenticated) {
-    // Redirect to appropriate dashboard
-    const redirectTo = isAdmin ? '/admin' : '/user';
-    return <Navigate to={redirectTo} replace state={{ from: location }} />;
+    // Honor login/register intent (e.g. return to /subscriptions/payment?plan=...)
+    const redirectTo = postAuthPath(isAdmin, location.state?.from);
+    return <Navigate to={redirectTo} replace />;
   }
 
   return children;
@@ -264,6 +265,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/admin/support"
+        element={
+          <AdminRoute>
+            <AdminSupportPage />
+          </AdminRoute>
+        }
+      />
+      <Route
         path="/admin/table"
         element={
           <AdminRoute>
@@ -283,7 +292,7 @@ function AppRoutes() {
         path="/admin/compare"
         element={
           <AdminRoute>
-            <ForecastComparisonPage />
+            <Navigate to="/admin/forecast?tab=compare" replace />
           </AdminRoute>
         }
       />

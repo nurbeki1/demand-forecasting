@@ -457,6 +457,273 @@ def get_feature_importance(product_id: str, store_id: Optional[str] = None, mode
     }
 
 
+# =========================================================
+# MARKET DATA PREDICTOR (web-search → ML → demand score)
+# =========================================================
+
+# Path to Amazon dataset
+_AMAZON_CSV = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data", "amazon", "Amazon-Products.csv",
+)
+
+# Cache key for market model
+_MARKET_MODEL_KEY = "__market_predictor__"
+
+INR_TO_USD = 0.012  # ~1 INR = 0.012 USD
+
+
+def _load_amazon_for_market() -> Optional[pd.DataFrame]:
+    """Load and clean Amazon CSV for market model training"""
+    if not os.path.exists(_AMAZON_CSV):
+        return None
+    try:
+        df = pd.read_csv(_AMAZON_CSV, usecols=["ratings", "no_of_ratings", "discount_price", "actual_price"])
+
+        def _clean_price(s):
+            if pd.isna(s):
+                return np.nan
+            return float(str(s).replace("₹", "").replace(",", "").strip())
+
+        def _clean_num(s):
+            if pd.isna(s):
+                return 0.0
+            try:
+                return float(str(s).replace(",", "").strip())
+            except ValueError:
+                return 0.0
+
+        df["actual_price"] = df["actual_price"].apply(_clean_price)
+        df["discount_price"] = df["discount_price"].apply(_clean_price)
+        df["ratings"] = pd.to_numeric(df["ratings"], errors="coerce")
+        df["no_of_ratings"] = df["no_of_ratings"].apply(_clean_num)
+
+        df = df.dropna(subset=["actual_price", "ratings"])
+        df = df[df["actual_price"] > 0]
+        df = df[df["ratings"].between(1, 5)]
+
+        # Price in USD
+        df["price_usd"] = df["actual_price"] * INR_TO_USD
+
+        # Discount percent
+        df["discount_pct"] = np.where(
+            df["actual_price"] > 0,
+            (df["actual_price"] - df["discount_price"].fillna(df["actual_price"])) / df["actual_price"],
+            0.0,
+        ).clip(0, 1)
+
+        # Log reviews
+        df["log_reviews"] = np.log1p(df["no_of_ratings"])
+
+        # Demand score: rating × log(reviews+1) — normalized 0–100
+        raw_score = df["ratings"] * df["log_reviews"]
+        df["demand_score"] = (raw_score / raw_score.max() * 100).clip(0, 100)
+
+        return df[["price_usd", "discount_pct", "ratings", "log_reviews", "demand_score"]].dropna()
+    except Exception as e:
+        print(f"[market model] load error: {e}")
+        return None
+
+
+def _get_or_train_market_model() -> Optional[Dict[str, Any]]:
+    """Get cached market model or train from Amazon data"""
+    if _MARKET_MODEL_KEY in _model_cache:
+        return _model_cache[_MARKET_MODEL_KEY]
+
+    df = _load_amazon_for_market()
+    if df is None or len(df) < 100:
+        return None
+
+    # Sample up to 50K rows for speed
+    df = df.sample(min(50_000, len(df)), random_state=42)
+
+    X = df[["price_usd", "discount_pct", "ratings", "log_reviews"]]
+    y = df["demand_score"]
+
+    model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+    model.fit(X, y)
+
+    # Compute percentile lookup from training data
+    demand_scores_sorted = np.sort(y.values)
+
+    result = {
+        "model": model,
+        "demand_scores_sorted": demand_scores_sorted,
+        "feature_names": ["price_usd", "discount_pct", "ratings", "log_reviews"],
+        "trained_at": datetime.now(),
+        "training_size": len(df),
+    }
+    _model_cache[_MARKET_MODEL_KEY] = result
+    return result
+
+
+def predict_from_market_data(
+    price_usd: float,
+    competitor_price_usd: float,
+    rating: float,
+    review_count: int,
+    trend_direction: str = "stable",
+    popularity_score: float = 50.0,
+    # New Kazakhstan-specific signals
+    has_kaspi_installment: bool = False,
+    kaspi_sellers: int = 0,
+    news_sentiment_score: int = 0,
+    market_saturation_score: float = 0.5,
+    is_new_model: bool = False,
+    has_supply_issue: bool = False,
+    yoy_growth_percent: float = 0.0,
+) -> Dict[str, Any]:
+    """
+    Predict market demand score using Amazon-trained ML model + KZ signals.
+
+    Args:
+        price_usd: Product wholesale price in USD
+        competitor_price_usd: Average competitor price in USD
+        rating: Average combined rating (global + Kaspi)
+        review_count: Total number of reviews (global + Kaspi)
+        trend_direction: "up", "down", or "stable"
+        popularity_score: Web search popularity adjusted for news (0–100)
+        has_kaspi_installment: Product available on Kaspi рассрочка
+        kaspi_sellers: Number of sellers on Kaspi.kz
+        news_sentiment_score: News sentiment (-5 to +5)
+        market_saturation_score: Market saturation (0=low, 1=high)
+        is_new_model: Whether a new version was recently announced
+        has_supply_issue: Known supply deficit
+        yoy_growth_percent: Category year-over-year growth %
+
+    Returns:
+        {
+            "demand_score": 0–100,
+            "demand_percentile": 0–100 (vs Amazon catalog),
+            "market_grade": "A"/"B"/"C"/"D",
+            "ml_confidence": float,
+            "key_factors": [...],
+            "recommendation": str,
+            "kz_signals": {...},
+        }
+    """
+    # Clamp base inputs
+    rating = max(0.0, min(5.0, float(rating or 3.5)))
+    review_count = max(0, int(review_count or 0))
+    price_usd = max(0.1, float(price_usd or 10.0))
+    competitor_price_usd = max(0.1, float(competitor_price_usd or price_usd * 1.2))
+
+    # Derived features
+    discount_pct = max(0.0, min(0.9, (competitor_price_usd - price_usd) / competitor_price_usd))
+    log_reviews = np.log1p(review_count)
+
+    market_model = _get_or_train_market_model()
+
+    if market_model is not None:
+        X = pd.DataFrame([[price_usd, discount_pct, rating, log_reviews]], columns=market_model["feature_names"])
+        demand_score = float(market_model["model"].predict(X)[0])
+        demand_score = max(0.0, min(100.0, demand_score))
+
+        # Compute percentile
+        sorted_scores = market_model["demand_scores_sorted"]
+        percentile = float(np.searchsorted(sorted_scores, demand_score) / len(sorted_scores) * 100)
+        ml_confidence = min(0.95, 0.6 + (review_count / 5000) * 0.35) if review_count > 0 else 0.5
+
+        importances = market_model["model"].feature_importances_
+        feature_names = market_model["feature_names"]
+        top_factors = sorted(zip(feature_names, importances), key=lambda x: -x[1])[:3]
+    else:
+        # Heuristic fallback
+        demand_score = rating * 15 + min(log_reviews * 5, 40) + discount_pct * 20
+        demand_score = max(0.0, min(100.0, demand_score + (popularity_score - 50) * 0.2))
+        percentile = demand_score
+        ml_confidence = 0.45
+        top_factors = [("rating", 0.5), ("discount_pct", 0.3), ("log_reviews", 0.2)]
+
+    # ── Kazakhstan market adjustments ──────────────────────────
+    kz_delta = 0.0
+
+    # Kaspi installment increases demand significantly in KZ (30-60% of purchases)
+    if has_kaspi_installment:
+        kz_delta += 7.0
+
+    # News sentiment
+    kz_delta += float(news_sentiment_score) * 1.5  # each point = ±1.5 score
+
+    # Market saturation penalizes demand (hard to compete)
+    kz_delta -= (market_saturation_score - 0.5) * 10.0
+
+    # New model announcement: if upcoming model exists, current model demand drops
+    if is_new_model:
+        kz_delta -= 5.0
+
+    # Supply issue creates artificial demand boost (scarcity effect)
+    if has_supply_issue:
+        kz_delta += 4.0
+
+    # Category growth
+    kz_delta += min(yoy_growth_percent * 0.15, 6.0)
+
+    # Trend adjustment
+    trend_boost = {"up": 8.0, "down": -8.0, "stable": 0.0}.get(trend_direction, 0.0)
+
+    demand_score = max(0.0, min(100.0, demand_score + trend_boost + kz_delta))
+
+    # Grade
+    if demand_score >= 70:
+        grade = "A"
+    elif demand_score >= 50:
+        grade = "B"
+    elif demand_score >= 30:
+        grade = "C"
+    else:
+        grade = "D"
+
+    # Key factors explanation
+    factor_labels = {
+        "ratings": "Рейтинг өнімнің сапасын көрсетеді",
+        "rating": "Рейтинг өнімнің сапасын көрсетеді",
+        "log_reviews": "Шолулар саны сұранысты растайды",
+        "discount_pct": "Бәсекелестерге қарағандағы баға артықшылығы",
+        "price_usd": "Баға деңгейі нарықта маңызды рөл атқарады",
+    }
+    key_factors = [
+        {"factor": name, "importance": round(float(imp), 3), "label": factor_labels.get(name, name)}
+        for name, imp in top_factors
+    ]
+
+    # Recommendation
+    if grade == "A":
+        recommendation = "Өте жоғары сұраныс. Нарыққа кіруге кеңес беріледі."
+    elif grade == "B":
+        recommendation = "Жақсы сұраныс. Сатуға болады, бірақ бәсекені бақылаңыз."
+    elif grade == "C":
+        recommendation = "Орташа сұраныс. Маркетингке инвестиция керек."
+    else:
+        recommendation = "Төмен сұраныс. Альтернативті өнімдерді қарастырыңыз."
+
+    return {
+        "demand_score": round(demand_score, 1),
+        "demand_percentile": round(percentile, 1),
+        "market_grade": grade,
+        "ml_confidence": round(ml_confidence, 2),
+        "key_factors": key_factors,
+        "recommendation": recommendation,
+        "inputs": {
+            "price_usd": price_usd,
+            "competitor_price_usd": competitor_price_usd,
+            "discount_pct": round(discount_pct * 100, 1),
+            "rating": rating,
+            "review_count": review_count,
+            "trend_direction": trend_direction,
+        },
+        "kz_signals": {
+            "kz_adjustment": round(kz_delta, 1),
+            "kaspi_installment_boost": 7.0 if has_kaspi_installment else 0.0,
+            "news_impact": round(float(news_sentiment_score) * 1.5, 1),
+            "saturation_penalty": round(-(market_saturation_score - 0.5) * 10.0, 1),
+            "new_model_penalty": -5.0 if is_new_model else 0.0,
+            "supply_scarcity_boost": 4.0 if has_supply_issue else 0.0,
+            "category_growth_boost": round(min(yoy_growth_percent * 0.15, 6.0), 1),
+        },
+    }
+
+
 def get_model_structure() -> Dict[str, Any]:
     """
     Возвращает структуру модели для визуализации

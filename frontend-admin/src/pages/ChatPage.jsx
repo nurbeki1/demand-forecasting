@@ -519,7 +519,8 @@ function ChatSidebar({
   onShowSettings,
   onOpenSubscription,
   onProfile,
-  t
+  premiumUnlocked,
+  t,
 }) {
   return (
     <aside className={`chat-sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}>
@@ -623,16 +624,16 @@ function ChatSidebar({
 
         <button
           type="button"
-          className="sidebar-icon-btn sidebar-subscription-btn"
+          className={`sidebar-icon-btn sidebar-subscription-btn${premiumUnlocked ? " sidebar-subscription-btn--pro" : ""}`}
           onClick={onOpenSubscription}
-          title={t('chat.subscription')}
-          aria-label={t('chat.subscription')}
+          title={premiumUnlocked ? t("chat.subscriptionProHint") : t("chat.subscription")}
+          aria-label={premiumUnlocked ? t("chat.subscriptionPro") : t("chat.subscription")}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <rect x="2" y="5" width="20" height="14" rx="2" />
             <line x1="2" y1="10" x2="22" y2="10" />
           </svg>
-          <span>{t('chat.subscription')}</span>
+          <span>{premiumUnlocked ? t("chat.subscriptionPro") : t("chat.subscription")}</span>
         </button>
 
         {/* User Avatar with Logout */}
@@ -705,30 +706,72 @@ export default function ChatPage() {
   // Determine if we're in "empty state" (no messages yet)
   const isEmptyState = messages.length === 0;
 
-  // Initialize
+  // Initialize — load history from backend DB first, then fall back to localStorage
   useEffect(() => {
-    const savedConversations = getConversations();
-    setConversations(savedConversations);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) setSpeechSupported(false);
 
-    const currentId = getCurrentConversationId();
-    if (currentId && savedConversations.find(c => c.id === currentId)) {
-      loadConversation(currentId, savedConversations);
-    }
-
-    // Check for prefilled prompt from other pages (e.g., ChartsPage)
     const prefillPrompt = sessionStorage.getItem("chat_prefill");
     if (prefillPrompt) {
       setInputValue(prefillPrompt);
       sessionStorage.removeItem("chat_prefill");
-      // Focus input
       setTimeout(() => inputRef.current?.focus(), 100);
     }
 
-    // Check for speech recognition support
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setSpeechSupported(false);
-    }
+    // Load history from backend (persistent across sessions)
+    getChatHistory().then((dbMessages) => {
+      if (dbMessages && dbMessages.length > 0) {
+        // Convert DB messages to frontend format
+        const frontendMessages = dbMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          intent: m.intent,
+          data: m.data || undefined,
+          timestamp: m.timestamp,
+        }));
+
+        // Build a single "history" conversation from DB messages
+        const historyConvId = "db_history";
+        const historyConv = {
+          id: historyConvId,
+          title: frontendMessages.find(m => m.role === "user")?.content?.slice(0, 40) || t('chat.chatHistory'),
+          messages: frontendMessages,
+          updatedAt: dbMessages[dbMessages.length - 1]?.timestamp || new Date().toISOString(),
+        };
+
+        // Merge with localStorage conversations (deduplicate by id)
+        const localConvs = getConversations().filter(c => c.id !== historyConvId);
+        const merged = [historyConv, ...localConvs];
+        setConversations(merged);
+
+        // Auto-load the DB history as the current conversation
+        const currentId = getCurrentConversationId();
+        if (!currentId || currentId === historyConvId) {
+          setMessages(frontendMessages);
+          setCurrentConversationIdState(historyConvId);
+          setCurrentConversationId(historyConvId);
+        } else {
+          const local = localConvs.find(c => c.id === currentId);
+          if (local) loadConversation(currentId, merged);
+        }
+      } else {
+        // No DB history — fall back to localStorage
+        const savedConversations = getConversations();
+        setConversations(savedConversations);
+        const currentId = getCurrentConversationId();
+        if (currentId && savedConversations.find(c => c.id === currentId)) {
+          loadConversation(currentId, savedConversations);
+        }
+      }
+    }).catch(() => {
+      // API unavailable — use localStorage only
+      const savedConversations = getConversations();
+      setConversations(savedConversations);
+      const currentId = getCurrentConversationId();
+      if (currentId && savedConversations.find(c => c.id === currentId)) {
+        loadConversation(currentId, savedConversations);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -978,10 +1021,17 @@ export default function ChatPage() {
             navigate("/subscriptions");
           }}
           onProfile={() => navigate("/user/profile")}
+          premiumUnlocked={premiumUnlocked}
           t={t}
         />
 
         <main className="chat-main">
+        {premiumUnlocked ? (
+          <div className="chat-pro-status-badge" role="status">
+            <span className="chat-pro-status-badge__dot" aria-hidden />
+            <span>{t("chat.proPlanStatusTop")}</span>
+          </div>
+        ) : null}
         {/* Settings View */}
         {showSettings ? (
           <SettingsPanel onClose={() => setShowSettings(false)} />

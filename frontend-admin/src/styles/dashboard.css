@@ -266,6 +266,14 @@ body {
   flex: 1;
 }
 
+.sidebar-dev-hint {
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--text-tertiary);
+  padding: 8px 12px 0;
+  opacity: 0.85;
+}
+
 .menuItem {
   display: flex;
   align-items: center;
@@ -289,10 +297,28 @@ body {
   color: var(--accent);
 }
 
-.menuItem svg, .menuItem span:first-child {
-  font-size: 18px;
-  width: 20px;
-  text-align: center;
+.menuItem-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  color: inherit;
+}
+
+.menuItem-icon svg {
+  flex-shrink: 0;
+}
+
+.menuItem-icon--duo {
+  gap: 1px;
+  justify-content: flex-start;
+  width: auto;
+  min-width: 22px;
+}
+
+.menuItem-icon--duo svg:first-child {
+  margin-left: -1px;
 }
 
 /* =====================================================
@@ -1014,4 +1040,38 @@ body {
   .userEmail {
     display: none;
   }
+}
+
+/* Forecast workspace — merged forecast + model compare */
+.forecast-workspace-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: var(--space-5);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+}
+
+.forecast-workspace-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.forecast-workspace-tab:hover {
+  color: var(--text-primary);
+}
+
+.forecast-workspace-tab--active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-xs);
 }

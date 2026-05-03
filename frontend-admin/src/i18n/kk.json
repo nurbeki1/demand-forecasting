@@ -51,7 +51,29 @@
     "settings": "Баптаулар",
     "logout": "Шығу",
     "login": "Кіру",
-    "register": "Тіркелу"
+    "register": "Тіркелу",
+    "support": "Қолдау",
+    "forecastCompare": "Болжам және салыстыру"
+  },
+  "adminSupport": {
+    "bannerTitle": "Telegram қолдау",
+    "bannerSubtitle": "Тикеттер (Отзыв / Запрос) — ішкі топта бот хабарламасына reply жасаңыз.",
+    "bannerDetails": "Нұсқаулық",
+    "title": "Telegram қолдау (әкімші)",
+    "subtitle": "Бот, жазылым сілтемесі және оператор чек-листі.",
+    "actionsTitle": "Жедел әрекеттер",
+    "actionsSub": "Жазылым бетіндегі Enterprise сілтемесімен бірдей.",
+    "openTelegram": "Қолдау ботын ашу",
+    "openPricing": "Жазылым / Enterprise",
+    "backDashboard": "Басқару тақтасына",
+    "operatorTitle": "Операторларға",
+    "operatorSub": "Тек адам жауабы — осы ағынға AI қосылмайды.",
+    "step1": "Пайдаланушы ботта Отзыв немесе Запрос таңдап хабарлама жібереді.",
+    "step2": "Тикет ішкі Telegram топқа келеді (backend: TELEGRAM_SUPPORT_GROUP_ID).",
+    "step3": "Тикетті жіберген бот хабарламасына reply жазсаңыз — жауап пайдаланушыға барады.",
+    "envTitle": "Орта айнымалылары",
+    "envSub": "Құпияларды Git-ке салмаңыз. Үлгілер:",
+    "docsRepo": "Толық нұсқау: репозиторийдегі docs/TELEGRAM_BOT_SETUP.md."
   },
   "compare": {
     "title": "Модельдерді салыстыру",
@@ -143,7 +165,12 @@
     "signedInAs": "Кірген аккаунт",
     "currentPlan": "Ағымдағы тариф",
     "planFree": "Тегін",
-    "planPremium": "Жазылым (premium)"
+    "planPremium": "Жазылым (premium)",
+    "activeBadge": "Белсенді",
+    "proActiveTagline": "Бұл сіздің ағымдағы тарифіңіз — барлық Pro мүмкіндіктері қосылған.",
+    "proActiveFootnote": "Enterprise немесе көлем керек болса, оңдағы карточканы қараңыз немесе хабарласыңыз.",
+    "currentPlanButton": "Қолданбаға оралу",
+    "telegramSupportMissing": "Telegram қолдау сілтемесі бапталмаған. Frontend .env ішінде VITE_TELEGRAM_SUPPORT_URL көрсетіңіз."
   },
   "payment": {
     "title": "Төлем",
@@ -278,6 +305,9 @@
     "noConversations": "Әлі сөйлесулер жоқ",
     "settings": "Баптаулар",
     "subscription": "Жазылым",
+    "subscriptionPro": "Жазылым · PRO",
+    "subscriptionProHint": "PRO жазылымы белсенді — тарифтерді қарау",
+    "proPlanStatusTop": "PRO жазылым белсенді",
     "comingSoon": "Жақында",
     "plugins": "Плагиндер",
     "customGPTs": "Арнайы GPT",
@@ -344,6 +374,10 @@
   },
   "forecast": {
     "title": "Болжам",
+    "workspaceTitle": "Болжам және салыстыру",
+    "workspaceSubtitle": "Спрос болжамын қараңыз немесе модель нұсқаларын салыстырыңыз.",
+    "tabForecast": "Болжам",
+    "tabCompare": "Модельді салыстыру",
     "selectProduct": "Өнім таңдаңыз",
     "horizon": "Болжам мерзімі",
     "days": "күн",

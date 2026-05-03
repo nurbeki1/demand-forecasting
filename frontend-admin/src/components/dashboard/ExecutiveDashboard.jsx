@@ -3,6 +3,7 @@
  * Forecast-focused metrics and AI insights
  */
 
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./ExecutiveDashboard.css";
 
@@ -331,6 +332,22 @@ export default function ExecutiveDashboard({ data, loading, onRefresh, onProduct
 
   return (
     <div className="executive-dashboard">
+      <div className="admin-support-banner" role="region" aria-label={t("adminSupport.bannerTitle")}>
+        <div className="admin-support-banner__inner">
+          <span className="admin-support-banner__icon" aria-hidden>
+            🛟
+          </span>
+          <div className="admin-support-banner__copy">
+            <div className="admin-support-banner__title">{t("adminSupport.bannerTitle")}</div>
+            <div className="admin-support-banner__sub">{t("adminSupport.bannerSubtitle")}</div>
+          </div>
+          <Link to="/admin/support" className="admin-support-banner__cta">
+            {t("adminSupport.bannerDetails")}
+            {Icons.arrowRight}
+          </Link>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="dashboard-header">
         <div className="header-info">

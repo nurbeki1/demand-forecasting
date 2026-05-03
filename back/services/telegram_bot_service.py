@@ -1,12 +1,20 @@
 """
-Telegram Bot Service for Demand Forecasting
-Provides instant forecasts, alerts, and reports via Telegram
+Forecast AI — Telegram қолдау боты (адам оператор арқылы).
+
+Қолданушы: inline түймелер — «Отзыв» / «Запрос» → мәселені жібереді → растау хабарламасы ғана (AI жоқ).
+Операторлар: TELEGRAM_SUPPORT_GROUP_ID ішкі топта бот жіберген хабарламаға *reply* жасап жауап береді —
+жауап сол қолданушыға қайта жіберіледі.
+
+Қосымша: /forecast, /price, /report, /alerts, /cities (AI қолданылады).
 """
 
+import html
 import os
 import logging
 from typing import Optional
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ChatType
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -27,9 +35,69 @@ user_chat_ids: dict[str, int] = {}
 # Alert subscribers
 alert_subscribers: set[int] = set()
 
+# Боттың қолдау топындағы хабарлама id → пайдаланушының жеке chat id (ресүрстан кейін тазарады).
+_ticket_bridge: dict[int, int] = {}
+
+
+def _support_group_id() -> Optional[int]:
+    raw = (os.getenv("TELEGRAM_SUPPORT_GROUP_ID") or "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        logger.warning("TELEGRAM_SUPPORT_GROUP_ID must be an integer (e.g. -100...)")
+        return None
+
+
+def _operator_id_set() -> Optional[set[int]]:
+    raw = (os.getenv("TELEGRAM_SUPPORT_OPERATOR_IDS") or "").strip()
+    if not raw:
+        return None
+    ids: set[int] = set()
+    for part in raw.split(","):
+        part = part.strip()
+        if part.isdigit():
+            ids.add(int(part))
+    return ids if ids else None
+
+
+def _is_operator(user_id: int) -> bool:
+    allowed = _operator_id_set()
+    if allowed is None:
+        return True
+    return user_id in allowed
+
+
+def support_menu_markup() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("⭐ Отзыв", callback_data="support:feedback"),
+                InlineKeyboardButton("📩 Запрос", callback_data="support:request"),
+            ]
+        ]
+    )
+
+
+def _support_contact_block_markdown() -> str:
+    """FRONTEND_URL / SUPPORT_EMAIL — қолдау контактілері (Markdown)."""
+    web = (os.getenv("FRONTEND_URL") or "").strip().rstrip("/")
+    email = (os.getenv("SUPPORT_EMAIL") or "").strip().replace("`", "")
+    parts: list[str] = []
+    if web:
+        parts.append(f"🌐 [Веб-қосымша]({web})")
+    if email:
+        parts.append(f"✉️ [{email}](mailto:{email})")
+    if not parts:
+        parts.append(
+            "_Әкімшіге айтыңыз:_ осында `FRONTEND_URL` және қажет болса `SUPPORT_EMAIL` орнатылады."
+        )
+    return "\n".join(parts)
+
 
 class TelegramBotService:
-    """Telegram Bot Service for demand forecasting interactions"""
+    """Telegram — қолдау интерфейсі + болжамдық автоматтандыру."""
 
     def __init__(self):
         self.application: Optional[Application] = None
@@ -43,51 +111,71 @@ class TelegramBotService:
         # Store user
         user_chat_ids[str(user.id)] = chat_id
 
+        links = _support_contact_block_markdown()
+        deep = ""
+        if context.args and context.args[0].strip().lower() == "support":
+            deep = "\n_Сізді қолдау арнасына бағыттадық._\n"
+
         welcome_message = f"""
-🤖 *Сәлем, {user.first_name}!*
+🛟 *Forecast AI — қолдау*{deep}
 
-Мен Demand Forecasting AI ботымын. Сізге көмектесе аламын:
+Сәлем, *{user.first_name}*!
 
-📊 *Командалар:*
-/forecast `<product>` - Болжам алу
-/price `<product>` `<city>` - Баға сұрау
-/alerts - Алерттерді қосу/өшіру
-/report - Күнделікті есеп
-/cities - Қалалар тізімі
-/help - Көмек
+Төменде түрді таңдаңыз, содан кейін *бір хабарламада* мәселеңізді жіберіңіз (мәтін немесе скрин).
+Жауапты *оператор осы чатта* жазады (авто-жауап жоқ).
 
-💡 *Мысал:*
-`/forecast iPhone 15`
-`/price Samsung Galaxy Almaty`
+📎 *Байланыс (қосымша):*
+{links}
 
-Сұрағыңызды жазыңыз! 👇
+📊 Болжам құралдары: `/help`
 """
-        await update.message.reply_text(welcome_message, parse_mode='Markdown')
+        await update.message.reply_text(
+            welcome_message,
+            parse_mode="Markdown",
+            reply_markup=support_menu_markup(),
+        )
+
+    async def support_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Қолдау: Отзыв / Запрос таңдау."""
+        links = _support_contact_block_markdown()
+        text = f"""
+🛟 *Қолдау*
+
+Түймелерден *Отзыв* немесе *Запрос* таңдаңыз, содан кейін хабарламаңызды жіберіңіз.
+
+Оператор жауабын күтіңіз.
+
+📎 *Байланыс:*
+{links}
+
+/help — командалар тізімі
+"""
+        await update.message.reply_text(
+            text,
+            parse_mode="Markdown",
+            reply_markup=support_menu_markup(),
+        )
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /help command"""
-        help_text = """
-📚 *Көмек*
+        links = _support_contact_block_markdown()
+        help_text = f"""
+📚 *Көмек · Forecast AI*
 
-*Негізгі командалар:*
-• /forecast `<product>` - Өнім болжамын алу
-• /price `<product>` `<city>` - Қала бойынша баға
-• /alerts - Алерттер қосу/өшіру
-• /report - Күнделікті есеп алу
-• /cities - Қолжетімді қалалар
-• /categories - Категориялар тізімі
-• /trending - Трендтегі өнімдер
+🛟 *Қолдау (адам оператор)*
+/start немесе /support — *Отзыв / Запрос* түймелері
 
-*Мысалдар:*
-• `/forecast iPhone 15 Pro`
-• `/price Samsung Galaxy S24 Астана`
-• `/trending electronics`
+📎 *Байланыс:*
+{links}
 
-*Сұрақтар:*
-Кез келген сұрақты жай жазыңыз:
-• "iPhone қанша тұрады?"
-• "Алматыда ең көп сатылатын телефон?"
-• "Келесі аптаға болжам бер"
+---
+
+📊 *Өнім командалары (болжам және аналитика)*
+• /forecast `<өнім>` — сұраныс болжамы (мысал: `/forecast iPhone 15`)
+• /price `<өнім>` `<қала>` — баға бағыты (мысал: `/price Samsung Galaxy Алматы`)
+• /report — қысқа күнделікті есеп
+• /alerts — stockout/баға ескертулеріне жазылу
+• /cities — қалалар тізімі (баға командасына көмек)
 """
         await update.message.reply_text(help_text, parse_mode='Markdown')
 
@@ -277,38 +365,152 @@ class TelegramBotService:
 """
         await update.message.reply_text(cities_text, parse_mode='Markdown')
 
-    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle free text messages"""
-        text = update.message.text
+    async def support_type_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Отзыв / Запрос таңдалған соң келесі хабарламаны операторға өткізу режимі."""
+        query = update.callback_query
+        if not query:
+            return
+        await query.answer()
+        data = query.data or ""
+        if data == "support:feedback":
+            kind = "feedback"
+            label = "Отзыв"
+        elif data == "support:request":
+            kind = "request"
+            label = "Запрос"
+        else:
+            return
+        context.user_data["support_awaiting_message"] = True
+        context.user_data["support_kind"] = kind
+        await query.message.reply_text(
+            f"✅ Таңдалды: *{label}*.\n\n"
+            "Енді мәселеңізді бір хабарламада жіберіңіз (мәтін, скрин немесе файл).",
+            parse_mode="Markdown",
+        )
 
-        await update.message.chat.send_action("typing")
+    async def _relay_ticket_to_staff(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        gid = _support_group_id()
+        if gid is None:
+            await update.message.reply_text(
+                "Қолдау топы әлі бапталмаған (`TELEGRAM_SUPPORT_GROUP_ID`). Әкімшіге хабарласыңыз."
+            )
+            context.user_data.pop("support_awaiting_message", None)
+            context.user_data.pop("support_kind", None)
+            return
+
+        u = update.effective_user
+        username = f"@{u.username}" if u.username else "жоқ"
+        kind = context.user_data.get("support_kind", "request")
+        kind_label = "Отзыв" if kind == "feedback" else "Запрос"
+
+        header_lines = [
+            f"🛟 <b>{html.escape(kind_label)}</b>",
+            f"👤 {html.escape((u.full_name or '').strip() or 'User')} ({html.escape(username)})",
+            f"🆔 <code>{u.id}</code>",
+            "─────────────",
+            "<i>Оператор: жауап үшін осы хабарламаға reply.</i>",
+        ]
+        header = "\n".join(header_lines)
+        msg = update.message
 
         try:
-            from services.ai_chat_service import AIChatService
+            bridge_id: int
+            if msg.photo:
+                cap = (msg.caption or "").strip()
+                body = f"\n\n{html.escape(cap)}" if cap else ""
+                caption = header + body
+                if len(caption) > 1024:
+                    caption = caption[:1021] + "..."
+                sent = await context.bot.send_photo(
+                    chat_id=gid,
+                    photo=msg.photo[-1].file_id,
+                    caption=caption,
+                    parse_mode="HTML",
+                )
+                bridge_id = sent.message_id
+            elif msg.text:
+                full = header + "\n\n" + html.escape(msg.text)
+                if len(full) > 4096:
+                    full = full[:4090] + "..."
+                sent = await context.bot.send_message(chat_id=gid, text=full, parse_mode="HTML")
+                bridge_id = sent.message_id
+            else:
+                hdr = await context.bot.send_message(
+                    chat_id=gid,
+                    text=header + "\n\n<i>Қосымша хабарлама төменде.</i>",
+                    parse_mode="HTML",
+                )
+                bridge_id = hdr.message_id
+                await context.bot.copy_message(
+                    chat_id=gid,
+                    from_chat_id=msg.chat_id,
+                    message_id=msg.message_id,
+                )
 
-            chat_service = AIChatService()
-            response = await chat_service.process_message(
-                text,
-                user_id=str(update.effective_user.id)
-            )
-
-            reply = response.get('reply', 'Кешіріңіз, түсінбедім. /help командасын қолданыңыз.')
-
-            # Truncate if too long for Telegram
-            if len(reply) > 4000:
-                reply = reply[:4000] + "\n\n... (қысқартылды)"
-
-            await update.message.reply_text(reply, parse_mode='Markdown')
-
+            _ticket_bridge[bridge_id] = msg.chat_id
+            await msg.reply_text("✅ Жіберілді. Оператор жақында осы чатта жауап береді.")
         except Exception as e:
-            logger.error(f"Message handling error: {e}")
-            await update.message.reply_text(
-                "⚠️ Қате болды. Қайта көріңіз немесе /help командасын қолданыңыз."
+            logger.exception("Support relay failed: %s", e)
+            await msg.reply_text("⚠️ Жіберу сәтсіз. Кейінірек қайта көріңіз.")
+
+        context.user_data.pop("support_awaiting_message", None)
+        context.user_data.pop("support_kind", None)
+
+    async def handle_staff_reply(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Қолдау топында тикет хабарламасына reply — қолданушыға қайта жіберу."""
+        msg = update.effective_message
+        if not msg or not msg.reply_to_message:
+            return
+
+        gid = _support_group_id()
+        if gid is None or update.effective_chat.id != gid:
+            return
+
+        reply_to = msg.reply_to_message
+        bot_me = await context.bot.get_me()
+        if reply_to.from_user.id != bot_me.id:
+            return
+
+        user_chat = _ticket_bridge.get(reply_to.message_id)
+        if user_chat is None:
+            return
+
+        op_id = update.effective_user.id
+        if op_id == bot_me.id:
+            return
+        if not _is_operator(op_id):
+            logger.info("Ignoring staff reply from non-operator telegram user_id=%s", op_id)
+            return
+
+        try:
+            await context.bot.copy_message(
+                chat_id=user_chat,
+                from_chat_id=gid,
+                message_id=msg.message_id,
             )
+        except Exception as e:
+            logger.exception("Failed to copy operator reply to user: %s", e)
+
+    async def handle_private_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Жеке чат: қолдау тикеті немесе түймелерге бағыттау (AI жоқ)."""
+        if update.effective_chat.type != ChatType.PRIVATE:
+            return
+
+        if context.user_data.get("support_awaiting_message"):
+            await self._relay_ticket_to_staff(update, context)
+            return
+
+        await update.message.reply_text(
+            "Қолдау үшін алдымен *Отзыв* немесе *Запрос* таңдаңыз, содан кейін мәселеңізді жіберіңіз.\n\n"
+            "Болжам үшін: `/help`",
+            parse_mode="Markdown",
+            reply_markup=support_menu_markup(),
+        )
 
     def setup_handlers(self, application: Application):
         """Setup all command handlers"""
         application.add_handler(CommandHandler("start", self.start_command))
+        application.add_handler(CommandHandler("support", self.support_command))
         application.add_handler(CommandHandler("help", self.help_command))
         application.add_handler(CommandHandler("forecast", self.forecast_command))
         application.add_handler(CommandHandler("price", self.price_command))
@@ -317,10 +519,18 @@ class TelegramBotService:
         application.add_handler(CommandHandler("cities", self.cities_command))
 
         # Callback handlers for inline buttons
+        application.add_handler(CallbackQueryHandler(self.support_type_callback, pattern=r"^support:"))
         application.add_handler(CallbackQueryHandler(self.alerts_callback, pattern="^alerts_"))
 
-        # Message handler for free text (must be last)
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
+        # Operator replies in support group (before private handler)
+        sgid = _support_group_id()
+        if sgid is not None:
+            application.add_handler(MessageHandler(filters.Chat(chat_id=sgid), self.handle_staff_reply))
+
+        # Private chat: human support relay only (no free-text AI)
+        application.add_handler(
+            MessageHandler(filters.ChatType.PRIVATE & ~filters.COMMAND, self.handle_private_message)
+        )
 
     async def send_alert(self, message: str):
         """Send alert to all subscribers"""
@@ -381,6 +591,11 @@ async def init_telegram_bot():
     if not TELEGRAM_BOT_TOKEN:
         logger.warning("TELEGRAM_BOT_TOKEN not set, bot disabled")
         return None
+
+    if _support_group_id() is None:
+        logger.warning(
+            "TELEGRAM_SUPPORT_GROUP_ID not set — Отзыв/Запрос tickets will not reach operators until configured."
+        )
 
     try:
         application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()

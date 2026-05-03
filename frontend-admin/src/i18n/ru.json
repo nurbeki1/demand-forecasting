@@ -51,7 +51,29 @@
     "settings": "Настройки",
     "logout": "Выйти",
     "login": "Войти",
-    "register": "Регистрация"
+    "register": "Регистрация",
+    "support": "Поддержка",
+    "forecastCompare": "Прогноз и сравнение"
+  },
+  "adminSupport": {
+    "bannerTitle": "Поддержка в Telegram",
+    "bannerSubtitle": "Тикеты (Отзыв / Запрос) — ответьте reply на сообщение бота во внутренней группе.",
+    "bannerDetails": "Инструкция",
+    "title": "Поддержка Telegram (админ)",
+    "subtitle": "Бот, тарифы и чек-лист для операторов.",
+    "actionsTitle": "Быстрые действия",
+    "actionsSub": "Та же ссылка, что и Enterprise на странице тарифов.",
+    "openTelegram": "Открыть бота поддержки",
+    "openPricing": "Подписки / Enterprise",
+    "backDashboard": "На панель",
+    "operatorTitle": "Для операторов",
+    "operatorSub": "Только живые ответы — без AI в этом сценарии.",
+    "step1": "Пользователь в боте выбирает Отзыв или Запрос и отправляет текст.",
+    "step2": "Тикет приходит во внутреннюю группу (TELEGRAM_SUPPORT_GROUP_ID на бэкенде).",
+    "step3": "Сделайте reply на сообщение бота с тикетом — ответ уйдёт пользователю в личку.",
+    "envTitle": "Переменные окружения",
+    "envSub": "Секреты не коммитьте. Примеры:",
+    "docsRepo": "Полная инструкция: docs/TELEGRAM_BOT_SETUP.md в репозитории."
   },
   "compare": {
     "title": "Сравнение моделей",
@@ -143,7 +165,12 @@
     "signedInAs": "Вы вошли как",
     "currentPlan": "Текущий тариф",
     "planFree": "Бесплатный",
-    "planPremium": "Подписка (premium)"
+    "planPremium": "Подписка (premium)",
+    "activeBadge": "Активна",
+    "proActiveTagline": "Ваш текущий тариф — все возможности Pro доступны.",
+    "proActiveFootnote": "Нужен Enterprise или больше лимитов? Смотрите карточку справа или напишите нам.",
+    "currentPlanButton": "Вернуться в приложение",
+    "telegramSupportMissing": "Ссылка на Telegram не настроена. Укажите VITE_TELEGRAM_SUPPORT_URL в .env фронтенда."
   },
   "payment": {
     "title": "Оплата",
@@ -278,6 +305,9 @@
     "noConversations": "Пока нет разговоров",
     "settings": "Настройки",
     "subscription": "Подписка",
+    "subscriptionPro": "Подписка · PRO",
+    "subscriptionProHint": "Подписка PRO активна — тарифы",
+    "proPlanStatusTop": "Подписка PRO активна",
     "comingSoon": "Скоро",
     "plugins": "Плагины",
     "customGPTs": "Свои GPT",
@@ -344,6 +374,10 @@
   },
   "forecast": {
     "title": "Прогноз",
+    "workspaceTitle": "Прогноз и сравнение",
+    "workspaceSubtitle": "Стройте прогноз спроса или сравнивайте версии модели.",
+    "tabForecast": "Прогноз",
+    "tabCompare": "Сравнение моделей",
     "selectProduct": "Выберите продукт",
     "horizon": "Горизонт прогноза",
     "days": "дней",

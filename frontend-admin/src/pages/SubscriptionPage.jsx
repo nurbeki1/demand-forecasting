@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
+import { TELEGRAM_SUPPORT_URL } from "../config";
 import "../styles/subscription.css";
 
 /** Premium ML / plan badge — `subscription_plan` only (same as chat picker). */
@@ -22,9 +23,12 @@ function PlanCard({
   ctaLabel,
   onCta,
   gradientCta,
+  isCurrentPlan,
 }) {
   const inner = (
-    <div className={`subscription-card__inner ${highlighted ? "subscription-card__inner--pro" : ""}`}>
+    <div
+      className={`subscription-card__inner ${highlighted ? "subscription-card__inner--pro" : ""}${isCurrentPlan ? " subscription-card__inner--current" : ""}`}
+    >
       <div className="subscription-card__header">
         <div>
           <h2 className="subscription-card__name">{name}</h2>
@@ -34,7 +38,7 @@ function PlanCard({
           {tagline ? <p className="subscription-card__tagline">{tagline}</p> : null}
         </div>
         {badgeText ? (
-          <span className="subscription-card__badge">{badgeText}</span>
+          <span className={`subscription-card__badge${isCurrentPlan ? " subscription-card__badge--active" : ""}`}>{badgeText}</span>
         ) : null}
       </div>
       <ul className="subscription-card__features">
@@ -48,7 +52,14 @@ function PlanCard({
         ))}
       </ul>
       {footnote ? <p className="subscription-card__footnote">{footnote}</p> : null}
-      {gradientCta ? (
+      {isCurrentPlan ? (
+        <button type="button" className="subscription-btn subscription-btn--current-plan" onClick={onCta}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+            <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span>{ctaLabel}</span>
+        </button>
+      ) : gradientCta ? (
         <button type="button" className="subscription-btn subscription-btn--gradient" onClick={onCta}>
           <span>{ctaLabel}</span>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -63,11 +74,11 @@ function PlanCard({
     </div>
   );
 
-  if (!highlighted) return <article className="subscription-card">{inner}</article>;
+  const articleClass = ["subscription-card"];
+  if (highlighted) articleClass.push("subscription-card--highlight");
+  if (isCurrentPlan) articleClass.push("subscription-card--is-current");
 
-  return (
-    <article className="subscription-card subscription-card--highlight">{inner}</article>
-  );
+  return <article className={articleClass.join(" ")}>{inner}</article>;
 }
 
 /** Opens full-page /login (no overlay modal). */
@@ -105,7 +116,27 @@ export default function SubscriptionPage() {
 
   const proClick = () => goCheckout("pro");
 
-  const enterpriseClick = () => goCheckout("enterprise");
+  const enterpriseClick = () => {
+    if (TELEGRAM_SUPPORT_URL) {
+      window.open(TELEGRAM_SUPPORT_URL, "_blank", "noopener,noreferrer");
+      return;
+    }
+    toast.message(t("subscription.telegramSupportMissing"));
+  };
+
+  const goBackFromSubscriptions = () => {
+    if (isAuthenticated) {
+      navigate(isAdmin ? "/admin" : "/user");
+      return;
+    }
+    navigate("/");
+  };
+
+  const hasPremiumPlan = Boolean(isAuthenticated && user && userAllowsPremiumModels(user));
+
+  const goToAppFromPricing = () => {
+    navigate(isAdmin ? "/admin" : "/user");
+  };
 
   return (
     <div className="subscription-page">
@@ -116,7 +147,7 @@ export default function SubscriptionPage() {
           <button
             type="button"
             className="subscription-page__back"
-            onClick={() => navigate(-1)}
+            onClick={goBackFromSubscriptions}
             aria-label={t("subscription.back")}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -171,7 +202,7 @@ export default function SubscriptionPage() {
           <PlanCard
             name={t("subscription.pro")}
             priceLine={t("subscription.pricePro")}
-            tagline={t("subscription.proTagline")}
+            tagline={hasPremiumPlan ? t("subscription.proActiveTagline") : t("subscription.proTagline")}
             features={[
               t("subscription.featPro1"),
               t("subscription.featPro2"),
@@ -180,12 +211,13 @@ export default function SubscriptionPage() {
               t("subscription.featPro5"),
               t("subscription.featPro6"),
             ]}
-            footnote={t("subscription.proFootnote")}
+            footnote={hasPremiumPlan ? t("subscription.proActiveFootnote") : t("subscription.proFootnote")}
             highlighted
-            badgeText={t("subscription.recommended")}
-            ctaLabel={t("subscription.ctaPro")}
-            onCta={proClick}
-            gradientCta
+            isCurrentPlan={hasPremiumPlan}
+            badgeText={hasPremiumPlan ? t("subscription.activeBadge") : t("subscription.recommended")}
+            ctaLabel={hasPremiumPlan ? t("subscription.currentPlanButton") : t("subscription.ctaPro")}
+            onCta={hasPremiumPlan ? goToAppFromPricing : proClick}
+            gradientCta={!hasPremiumPlan}
           />
           <PlanCard
             name={t("subscription.enterprise")}

@@ -720,16 +720,214 @@ class WebSearchService:
 
         return similar[:5]
 
+    # =========================================================
+    # KAZAKHSTAN-SPECIFIC SEARCHES
+    # =========================================================
+
+    async def search_kaspi_demand(self, product_name: str) -> Dict[str, Any]:
+        """
+        Search for product demand signals on Kaspi.kz (Kazakhstan's #1 marketplace).
+        Returns sales rank, review velocity, category rank, installment availability.
+        """
+        query = f"{product_name} kaspi.kz рейтинг продажи рассрочка отзывы"
+        result = await self._search(
+            query=query,
+            include_domains=["kaspi.kz"],
+            max_results=5,
+        )
+
+        kaspi_data = {
+            "has_installment": False,
+            "kaspi_reviews": 0,
+            "kaspi_rating": 0.0,
+            "kaspi_sellers": 0,
+            "category_rank": None,
+            "delivery_available": False,
+        }
+
+        all_content = " ".join(r.get("content", "") + " " + r.get("title", "") for r in result.get("results", []))
+        content_lower = all_content.lower()
+
+        # Installment keywords
+        if any(kw in content_lower for kw in ["рассрочка", "0%", "kaspi red", "kaspi gold", "бөліп", "бөлшектеп"]):
+            kaspi_data["has_installment"] = True
+
+        # Delivery
+        if any(kw in content_lower for kw in ["доставка", "жеткізу", "delivery"]):
+            kaspi_data["delivery_available"] = True
+
+        # Extract Kaspi reviews count
+        count_match = re.search(r'(\d{1,5})\s*(?:отзывов|пікір|reviews?)', all_content, re.IGNORECASE)
+        if count_match:
+            try:
+                kaspi_data["kaspi_reviews"] = int(count_match.group(1).replace(",", ""))
+            except ValueError:
+                pass
+
+        # Extract Kaspi rating
+        for pattern in [r'(\d+\.?\d*)\s*/\s*5', r'рейтинг:?\s*(\d+\.?\d*)']:
+            m = re.search(pattern, all_content, re.IGNORECASE)
+            if m:
+                try:
+                    r_val = float(m.group(1))
+                    if 1 <= r_val <= 5:
+                        kaspi_data["kaspi_rating"] = r_val
+                        break
+                except ValueError:
+                    pass
+
+        # Count sellers
+        seller_match = re.search(r'(\d+)\s*(?:продавц|магазин|sellers?)', all_content, re.IGNORECASE)
+        if seller_match:
+            try:
+                kaspi_data["kaspi_sellers"] = int(seller_match.group(1))
+            except ValueError:
+                pass
+
+        return kaspi_data
+
+    async def search_market_news(self, product_name: str) -> Dict[str, Any]:
+        """
+        Search for recent news: new model launches, supply issues, price drops, viral trends.
+        Returns news_sentiment, key_events, expected_demand_impact.
+        """
+        query = f"{product_name} новинка выпуск дефицит скидка Казахстан 2024 2025"
+        result = await self._search(query=query, max_results=5)
+
+        news = {
+            "news_sentiment": "neutral",  # positive, negative, neutral
+            "sentiment_score": 0,         # -5 to +5
+            "key_events": [],
+            "demand_impact": "neutral",   # boost, drop, neutral
+            "is_new_model": False,
+            "has_supply_issue": False,
+            "has_price_drop": False,
+        }
+
+        all_content = " ".join(r.get("content", "") + " " + r.get("title", "") for r in result.get("results", []))
+        content_lower = all_content.lower()
+
+        score = 0
+
+        # Positive signals
+        positive_events = {
+            "новинка": ("Новая модель вышла", 2),
+            "новый": ("Новый продукт", 1),
+            "бестселлер": ("Бестселлер", 2),
+            "viral": ("Вирусный контент", 2),
+            "хит продаж": ("Хит продаж", 2),
+            "скидка": ("Скидки/акция", 1),
+            "распродажа": ("Распродажа", 1),
+        }
+        for kw, (label, weight) in positive_events.items():
+            if kw in content_lower:
+                news["key_events"].append(label)
+                score += weight
+
+        # Negative signals
+        negative_events = {
+            "дефицит": ("Дефицит товара", -2),
+            "нет в наличии": ("Нет в наличии", -2),
+            "запрет": ("Возможный запрет", -3),
+            "отозван": ("Отзыв товара", -3),
+            "проблема": ("Проблемы с качеством", -1),
+            "поломка": ("Жалобы на поломки", -2),
+        }
+        for kw, (label, weight) in negative_events.items():
+            if kw in content_lower:
+                news["key_events"].append(label)
+                score += weight
+
+        # New model detection
+        if any(kw in content_lower for kw in ["новинка", "2025", "новый", "new model", "announced"]):
+            news["is_new_model"] = True
+
+        if any(kw in content_lower for kw in ["дефицит", "нет в наличии", "shortage"]):
+            news["has_supply_issue"] = True
+
+        if any(kw in content_lower for kw in ["скидка", "цена упала", "price drop", "дешевле"]):
+            news["has_price_drop"] = True
+
+        news["sentiment_score"] = score
+        if score >= 2:
+            news["news_sentiment"] = "positive"
+            news["demand_impact"] = "boost"
+        elif score <= -2:
+            news["news_sentiment"] = "negative"
+            news["demand_impact"] = "drop"
+        else:
+            news["news_sentiment"] = "neutral"
+            news["demand_impact"] = "neutral"
+
+        news["key_events"] = list(dict.fromkeys(news["key_events"]))[:4]  # deduplicate, max 4
+        return news
+
+    async def search_category_market_size(self, product_name: str) -> Dict[str, Any]:
+        """
+        Estimate category market size and saturation in Kazakhstan.
+        Returns market_size_level, saturation, growth_rate.
+        """
+        # Extract rough category from product name
+        name_lower = product_name.lower()
+        category_map = {
+            "iphone": "смартфоны", "samsung": "смартфоны", "xiaomi": "смартфоны",
+            "ноутбук": "ноутбуки", "laptop": "ноутбуки", "macbook": "ноутбуки",
+            "наушники": "наушники", "airpods": "наушники",
+            "холодильник": "бытовая техника", "стиральная": "бытовая техника",
+            "кроссовки": "обувь", "nike": "спортивная одежда", "adidas": "спортивная одежда",
+        }
+        category = next((v for k, v in category_map.items() if k in name_lower), "электроника")
+
+        query = f"рынок {category} Казахстан объём продажи 2024 млрд"
+        result = await self._search(query=query, max_results=3)
+
+        market = {
+            "category": category,
+            "market_size_level": "medium",   # small, medium, large
+            "saturation_level": "medium",     # low, medium, high
+            "yoy_growth_percent": 0.0,
+            "market_description": "",
+        }
+
+        all_content = " ".join(r.get("content", "") for r in result.get("results", []))
+        content_lower = all_content.lower()
+
+        # Growth signals
+        growth_match = re.search(r'(\d+(?:\.\d+)?)\s*%\s*(?:рост|growth|увеличение)', all_content, re.IGNORECASE)
+        if growth_match:
+            try:
+                market["yoy_growth_percent"] = float(growth_match.group(1))
+            except ValueError:
+                pass
+
+        # Size signals
+        if any(kw in content_lower for kw in ["млрд", "billion", "крупный"]):
+            market["market_size_level"] = "large"
+        elif any(kw in content_lower for kw in ["млн", "million", "средний"]):
+            market["market_size_level"] = "medium"
+        else:
+            market["market_size_level"] = "small"
+
+        # Saturation
+        if any(kw in content_lower for kw in ["насыщен", "конкурентный", "много продавцов", "saturated"]):
+            market["saturation_level"] = "high"
+        elif any(kw in content_lower for kw in ["растущий", "перспективный", "growing", "low competition"]):
+            market["saturation_level"] = "low"
+
+        market["market_description"] = f"Рынок {category} в Казахстане"
+        return market
+
     async def comprehensive_product_analysis(self, product_name: str) -> Dict[str, Any]:
         """
         Run comprehensive analysis for a product using multiple searches.
 
         This is the main method for full product analysis.
+        Now includes Kazakhstan-specific signals, news sentiment, and market size.
 
         Returns:
-            Complete analysis with prices, reviews, trends, competitors
+            Complete analysis with prices, reviews, trends, KZ-specific signals
         """
-        # Run all searches in parallel
+        # Run all searches in parallel — base + 3 new KZ-specific searches
         results = await asyncio.gather(
             self.search_product_price(product_name),
             self.get_competitor_prices(product_name),
@@ -737,16 +935,22 @@ class WebSearchService:
             self.search_demand_trends(product_name),
             self.search_similar_products(product_name),
             self.get_currency_rate("USD"),
+            self.search_kaspi_demand(product_name),
+            self.search_market_news(product_name),
+            self.search_category_market_size(product_name),
             return_exceptions=True,
         )
 
         # Unpack results
-        price_info = results[0] if not isinstance(results[0], Exception) else None
-        competitors = results[1] if not isinstance(results[1], Exception) else []
-        reviews = results[2] if not isinstance(results[2], Exception) else {}
-        trends = results[3] if not isinstance(results[3], Exception) else {}
-        similar = results[4] if not isinstance(results[4], Exception) else []
-        currency = results[5] if not isinstance(results[5], Exception) else None
+        price_info   = results[0] if not isinstance(results[0], Exception) else None
+        competitors  = results[1] if not isinstance(results[1], Exception) else []
+        reviews      = results[2] if not isinstance(results[2], Exception) else {}
+        trends       = results[3] if not isinstance(results[3], Exception) else {}
+        similar      = results[4] if not isinstance(results[4], Exception) else []
+        currency     = results[5] if not isinstance(results[5], Exception) else None
+        kaspi        = results[6] if not isinstance(results[6], Exception) else {}
+        news         = results[7] if not isinstance(results[7], Exception) else {}
+        market_size  = results[8] if not isinstance(results[8], Exception) else {}
 
         # Calculate profitability
         wholesale_usd = price_info.price_usd if price_info else 0
@@ -759,7 +963,7 @@ class WebSearchService:
         potential_profit_kzt = avg_retail_kzt - wholesale_kzt
         profit_margin = (potential_profit_kzt / wholesale_kzt * 100) if wholesale_kzt > 0 else 0
 
-        # Build risk assessment
+        # Build risk assessment (enhanced with new signals)
         risks = []
         if trends.get("trend_direction") == "down":
             risks.append("Спрос снижается")
@@ -767,10 +971,30 @@ class WebSearchService:
             risks.append(f"Низкий рейтинг: {reviews.get('avg_rating')}")
         if len(competitors) > 5:
             risks.append("Высокая конкуренция")
+        if news.get("has_supply_issue"):
+            risks.append("Дефицит товара на рынке")
+        if market_size.get("saturation_level") == "high":
+            risks.append("Высокое насыщение рынка")
         if profit_margin < 15:
             risks.append("Низкая маржа")
 
         risk_level = "low" if len(risks) == 0 else "medium" if len(risks) <= 2 else "high"
+
+        # Combined review count: prefer Kaspi if available, else web
+        total_reviews = max(
+            reviews.get("review_count", 0),
+            kaspi.get("kaspi_reviews", 0),
+        )
+        combined_rating = kaspi.get("kaspi_rating") or reviews.get("avg_rating", 0)
+
+        # News impact on popularity score
+        base_popularity = trends.get("popularity_score", 50)
+        news_delta = {"boost": 12, "neutral": 0, "drop": -12}.get(news.get("demand_impact", "neutral"), 0)
+        adjusted_popularity = max(0, min(100, base_popularity + news_delta))
+
+        # Market saturation score (0=low, 1=high) for ML
+        saturation_map = {"low": 0.2, "medium": 0.5, "high": 0.85}
+        saturation_score = saturation_map.get(market_size.get("saturation_level", "medium"), 0.5)
 
         return {
             "product_name": product_name,
@@ -792,19 +1016,48 @@ class WebSearchService:
             "competitor_prices": competitor_prices[:5],
             "similar_products": [s["name"] for s in similar],
 
-            # Reviews & Rating
-            "avg_rating": reviews.get("avg_rating", 0),
-            "review_count": reviews.get("review_count", 0),
+            # Reviews & Rating (combined global + Kaspi)
+            "avg_rating": round(combined_rating, 1),
+            "review_count": total_reviews,
             "pros": reviews.get("pros", []),
             "cons": reviews.get("cons", []),
             "recommendation_rate": reviews.get("recommendation_rate", 0),
 
             # Demand & Trends
             "trend_direction": trends.get("trend_direction", "stable"),
-            "popularity_score": trends.get("popularity_score", 50),
+            "popularity_score": adjusted_popularity,
             "search_interest": trends.get("search_interest", "medium"),
             "seasonality": trends.get("seasonality"),
             "trend_description": trends.get("trend_description", ""),
+
+            # Kazakhstan-specific signals
+            "kaspi": {
+                "has_installment": kaspi.get("has_installment", False),
+                "kaspi_reviews": kaspi.get("kaspi_reviews", 0),
+                "kaspi_rating": kaspi.get("kaspi_rating", 0.0),
+                "kaspi_sellers": kaspi.get("kaspi_sellers", 0),
+                "delivery_available": kaspi.get("delivery_available", False),
+            },
+
+            # News & events
+            "news": {
+                "sentiment": news.get("news_sentiment", "neutral"),
+                "sentiment_score": news.get("sentiment_score", 0),
+                "key_events": news.get("key_events", []),
+                "demand_impact": news.get("demand_impact", "neutral"),
+                "is_new_model": news.get("is_new_model", False),
+                "has_supply_issue": news.get("has_supply_issue", False),
+                "has_price_drop": news.get("has_price_drop", False),
+            },
+
+            # Market size
+            "market": {
+                "category": market_size.get("category", ""),
+                "size_level": market_size.get("market_size_level", "medium"),
+                "saturation_level": market_size.get("saturation_level", "medium"),
+                "saturation_score": saturation_score,
+                "yoy_growth_percent": market_size.get("yoy_growth_percent", 0.0),
+            },
 
             # Risk Assessment
             "risk_level": risk_level,
