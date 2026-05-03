@@ -32,6 +32,7 @@ import ModelVisualizationPage from "./pages/ModelVisualizationPage";
 import ReportsPage from "./pages/ReportsPage";
 import ForecastComparisonPage from "./pages/ForecastComparisonPage";
 import UserManagementPage from "./pages/UserManagementPage";
+import ProfilePage from "./pages/ProfilePage";
 
 // Styles
 import "./styles/dashboard.css";
@@ -198,6 +199,14 @@ function AppRoutes() {
         element={
           <UserRoute>
             <ChatPage />
+          </UserRoute>
+        }
+      />
+      <Route
+        path="/user/profile"
+        element={
+          <UserRoute>
+            <ProfilePage />
           </UserRoute>
         }
       />

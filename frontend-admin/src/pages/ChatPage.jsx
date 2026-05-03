@@ -233,6 +233,99 @@ function processInline(text) {
 }
 
 // ============================================
+// MODEL SELECTOR COMPONENT
+// ============================================
+const MODEL_OPTIONS = [
+  {
+    value: "random_forest",
+    label: "RF",
+    name: "Random Forest",
+    description: "Тұрақты, кез-келген деректе жақсы жұмыс істейді",
+    color: "#60a5fa",
+  },
+  {
+    value: "lightgbm",
+    label: "LGBM",
+    name: "LightGBM",
+    description: "Өте жылдам, үлкен деректер үшін оңтайлы",
+    color: "#34d399",
+  },
+  {
+    value: "xgboost",
+    label: "XGB",
+    name: "XGBoost",
+    description: "Жоғары дәлдік, күрделі үлгілерді анықтайды",
+    color: "#f59e0b",
+  },
+];
+
+function ModelSelector({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const selected = MODEL_OPTIONS.find((m) => m.value === value) || MODEL_OPTIONS[0];
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="model-selector" ref={ref}>
+      <button
+        className="model-selector-btn"
+        onClick={() => setOpen((prev) => !prev)}
+        title={`Модель: ${selected.name}`}
+        type="button"
+      >
+        <span className="model-selector-label" style={{ color: selected.color }}>
+          {selected.label}
+        </span>
+        <svg
+          className={`model-selector-chevron ${open ? "open" : ""}`}
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        >
+          <polyline points="18 15 12 9 6 15" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="model-selector-dropdown">
+          {MODEL_OPTIONS.map((m) => (
+            <button
+              key={m.value}
+              className={`model-option ${value === m.value ? "active" : ""}`}
+              onClick={() => { onChange(m.value); setOpen(false); }}
+              type="button"
+            >
+              <div className="model-option-top">
+                <span className="model-option-name" style={{ color: m.color }}>
+                  {m.name}
+                </span>
+                {value === m.value && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </div>
+              <span className="model-option-desc">{m.description}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // PRODUCT COMPONENTS
 // ============================================
 function ProductCard({ product, t }) {
@@ -407,6 +500,7 @@ function ChatSidebar({
   user,
   onLogout,
   onShowSettings,
+  onProfile,
   t
 }) {
   return (
@@ -511,10 +605,16 @@ function ChatSidebar({
 
         {/* User Avatar with Logout */}
         <div className="sidebar-user-row">
-          <div className="user-avatar-small">
-            {user?.email?.[0]?.toUpperCase() || 'U'}
-          </div>
-          <span className="user-email-small">{user?.email || 'User'}</span>
+          <button
+            className="user-avatar-small"
+            onClick={onProfile}
+            title="Профиль"
+            aria-label="Профиль"
+            style={{ cursor: "pointer", border: "none", background: "none", padding: 0 }}
+          >
+            {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+          </button>
+          <span className="user-email-small">{user?.full_name || user?.email || 'User'}</span>
           <button className="sidebar-logout-btn" onClick={onLogout} title={t('nav.logout')} aria-label={t('nav.logout')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -551,6 +651,9 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationIdState] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+
+  // Model selection
+  const [selectedModel, setSelectedModel] = useState("random_forest");
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -685,7 +788,7 @@ export default function ChatPage() {
     setLoading(true);
 
     try {
-      const response = await sendChatMessage(text, i18n.language);
+      const response = await sendChatMessage(text, i18n.language, selectedModel);
       const assistantMessage = {
         role: "assistant",
         content: response.reply,
@@ -839,6 +942,7 @@ export default function ChatPage() {
           onShowSettings={() => {
             setShowSettings(true);
           }}
+          onProfile={() => navigate("/user/profile")}
           t={t}
         />
 
@@ -890,6 +994,8 @@ export default function ChatPage() {
                       disabled={loading || isRecording}
                       autoFocus
                     />
+                    {/* Model Selector */}
+                    <ModelSelector value={selectedModel} onChange={setSelectedModel} />
                     {/* Microphone Button */}
                     {speechSupported && (
                       <button
@@ -1040,6 +1146,8 @@ export default function ChatPage() {
                       onKeyPress={handleKeyPress}
                       disabled={loading || isRecording}
                     />
+                    {/* Model Selector */}
+                    <ModelSelector value={selectedModel} onChange={setSelectedModel} />
                     {/* Microphone Button */}
                     {speechSupported && (
                       <button

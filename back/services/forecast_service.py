@@ -1,6 +1,9 @@
-import pandas as pd
 import math
 import os
+
+import pandas as pd
+
+from services import model_service
 
 # Get absolute path relative to this file
 _DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,40 +25,41 @@ def safe_num(x, default=0.0):
 
 
 def get_forecast_chart(product_id: str, horizon_days: int):
-    df = pd.read_csv(DATA_PATH)
+    df = pd.read_csv(DATA_PATH, parse_dates=["Date"])
 
-    df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
+    sub = df[df["Product ID"] == product_id].copy()
 
-
-    if "product_id" not in df.columns:
-        raise ValueError("CSV must contain 'Product ID' column")
-
-    if "demand_forecast" not in df.columns:
-        raise ValueError("CSV must contain 'Demand Forecast' column")
-
-    product_df = df[df["product_id"] == product_id].copy()
-
-    if product_df.empty:
+    if sub.empty:
         raise ValueError(f"Product {product_id} not found")
 
-    history = []
-    for i, row in product_df.iterrows():
-        history.append({
-            "date": str(row.get("date", f"day-{i}")),
-            "demand": safe_num(row.get("demand_forecast"))
-        })
+    if len(sub) < 30:
+        raise ValueError("Not enough data for this product")
 
-    mean_demand = safe_num(product_df["demand_forecast"].mean())
+    # Используем реальную ML модель
+    trained = model_service.get_or_train_model(sub, product_id)
+    future_df, preds = model_service.predict(trained, horizon_days)
 
-    forecast = []
-    for i in range(horizon_days):
-        forecast.append({
-            "date": f"day+{i+1}",
-            "predicted_demand": mean_demand
-        })
+    # История: последние 90 дней реального спроса
+    history_df = sub.sort_values("Date").tail(90)
+    history = [
+        {
+            "date": str(row["Date"].date()),
+            "demand": safe_num(row.get("Demand Forecast")),
+        }
+        for _, row in history_df.iterrows()
+    ]
+
+    forecast = [
+        {
+            "date": str(d.date()),
+            "predicted_demand": round(float(p), 2),
+        }
+        for d, p in zip(future_df[model_service.DATE_COL], preds)
+    ]
 
     return {
         "product_id": product_id,
         "history": history,
-        "forecast": forecast
+        "forecast": forecast,
+        "model_metrics": trained["metrics"],
     }

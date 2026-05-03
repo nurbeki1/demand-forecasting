@@ -7,9 +7,114 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- Google Sign-In -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+      /* Base paint before any JS/CSS: avoids white flash on slow networks */
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        min-height: 100dvh;
+        background-color: #020408;
+      }
+
+      #root {
+        min-height: 100%;
+        min-height: 100dvh;
+        background-color: #020408;
+      }
+
+      #preloader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        background: #020408;
+        opacity: 1;
+        transition: opacity 0.5s ease;
+      }
+
+      #preloader.preloader-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .preloader-spinner {
+        width: 54px;
+        height: 54px;
+        border: 3px solid rgba(0, 229, 255, 0.18);
+        border-top-color: #00e5ff;
+        border-radius: 50%;
+        animation: preloader-spin 0.8s linear infinite;
+      }
+
+      .preloader-text {
+        color: #94a3b8;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 14px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      body.preloader-active {
+        overflow: hidden;
+      }
+
+      @keyframes preloader-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </head>
-  <body>
+  <body class="preloader-active">
+    <div id="preloader">
+      <div class="preloader-spinner" aria-hidden="true"></div>
+      <div class="preloader-text">Loading...</div>
+    </div>
     <div id="root"></div>
+    <script>
+      (function () {
+        /* Landing waits for large Spline assets; other routes can hide sooner */
+        var PRELOADER_MAX_WAIT_MS =
+          window.location.pathname === "/" ? 180000 : 12000;
+        var preloader = document.getElementById("preloader");
+        var hidden = false;
+
+        function hidePreloader() {
+          if (hidden) return;
+          hidden = true;
+
+          if (!preloader) {
+            document.body.classList.remove("preloader-active");
+            return;
+          }
+
+          preloader.classList.add("preloader-hidden");
+          window.setTimeout(function () {
+            preloader.remove();
+            document.body.classList.remove("preloader-active");
+          }, 500);
+        }
+
+        // Make manual trigger available for app/runtime events.
+        window.__hideInitialPreloader = hidePreloader;
+
+        // Hide when all resources are loaded.
+        window.addEventListener("load", hidePreloader, { once: true });
+
+        // Landing page: hide as soon as Spline reports readiness.
+        if (window.location.pathname === "/") {
+          window.addEventListener("spline-ready", hidePreloader, { once: true });
+        }
+
+        // Hard fallback to avoid infinite preload.
+        window.setTimeout(hidePreloader, PRELOADER_MAX_WAIT_MS);
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

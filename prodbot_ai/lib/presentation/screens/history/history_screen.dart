@@ -82,38 +82,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       child: Row(
         children: [
-          // Icon
           Container(
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: AppColors.primary10,
-              borderRadius: BorderRadius.circular(8),
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.32),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: const Icon(
               Icons.history_rounded,
               size: 18,
-              color: AppColors.primary,
+              color: AppColors.white,
             ),
           ),
-
           const SizedBox(width: AppDimensions.spacing12),
-
-          // Title
-          Text(
-            'History',
-            style: AppTextStyles.titleMedium,
-          ),
-
+          Text('Тарих', style: AppTextStyles.titleMedium),
           const Spacer(),
-
-          // Clear all button
           TextButton(
-            onPressed: () {
-              // TODO: Clear history
-            },
+            onPressed: () {},
             child: Text(
-              'Clear all',
+              'Барлығын тазалау',
               style: AppTextStyles.labelMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -160,26 +155,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 80,
-            height: 80,
+            width: 88,
+            height: 88,
             decoration: BoxDecoration(
-              color: AppColors.primary10,
+              gradient: AppColors.primaryGradient,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 24,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
             child: const Icon(
               Icons.history_rounded,
               size: 40,
-              color: AppColors.primary,
+              color: AppColors.white,
             ),
           ),
           const SizedBox(height: AppDimensions.spacing24),
-          Text(
-            'No history yet',
-            style: AppTextStyles.titleMedium,
-          ),
+          Text('Тарих әзірге бос', style: AppTextStyles.titleMedium),
           const SizedBox(height: AppDimensions.spacing8),
           Text(
-            'Your chat history will appear here',
+            'Чат тарихы осы жерде көрсетіледі',
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -226,7 +225,8 @@ class _HistoryCard extends StatelessWidget {
       padding: const EdgeInsets.all(AppDimensions.spacing16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Row(
         children: [

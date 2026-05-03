@@ -1,0 +1,78 @@
+{
+  "@@locale": "en",
+  "appTitle": "ProdBot AI",
+
+  "welcomePoweredByAi": "AI-powered",
+  "welcomeTitle": "Welcome",
+  "welcomeBrandHighlight": "ProdBot AI",
+  "welcomeSubtitle": "Demand forecasting platform. Smart analysis one question away.",
+  "welcomeStart": "Get started",
+  "welcomeLogin": "Log in",
+  "welcomeOr": "or",
+
+  "loginTitle": "Sign in",
+  "loginSubtitle": "Enter your details to sign in to your account",
+  "loginEmailLabel": "Email",
+  "loginEmailHint": "you@company.com",
+  "loginPasswordLabel": "Password",
+  "loginPasswordHint": "Enter password",
+  "loginRememberMe": "Remember me",
+  "loginForgotPassword": "Forgot password?",
+  "loginButton": "Sign in",
+  "loginNoAccount": "No account?",
+  "loginRegister": "Register",
+
+  "validationEmailRequired": "Email is required",
+  "validationEmailInvalid": "Enter a valid email",
+  "validationPasswordRequired": "Password is required",
+  "validationPasswordShort": "At least 4 characters",
+
+  "chatNewChat": "New chat",
+  "chatSearchHint": "Search…",
+  "chatRecentChats": "Recent chats",
+  "chatNoConversations": "No chats yet",
+  "chatSettings": "Settings",
+  "chatLogout": "Log out",
+  "chatLogoutTooltip": "Log out",
+  "chatDeleteTitle": "Delete chat",
+  "chatDeleteBody": "Delete this chat?",
+  "chatCancel": "Cancel",
+  "chatDelete": "Delete",
+  "chatAiAssistant": "AI Assistant",
+  "chatWelcomeType1": "Welcome!",
+  "chatWelcomeType2": "Ask anything",
+  "chatWelcomeType3": "AI answers should be verified",
+  "chatAskAnythingHint": "Ask anything…",
+  "chatMessageHint": "Message…",
+  "chatDisclaimer": "AI may make mistakes. Verify important information.",
+  "suggestionTopProducts": "Top products",
+  "suggestionSalesForecast": "Sales forecast",
+  "suggestionTrending": "Trending items",
+  "suggestionCompare": "Compare products",
+
+  "roleYou": "You",
+  "roleAiAssistant": "AI Assistant",
+
+  "modelPickerTitle": "AI model",
+  "modelRfDesc": "Stable, works well on most data",
+  "modelLgbmDesc": "Very fast, ideal for large datasets",
+  "modelXgbDesc": "High accuracy, finds complex patterns",
+
+  "miniChartTitle": "Demand forecast",
+  "miniChartHistory": "History",
+  "miniChartForecast": "Forecast",
+
+  "productsCarouselTitle": "Products ({count})",
+  "@productsCarouselTitle": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "productPriceUnknown": "No price",
+
+  "chatErrorGeneric": "Error: could not reach the server. Try again later.",
+
+  "routerPageNotFound": "Page not found",
+  "routerUnknownRoute": "Unknown route",
+  "routerGoHome": "Go home"
+}

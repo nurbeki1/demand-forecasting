@@ -76,6 +76,10 @@ function Spline3DScene({ activeSection, lookAtCenter }) {
 
   const onSplineLoad = (splineApp) => {
     splineRef.current = splineApp;
+    window.dispatchEvent(new Event("spline-ready"));
+    if (typeof window.__hideInitialPreloader === "function") {
+      window.__hideInitialPreloader();
+    }
 
     // Try to find the head object (common names in Spline models)
     const headNames = ['Head', 'head', 'HEAD', 'Robot Head', 'Skull', 'Face'];

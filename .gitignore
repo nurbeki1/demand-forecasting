@@ -49,3 +49,5 @@ prodbot_ai/.packages
 
 # Claude cache
 .claude/
+# Trained ML models (large binary files)
+back/models/*.pkl

@@ -229,6 +229,7 @@ class ForecastResponse(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     language: str = "kk"  # Default to Kazakh, supports kk, ru, en
+    model_type: str = "random_forest"  # ML model: random_forest, lightgbm, xgboost
 
 
 class ProductInfo(BaseModel):
@@ -373,6 +374,7 @@ def forecast(
     product_id: str = Query(...),
     store_id: Optional[str] = Query(None),
     horizon_days: int = Query(7, ge=1, le=30),
+    model_type: str = Query("random_forest", enum=["random_forest", "lightgbm", "xgboost"]),
     user=Depends(get_admin_user),
 ):
     """Получить прогноз спроса на продукт (Admin only)"""
@@ -386,7 +388,7 @@ def forecast(
         raise HTTPException(status_code=400, detail="Not enough data for this product")
 
     # Используем кэшированную модель или обучаем новую
-    trained = get_or_train_model(sub, product_id, store_id)
+    trained = get_or_train_model(sub, product_id, store_id, model_type=model_type)
 
     # Получаем предсказания
     future_df, preds = predict(trained, horizon_days)
@@ -415,6 +417,7 @@ def forecast_v2(
     product_id: str = Query(...),
     store_id: Optional[str] = Query(None),
     horizon_days: int = Query(7, ge=1, le=30),
+    model_type: str = Query("random_forest", enum=["random_forest", "lightgbm", "xgboost"]),
     user=Depends(get_admin_user),
 ):
     """
@@ -431,7 +434,7 @@ def forecast_v2(
         raise HTTPException(status_code=400, detail="Not enough data for this product")
 
     # Get model and predictions
-    trained = get_or_train_model(sub, product_id, store_id)
+    trained = get_or_train_model(sub, product_id, store_id, model_type=model_type)
     future_df, preds = predict(trained, horizon_days)
 
     # Build predictions list
@@ -618,7 +621,7 @@ def get_active_alerts(
 @limiter.limit(RateLimits.CHAT)
 def chat(request: Request, payload: ChatRequest, user=Depends(get_current_user)):
     """AI чат с RAG для анализа спроса"""
-    return handle_ai_chat(payload.message, user.id, language=payload.language)
+    return handle_ai_chat(payload.message, user.id, language=payload.language, model_type=payload.model_type)
 
 
 @app.get("/chat/history")
@@ -792,6 +795,7 @@ def clear_model_cache(user=Depends(get_admin_user)):
 def retrain_model(
     product_id: str,
     store_id: Optional[str] = Query(None),
+    model_type: str = Query("random_forest", enum=["random_forest", "lightgbm", "xgboost"]),
     user=Depends(get_admin_user),
 ):
     """Принудительно переобучить модель для продукта (Admin only)"""
@@ -805,11 +809,11 @@ def retrain_model(
         raise HTTPException(status_code=400, detail="Not enough data for this product")
 
     # Capture old metrics before retrain
-    cache_key = get_cache_key(product_id, store_id)
+    cache_key = get_cache_key(product_id, store_id, model_type)
     old_metrics = _model_cache[cache_key]["metrics"] if cache_key in _model_cache else None
     old_trained_at = str(_model_cache[cache_key]["trained_at"]) if cache_key in _model_cache else None
 
-    trained = get_or_train_model(sub, product_id, store_id, force_retrain=True)
+    trained = get_or_train_model(sub, product_id, store_id, force_retrain=True, model_type=model_type)
 
     improvement = None
     if old_metrics:
@@ -840,6 +844,7 @@ async def forecast_compare(
     product_id: str = Query(...),
     store_id: Optional[str] = Query(None),
     horizon_days: int = Query(7, ge=1, le=30),
+    model_type: str = Query("random_forest", enum=["random_forest", "lightgbm", "xgboost"]),
     user=Depends(get_admin_user),
 ):
     """Compare current cached model vs freshly retrained model"""
@@ -853,7 +858,7 @@ async def forecast_compare(
     if len(sub) < 30:
         raise HTTPException(status_code=400, detail="Not enough data for this product")
 
-    cache_key = get_cache_key(product_id, store_id)
+    cache_key = get_cache_key(product_id, store_id, model_type)
 
     # Get current model predictions (if cached)
     current_data = None
@@ -867,7 +872,7 @@ async def forecast_compare(
         }
 
     # Train new model without caching (CPU-intensive, run in thread)
-    new_trained = await asyncio.to_thread(train_model_preview, sub, product_id, store_id)
+    new_trained = await asyncio.to_thread(train_model_preview, sub, product_id, store_id, model_type)
     future_df, new_preds = predict(new_trained, horizon_days)
 
     dates = [str(d.date()) for d in future_df[DATE_COL]]

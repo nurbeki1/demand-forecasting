@@ -261,12 +261,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               const SizedBox(height: AppDimensions.spacing32),
 
-              // Submit button
-              AppButton(
+              AppButton.gradient(
                 text: 'Add Product',
+                prefixIcon: Icons.check_rounded,
                 onPressed: _saveProduct,
                 isLoading: _isLoading,
-                fullWidth: true,
               ),
 
               const SizedBox(height: AppDimensions.spacing24),

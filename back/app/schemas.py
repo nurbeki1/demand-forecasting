@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from datetime import datetime
 
 
 # ===== Email Verification =====
@@ -18,13 +19,13 @@ class CompleteRegistrationRequest(BaseModel):
     """Request to complete registration after verification"""
     email: EmailStr
     code: str = Field(min_length=6, max_length=6)
-    password: str = Field(min_length=4, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
 
 
 # ===== Standard Auth =====
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=4, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class LoginRequest(BaseModel):
@@ -61,6 +62,11 @@ class UserResponse(BaseModel):
     is_verified: bool = True
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class UpdateProfileRequest(BaseModel):
+    full_name: Optional[str] = None
 
 
 # ===== Google OAuth =====

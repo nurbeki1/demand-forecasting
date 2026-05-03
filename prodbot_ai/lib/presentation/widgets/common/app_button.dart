@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/theme.dart';
 
-enum AppButtonVariant { primary, secondary, outline, text, danger }
+enum AppButtonVariant { primary, secondary, outline, text, danger, gradient }
+
 enum AppButtonSize { small, medium, large }
 
-/// Custom button widget based on Figma design
-/// Supports multiple variants: primary, secondary, outline, text, danger
+/// Custom button widget aligned with the web platform design tokens
+/// (`frontend-admin/src/styles/chat.css`).
+///
+/// New `gradient` variant renders the indigo→purple brand gradient that
+/// the web uses for primary CTAs (e.g. `.cta-button`, `.empty-send-btn`).
 class AppButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -29,10 +33,10 @@ class AppButton extends StatelessWidget {
     IconData? prefixIcon,
     this.suffixIcon,
     this.child,
-  }) : isFullWidth = fullWidth ?? true,
-       prefixIcon = icon ?? prefixIcon;
+  })  : isFullWidth = fullWidth ?? true,
+        prefixIcon = icon ?? prefixIcon;
 
-  // Primary filled button
+  // Primary filled button (solid indigo)
   const AppButton.primary({
     super.key,
     required this.text,
@@ -44,6 +48,20 @@ class AppButton extends StatelessWidget {
     this.suffixIcon,
     this.child,
   }) : variant = AppButtonVariant.primary;
+
+  /// Brand gradient button (indigo → purple) for the most important CTAs.
+  /// Mirrors the web `.cta-button` and `.auth-submit` styling.
+  const AppButton.gradient({
+    super.key,
+    required this.text,
+    this.onPressed,
+    this.size = AppButtonSize.large,
+    this.isLoading = false,
+    this.isFullWidth = true,
+    this.prefixIcon,
+    this.suffixIcon,
+    this.child,
+  }) : variant = AppButtonVariant.gradient;
 
   // Outlined button
   const AppButton.outline({
@@ -120,7 +138,6 @@ class AppButton extends StatelessWidget {
       case AppButtonSize.small:
         return AppTextStyles.buttonSmall;
       case AppButtonSize.medium:
-        return AppTextStyles.button;
       case AppButtonSize.large:
         return AppTextStyles.button;
     }
@@ -160,6 +177,8 @@ class AppButton extends StatelessWidget {
         return _buildTextButton(isDisabled);
       case AppButtonVariant.danger:
         return _buildDangerButton(isDisabled);
+      case AppButtonVariant.gradient:
+        return _buildGradientButton(isDisabled);
     }
   }
 
@@ -167,15 +186,54 @@ class AppButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: isDisabled ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: isDisabled ? AppColors.textDisabled : AppColors.primary,
-        foregroundColor: AppColors.white,
+        backgroundColor:
+            isDisabled ? AppColors.surfaceVariant : AppColors.primary,
+        foregroundColor:
+            isDisabled ? AppColors.textHint : AppColors.white,
         elevation: 0,
         padding: _padding,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         ),
       ),
-      child: _buildButtonContent(AppColors.white),
+      child: _buildButtonContent(
+        isDisabled ? AppColors.textHint : AppColors.white,
+      ),
+    );
+  }
+
+  Widget _buildGradientButton(bool isDisabled) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: isDisabled ? null : AppColors.primaryGradient,
+        color: isDisabled ? AppColors.surfaceVariant : null,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        boxShadow: isDisabled
+            ? null
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.32),
+                  blurRadius: 24,
+                  spreadRadius: -4,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isDisabled ? null : onPressed,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          child: Padding(
+            padding: _padding,
+            child: Center(
+              child: _buildButtonContent(
+                isDisabled ? AppColors.textHint : AppColors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -183,12 +241,17 @@ class AppButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: isDisabled ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: isDisabled ? AppColors.surfaceVariant : AppColors.primary10,
+        backgroundColor:
+            isDisabled ? AppColors.surfaceVariant : AppColors.primary10,
         foregroundColor: AppColors.primary,
         elevation: 0,
         padding: _padding,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          side: BorderSide(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            width: 1,
+          ),
         ),
       ),
       child: _buildButtonContent(
@@ -201,18 +264,19 @@ class AppButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: isDisabled ? null : onPressed,
       style: OutlinedButton.styleFrom(
-        foregroundColor: isDisabled ? AppColors.textDisabled : AppColors.primary,
+        foregroundColor:
+            isDisabled ? AppColors.textHint : AppColors.textPrimary,
         side: BorderSide(
-          color: isDisabled ? AppColors.textDisabled : AppColors.primary,
-          width: AppDimensions.borderWidthMedium,
+          color: isDisabled ? AppColors.borderSubtle : AppColors.border,
+          width: AppDimensions.borderWidthThin,
         ),
         padding: _padding,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         ),
       ),
       child: _buildButtonContent(
-        isDisabled ? AppColors.textDisabled : AppColors.primary,
+        isDisabled ? AppColors.textHint : AppColors.textPrimary,
       ),
     );
   }
@@ -234,12 +298,13 @@ class AppButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: isDisabled ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: isDisabled ? AppColors.textDisabled : AppColors.error,
+        backgroundColor:
+            isDisabled ? AppColors.surfaceVariant : AppColors.error,
         foregroundColor: AppColors.white,
         elevation: 0,
         padding: _padding,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         ),
       ),
       child: _buildButtonContent(AppColors.white),

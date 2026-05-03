@@ -3,7 +3,271 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/theme.dart';
 import '../../../services/chat_service.dart';
 import '../../../data/models/chat_models.dart';
+import '../../widgets/common/widgets.dart';
 import 'widgets/chat_message.dart';
+
+// ─────────────────────────────────────────────────────────────
+//  Model definitions for selector
+// ─────────────────────────────────────────────────────────────
+
+class _ModelOption {
+  final String id;
+  final String label;
+  final String shortLabel;
+  final String description;
+  final Color color;
+
+  const _ModelOption({
+    required this.id,
+    required this.label,
+    required this.shortLabel,
+    required this.description,
+    required this.color,
+  });
+}
+
+const _kModels = [
+  _ModelOption(
+    id: 'random_forest',
+    label: 'Random Forest',
+    shortLabel: 'RF',
+    description: 'Тұрақты, жоғары дәлдік',
+    color: Color(0xFF6366F1),
+  ),
+  _ModelOption(
+    id: 'lightgbm',
+    label: 'LightGBM',
+    shortLabel: 'LGBM',
+    description: 'Жылдам, градиент бустинг',
+    color: Color(0xFF22C55E),
+  ),
+  _ModelOption(
+    id: 'xgboost',
+    label: 'XGBoost',
+    shortLabel: 'XGB',
+    description: 'Күшті, терең талдау',
+    color: Color(0xFFF59E0B),
+  ),
+];
+
+// ─────────────────────────────────────────────────────────────
+//  Model Selector Widget
+// ─────────────────────────────────────────────────────────────
+
+class _ModelSelector extends StatefulWidget {
+  final String selectedId;
+  final ValueChanged<String> onChanged;
+
+  const _ModelSelector({
+    required this.selectedId,
+    required this.onChanged,
+  });
+
+  @override
+  State<_ModelSelector> createState() => _ModelSelectorState();
+}
+
+class _ModelSelectorState extends State<_ModelSelector> {
+  bool _open = false;
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlay;
+
+  _ModelOption get _current => _kModels.firstWhere(
+        (m) => m.id == widget.selectedId,
+        orElse: () => _kModels.first,
+      );
+
+  void _toggleDropdown() {
+    if (_open) {
+      _closeDropdown();
+    } else {
+      _openDropdown();
+    }
+  }
+
+  void _openDropdown() {
+    final renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+
+    _overlay = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _closeDropdown,
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          CompositedTransformFollower(
+            link: _layerLink,
+            showWhenUnlinked: false,
+            offset: Offset(0, -(size.height + 8 + 3 * 72.0)),
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: 240,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBackground,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                  border: Border.all(color: AppColors.border, width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _kModels.map((model) {
+                    final isSelected = model.id == widget.selectedId;
+                    return InkWell(
+                      onTap: () {
+                        widget.onChanged(model.id);
+                        _closeDropdown();
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary10
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: model.color.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: model.color.withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  model.shortLabel,
+                                  style: AppTextStyles.caption.copyWith(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    color: model.color,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    model.label,
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    model.description,
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    Overlay.of(context).insert(_overlay!);
+    setState(() => _open = true);
+  }
+
+  void _closeDropdown() {
+    _overlay?.remove();
+    _overlay = null;
+    if (mounted) setState(() => _open = false);
+  }
+
+  @override
+  void dispose() {
+    _overlay?.remove();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final model = _current;
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: GestureDetector(
+        onTap: _toggleDropdown,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: model.color.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: model.color.withValues(alpha: 0.32),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                model.shortLabel,
+                style: AppTextStyles.caption.copyWith(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: model.color,
+                ),
+              ),
+              const SizedBox(width: 4),
+              AnimatedRotation(
+                turns: _open ? 0.5 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 16,
+                  color: model.color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Chat Screen
+// ─────────────────────────────────────────────────────────────
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -23,6 +287,7 @@ class _ChatScreenState extends State<ChatScreen> {
   List<FlSpot> _historySpots = [];
   List<FlSpot> _forecastSpots = [];
   List<String> _currentSuggestions = [];
+  String _selectedModel = 'random_forest';
 
   @override
   void initState() {
@@ -43,13 +308,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (history.isEmpty) {
         _addBotMessage(
-          'Hi! I can help you analyze demand forecasts. Ask me anything about products, trends, or comparisons.',
+          'Сәлем! Мен сізге сұраныс болжамын талдауға көмектесе аламын. Өнімдер, трендтер немесе салыстырмалар туралы сұраңыз.',
           showSuggestions: true,
           suggestions: [
-            'Forecast for P0001',
-            'Top 5 products',
-            'Compare East and West',
-            'What categories exist?',
+            'P0001 болжамы',
+            'Үздік 5 өнім',
+            'Шығыс пен батысты салыстыру',
+            'Қандай категориялар бар?',
           ],
         );
       } else {
@@ -63,7 +328,6 @@ class _ChatScreenState extends State<ChatScreen> {
               images: msg.images,
             ));
 
-            // Restore chart data from last assistant message with data
             if (msg.isAssistant && msg.data != null) {
               _updateChartData(msg.data!);
             }
@@ -72,7 +336,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } catch (e) {
       _addBotMessage(
-        'Hi! I can help you analyze demand forecasts. Ask me anything!',
+        'Сәлем! Мен сізге сұраныс болжамын талдауға көмектесе аламын.',
         showSuggestions: true,
       );
     } finally {
@@ -150,9 +414,12 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await _chatService.sendMessage(text);
+      final response = await _chatService.sendMessage(
+        text,
+        language: 'kk',
+        modelType: _selectedModel,
+      );
 
-      // Update chart if data available
       if (response.data != null) {
         _updateChartData(response.data!);
       }
@@ -166,11 +433,11 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     } catch (e) {
       _addBotMessage(
-        'Sorry, I encountered an error. Please try again.',
+        'Кешіріңіз, қате орын алды. Қайтадан көріңіз.',
         showSuggestions: true,
         suggestions: _currentSuggestions.isNotEmpty
             ? _currentSuggestions
-            : ['Forecast for P0001', 'Top 5 products'],
+            : ['P0001 болжамы', 'Үздік 5 өнім'],
       );
     } finally {
       setState(() => _isLoading = false);
@@ -191,17 +458,17 @@ class _ChatScreenState extends State<ChatScreen> {
         _forecastSpots.clear();
       });
       _addBotMessage(
-        'Chat history cleared. How can I help you?',
+        'Чат тарихы тазартылды. Сізге қалай көмектесе аламын?',
         showSuggestions: true,
         suggestions: [
-          'Forecast for P0001',
-          'Top 5 products',
-          'Compare East and West',
+          'P0001 болжамы',
+          'Үздік 5 өнім',
+          'Шығыс пен батысты салыстыру',
         ],
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to clear history')),
+        const SnackBar(content: Text('Тарихты тазалау сәтсіз аяқталды')),
       );
     }
   }
@@ -215,38 +482,33 @@ class _ChatScreenState extends State<ChatScreen> {
     final diff = avg - last;
 
     if (diff > 5) {
-      return 'Demand is expected to increase. Consider increasing stock.';
+      return 'Сұраныс өсуі күтілуде. Қорды арттыруды қарастырыңыз.';
     } else if (diff < -5) {
-      return 'Demand is expected to decline. Consider reducing inventory.';
+      return 'Сұраныс төмендеуі күтілуде. Қорды азайтуды қарастырыңыз.';
     }
-    return 'Demand is expected to remain stable.';
+    return 'Сұраныс тұрақты болып қалады деп күтілуде.';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             _buildHeader(),
-
-            const Divider(height: 1, color: AppColors.divider),
-
-            // Loading history indicator
+            const Divider(height: 1, color: AppColors.borderSubtle),
             if (_isLoadingHistory)
               const Expanded(
                 child: Center(
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               )
             else
-              // Chat messages
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(AppDimensions.spacing16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   itemCount:
                       _messages.length + (_historySpots.isNotEmpty ? 1 : 0),
                   itemBuilder: (context, index) {
@@ -257,16 +519,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         onSuggestionTap: _onSuggestionTap,
                       );
                     }
-                    // Chart
                     return _buildChart();
                   },
                 ),
               ),
-
-            // Typing indicator
             if (_isLoading) _buildTypingIndicator(),
-
-            // Input field
             _buildInputField(),
           ],
         ),
@@ -275,66 +532,47 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.spacing16,
-        vertical: AppDimensions.spacing12,
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          // Bot icon
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.primary10,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.smart_toy_rounded,
-              size: 18,
-              color: AppColors.primary,
-            ),
+          const BrandLogo(
+            size: 36,
+            radius: 10,
+            icon: Icons.auto_awesome_rounded,
           ),
-
-          const SizedBox(width: AppDimensions.spacing12),
-
-          // Title
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Prodbot AI',
-                style: AppTextStyles.titleMedium,
-              ),
-              Text(
-                'Demand Forecasting Assistant',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Prodbot AI', style: AppTextStyles.titleMedium),
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppColors.success,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Қосулы · сұраныс болжам көмекшісі',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-
-          const Spacer(),
-
-          // Clear history button
-          IconButton(
-            onPressed: _clearHistory,
-            icon: const Icon(
-              Icons.delete_outline,
-              color: AppColors.iconDefault,
+              ],
             ),
-            tooltip: 'Clear history',
           ),
-
-          // Menu button
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.more_vert,
-              color: AppColors.iconDefault,
-            ),
+          _IconBubble(
+            icon: Icons.delete_outline_rounded,
+            tooltip: 'Тарихты тазалау',
+            onTap: _clearHistory,
           ),
         ],
       ),
@@ -342,35 +580,27 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildTypingIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.spacing16,
-        vertical: AppDimensions.spacing8,
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Row(
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.primary10,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.smart_toy_rounded,
-              size: 18,
-              color: AppColors.primary,
-            ),
+          const BrandLogo(
+            size: 32,
+            radius: 9,
+            icon: Icons.auto_awesome_rounded,
           ),
-          const SizedBox(width: AppDimensions.spacing8),
+          const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spacing16,
-              vertical: AppDimensions.spacing12,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.chatBubble,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+              color: AppColors.surfaceVariant,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+              ),
+              border: Border.all(color: AppColors.border, width: 1),
             ),
             child: const _TypingDots(),
           ),
@@ -381,89 +611,89 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildInputField() {
     return Container(
-      padding: const EdgeInsets.all(AppDimensions.spacing16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowLight,
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        border: Border(
+          top: BorderSide(color: AppColors.borderSubtle, width: 1),
+        ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Text input
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                boxShadow: AppDimensions.shadowLg,
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: AppColors.border, width: 1),
               ),
+              padding: const EdgeInsets.fromLTRB(16, 4, 6, 4),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // AI icon
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(left: AppDimensions.spacing12),
-                    child: Icon(
-                      Icons.auto_awesome,
-                      size: 20,
-                      color: AppColors.iconVariant.withValues(alpha: 0.6),
-                    ),
-                  ),
-
-                  // Input
                   Expanded(
                     child: TextField(
                       controller: _messageController,
                       decoration: InputDecoration(
-                        hintText: 'Ask about demand forecasts...',
+                        hintText: 'Хабарлама жазыңыз...',
                         hintStyle: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textHint,
                         ),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppDimensions.spacing12,
-                          vertical: AppDimensions.spacing14,
-                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                        isDense: true,
                       ),
-                      style: AppTextStyles.bodyMedium,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 4,
+                      minLines: 1,
+                      textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _sendMessage(),
                       enabled: !_isLoading,
                     ),
                   ),
-
-                  // Mic button
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.mic_none_outlined,
-                      color: AppColors.primary,
-                    ),
+                  _ModelSelector(
+                    selectedId: _selectedModel,
+                    onChanged: (id) => setState(() => _selectedModel = id),
                   ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.mic_none_rounded,
+                    color: AppColors.textHint,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 6),
                 ],
               ),
             ),
           ),
-
-          const SizedBox(width: AppDimensions.spacing12),
-
-          // Send button
+          const SizedBox(width: 10),
           GestureDetector(
             onTap: _isLoading ? null : _sendMessage,
-            child: Container(
-              width: 54,
-              height: 54,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
-                color: _isLoading ? AppColors.textDisabled : AppColors.primary,
+                gradient: _isLoading ? null : AppColors.primaryGradient,
+                color: _isLoading ? AppColors.surfaceVariant : null,
                 shape: BoxShape.circle,
+                boxShadow: _isLoading
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
               ),
-              child: const Icon(
-                Icons.send,
-                color: AppColors.white,
+              child: Icon(
+                Icons.arrow_upward_rounded,
+                color: _isLoading ? AppColors.textHint : AppColors.white,
                 size: 22,
               ),
             ),
@@ -479,23 +709,41 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(top: AppDimensions.spacing16),
-      padding: const EdgeInsets.all(AppDimensions.spacing16),
+      margin: const EdgeInsets.only(top: 8, bottom: 8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        boxShadow: AppDimensions.shadowCard,
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Demand Analysis',
-            style: AppTextStyles.titleSmall,
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.32),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.show_chart_rounded,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('Сұраныс талдауы', style: AppTextStyles.titleSmall),
+            ],
           ),
-          const SizedBox(height: AppDimensions.spacing16),
+          const SizedBox(height: 16),
           SizedBox(
-            height: 200,
+            height: 180,
             child: LineChart(
               LineChartData(
                 gridData: FlGridData(
@@ -503,94 +751,93 @@ class _ChatScreenState extends State<ChatScreen> {
                   drawHorizontalLine: true,
                   drawVerticalLine: false,
                   horizontalInterval: 20,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.border,
+                  getDrawingHorizontalLine: (value) => const FlLine(
+                    color: AppColors.borderSubtle,
                     strokeWidth: 1,
                   ),
                 ),
                 borderData: FlBorderData(show: false),
                 titlesData: const FlTitlesData(show: false),
                 lineBarsData: [
-                  // History line
                   LineChartBarData(
                     spots: _historySpots,
                     isCurved: true,
-                    color: AppColors.info,
+                    color: AppColors.primary,
                     barWidth: 2,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppColors.info.withValues(alpha: 0.1),
+                      color: AppColors.primary.withValues(alpha: 0.12),
                     ),
                   ),
-                  // Forecast line
                   LineChartBarData(
                     spots: _forecastSpots,
                     isCurved: true,
-                    color: AppColors.purpleHaze,
+                    color: AppColors.secondary,
                     barWidth: 2,
                     dotData: const FlDotData(show: true),
                     dashArray: [6, 4],
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppColors.purpleHaze.withValues(alpha: 0.1),
+                      color: AppColors.secondary.withValues(alpha: 0.12),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: AppDimensions.spacing12),
-
-          // Legend
+          const SizedBox(height: 12),
           Row(
-            children: [
+            children: const [
+              _ChartLegendItem(color: AppColors.primary, label: 'Тарихи'),
+              SizedBox(width: 16),
               _ChartLegendItem(
-                color: AppColors.info,
-                label: 'Historical',
-              ),
-              const SizedBox(width: AppDimensions.spacing16),
-              _ChartLegendItem(
-                color: AppColors.purpleHaze,
-                label: 'Forecast',
+                color: AppColors.secondary,
+                label: 'Болжам',
                 isDashed: true,
               ),
             ],
           ),
-
-          const SizedBox(height: AppDimensions.spacing12),
-
-          // Insight text
-          Container(
-            padding: const EdgeInsets.all(AppDimensions.spacing12),
-            decoration: BoxDecoration(
-              color: AppColors.primary10,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.insights,
-                  size: 18,
-                  color: AppColors.primary,
+          if (_buildInsightText().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary10,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.28),
                 ),
-                const SizedBox(width: AppDimensions.spacing8),
-                Expanded(
-                  child: Text(
-                    _buildInsightText(),
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textPrimary,
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.insights_rounded,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _buildInsightText(),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+//  Chart Legend Item
+// ─────────────────────────────────────────────────────────────
 
 class _ChartLegendItem extends StatelessWidget {
   final Color color;
@@ -615,15 +862,16 @@ class _ChartLegendItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(2),
           ),
           child: isDashed
-              ? CustomPaint(
-                  painter: _DashedLinePainter(color: color),
-                )
+              ? CustomPaint(painter: _DashedLinePainter(color: color))
               : null,
         ),
-        const SizedBox(width: AppDimensions.spacing6),
+        const SizedBox(width: 6),
         Text(
           label,
-          style: AppTextStyles.caption,
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
@@ -632,7 +880,6 @@ class _ChartLegendItem extends StatelessWidget {
 
 class _DashedLinePainter extends CustomPainter {
   final Color color;
-
   _DashedLinePainter({required this.color});
 
   @override
@@ -642,17 +889,14 @@ class _DashedLinePainter extends CustomPainter {
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
 
-    const dashWidth = 4.0;
-    const dashSpace = 2.0;
     double startX = 0;
-
     while (startX < size.width) {
       canvas.drawLine(
         Offset(startX, size.height / 2),
-        Offset(startX + dashWidth, size.height / 2),
+        Offset(startX + 4.0, size.height / 2),
         paint,
       );
-      startX += dashWidth + dashSpace;
+      startX += 6.0;
     }
   }
 
@@ -660,7 +904,10 @@ class _DashedLinePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// Animated typing dots indicator
+// ─────────────────────────────────────────────────────────────
+//  Typing indicator dots
+// ─────────────────────────────────────────────────────────────
+
 class _TypingDots extends StatefulWidget {
   const _TypingDots();
 
@@ -726,11 +973,39 @@ class _TypingDotsState extends State<_TypingDots>
   }
 
   double _bounce(double t) {
-    // Creates a bounce effect
-    if (t < 0.5) {
-      return 4 * t * t * t;
-    } else {
-      return 1 - ((-2 * t + 2) * (-2 * t + 2) * (-2 * t + 2)) / 2;
+    if (t < 0.5) return 4 * t * t * t;
+    return 1 - ((-2 * t + 2) * (-2 * t + 2) * (-2 * t + 2)) / 2;
+  }
+}
+
+class _IconBubble extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? tooltip;
+  const _IconBubble({required this.icon, required this.onTap, this.tooltip});
+
+  @override
+  Widget build(BuildContext context) {
+    final btn = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceVariant,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            border: Border.all(color: AppColors.border, width: 1),
+          ),
+          child: Icon(icon, size: 18, color: AppColors.textSecondary),
+        ),
+      ),
+    );
+    if (tooltip != null) {
+      return Tooltip(message: tooltip!, child: btn);
     }
+    return btn;
   }
 }

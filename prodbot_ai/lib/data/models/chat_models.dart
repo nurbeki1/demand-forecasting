@@ -39,44 +39,76 @@ class ProductImage {
 class ChatResponse {
   final String reply;
   final String intent;
+  final String? responseType;
   final Map<String, dynamic>? entities;
   final List<String> suggestions;
+  final List<String> suggestedQuestions;
+  final List<String>? availableDetails;
   final ChatData? data;
   final List<ProductImage>? images;
+  final Map<String, dynamic>? kzData;
 
   ChatResponse({
     required this.reply,
     required this.intent,
+    this.responseType,
     this.entities,
     required this.suggestions,
+    this.suggestedQuestions = const [],
+    this.availableDetails,
     this.data,
     this.images,
+    this.kzData,
   });
 
   factory ChatResponse.fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic>? rawData;
+    if (json['data'] is Map) {
+      rawData = (json['data'] as Map).cast<String, dynamic>();
+    }
+    final hasForecastShape = rawData != null &&
+        (rawData.containsKey('history') || rawData.containsKey('forecast'));
     return ChatResponse(
-      reply: json['reply'] as String,
-      intent: json['intent'] as String,
-      entities: json['entities'] as Map<String, dynamic>?,
+      reply: json['reply'] as String? ?? '',
+      intent: json['intent'] as String? ?? 'general',
+      responseType: json['response_type'] as String?,
+      entities: (json['entities'] as Map?)?.cast<String, dynamic>(),
       suggestions: (json['suggestions'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],
-      data: json['data'] != null
-          ? ChatData.fromJson(json['data'] as Map<String, dynamic>)
-          : null,
+      suggestedQuestions: (json['suggested_questions'] as List<dynamic>?)
+              ?.map((e) {
+                if (e is String) return e;
+                if (e is Map) {
+                  return (e['prompt'] ?? e['text'] ?? '').toString();
+                }
+                return e.toString();
+              })
+              .where((s) => s.isNotEmpty)
+              .toList() ??
+          [],
+      availableDetails: (json['available_details'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      data: hasForecastShape ? ChatData.fromJson(rawData) : null,
       images: (json['images'] as List<dynamic>?)
               ?.map((e) => ProductImage.fromJson(e as Map<String, dynamic>))
               .toList(),
+      // KZ analysis lives under `data` when intent == 'kz_market_analysis'
+      kzData: rawData != null && !hasForecastShape ? rawData : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
         'reply': reply,
         'intent': intent,
+        'response_type': responseType,
         'entities': entities,
         'suggestions': suggestions,
-        'data': data?.toJson(),
+        'suggested_questions': suggestedQuestions,
+        'available_details': availableDetails,
+        'data': data?.toJson() ?? kzData,
         'images': images?.map((e) => e.toJson()).toList(),
       };
 }

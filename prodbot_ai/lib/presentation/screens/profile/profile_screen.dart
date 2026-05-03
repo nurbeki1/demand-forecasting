@@ -14,7 +14,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // User data loaded from storage
   Map<String, dynamic> _user = {
     'name': 'Madina Samet',
     'email': 'testuser@prodbot.kz',
@@ -39,7 +38,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _user = {
           'name': userData?['name'] ?? 'Madina Samet',
-          'email': authService.currentUserEmail ?? userData?['email'] ?? 'testuser@prodbot.kz',
+          'email': authService.currentUserEmail ??
+              userData?['email'] ??
+              'testuser@prodbot.kz',
           'company': userData?['company'] ?? 'ProdBot AI',
           'role': userData?['role'] ?? 'User',
           'avatar': userData?['avatar'],
@@ -54,79 +55,126 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => _navigateToSettings(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildAppBar(),
+              const Divider(height: 1, color: AppColors.borderSubtle),
+              const SizedBox(height: 8),
+              _buildProfileHeader(),
+              const SizedBox(height: 12),
+              _buildStatsSection(),
+              const SizedBox(height: 16),
+              _buildQuickActions(),
+              const SizedBox(height: 8),
+              _buildMenuSection('Аккаунт', [
+                _MenuItemData(
+                    'Жеке ақпарат', Icons.person_outline_rounded, () {}),
+                _MenuItemData('Компания', Icons.business_outlined, () {}),
+                _MenuItemData('Қауіпсіздік', Icons.lock_outline_rounded, () {}),
+                _MenuItemData(
+                    'Хабарламалар', Icons.notifications_outlined, () {}),
+              ]),
+              const SizedBox(height: 16),
+              _buildMenuSection('Қалаулар', [
+                _MenuItemData(
+                  'Тіл',
+                  Icons.language_rounded,
+                  () {},
+                  trailing: 'Қазақша',
+                ),
+                _MenuItemData(
+                  'Тақырып',
+                  Icons.palette_outlined,
+                  () {},
+                  trailing: 'Қараңғы',
+                ),
+                _MenuItemData(
+                  'Деректерді экспорттау',
+                  Icons.download_outlined,
+                  () {},
+                ),
+              ]),
+              const SizedBox(height: 16),
+              _buildMenuSection('Қолдау', [
+                _MenuItemData(
+                  'Көмек орталығы',
+                  Icons.help_outline_rounded,
+                  () {},
+                ),
+                _MenuItemData(
+                  'Қолдау қызметі',
+                  Icons.support_agent_outlined,
+                  () {},
+                ),
+                _MenuItemData(
+                  'Құпиялылық саясаты',
+                  Icons.privacy_tip_outlined,
+                  () {},
+                ),
+              ]),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: AppButton.outline(
+                  text: 'Шығу',
+                  prefixIcon: Icons.logout_rounded,
+                  onPressed: _logout,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'ProdBot AI v1.0.0',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textHint,
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile header
-            _buildProfileHeader(),
-
-            // Stats
-            _buildStatsSection(),
-
-            // Quick actions
-            _buildQuickActions(),
-
-            // Menu items
-            _buildMenuSection(),
-
-            const SizedBox(height: AppDimensions.spacing24),
-
-            // Logout button
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spacing16,
-              ),
-              child: AppButton(
-                text: 'Log Out',
-                variant: AppButtonVariant.outline,
-                icon: Icons.logout,
-                onPressed: _logout,
-                fullWidth: true,
-              ),
-            ),
-
-            const SizedBox(height: AppDimensions.spacing16),
-
-            // Version info
-            Text(
-              'ProdBot AI v1.0.0',
-              style: AppTextStyles.caption,
-            ),
-
-            const SizedBox(height: AppDimensions.spacing32),
-          ],
         ),
       ),
     );
   }
 
+  Widget _buildAppBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+      child: Row(
+        children: [
+          Text('Профиль', style: AppTextStyles.titleLarge),
+          const Spacer(),
+          _IconBubble(
+            icon: Icons.settings_outlined,
+            onTap: _navigateToSettings,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProfileHeader() {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spacing24),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Column(
         children: [
-          // Avatar
           Stack(
             children: [
               Container(
-                width: 100,
-                height: 100,
+                width: 96,
+                height: 96,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary10,
-                  border: Border.all(
-                    color: AppColors.primary,
-                    width: 3,
-                  ),
+                  gradient: AppColors.primaryGradient,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                      blurRadius: 28,
+                      spreadRadius: -4,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
                 ),
                 child: _user['avatar'] != null
                     ? ClipOval(
@@ -137,9 +185,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       )
                     : Center(
                         child: Text(
-                          _getInitials(_user['name']),
+                          _getInitials(_user['name'] as String),
                           style: AppTextStyles.headlineMedium.copyWith(
-                            color: AppColors.primary,
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
@@ -150,68 +199,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: GestureDetector(
                   onTap: _changeAvatar,
                   child: Container(
-                    width: 32,
-                    height: 32,
+                    width: 30,
+                    height: 30,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: AppColors.surface,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.white,
-                        width: 2,
+                        color: AppColors.background,
+                        width: 3,
                       ),
                     ),
                     child: const Icon(
-                      Icons.camera_alt,
-                      size: 16,
-                      color: AppColors.white,
+                      Icons.camera_alt_rounded,
+                      size: 14,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
               ),
             ],
           ),
-
-          const SizedBox(height: AppDimensions.spacing16),
-
-          // Name
-          Text(_user['name'], style: AppTextStyles.headlineSmall),
-
-          const SizedBox(height: AppDimensions.spacing4),
-
-          // Email
+          const SizedBox(height: 16),
+          Text(_user['name'] as String, style: AppTextStyles.titleLarge),
+          const SizedBox(height: 4),
           Text(
-            _user['email'],
-            style: AppTextStyles.bodyMedium.copyWith(
+            _user['email'] as String,
+            style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
-
-          const SizedBox(height: AppDimensions.spacing8),
-
-          // Plan badge
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spacing12,
-              vertical: AppDimensions.spacing4,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
               color: AppColors.primary10,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.workspace_premium,
-                  size: 16,
+                  Icons.workspace_premium_rounded,
+                  size: 14,
                   color: AppColors.primary,
                 ),
-                const SizedBox(width: AppDimensions.spacing4),
+                const SizedBox(width: 6),
                 Text(
-                  '${_user['plan']} Plan',
-                  style: AppTextStyles.labelSmall.copyWith(
+                  '${_user['plan']} жоспар',
+                  style: AppTextStyles.caption.copyWith(
                     color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -224,20 +264,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildStatsSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppDimensions.spacing16),
-      padding: const EdgeInsets.all(AppDimensions.spacing16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        border: Border.all(color: AppColors.border),
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Row(
         children: [
-          Expanded(child: _buildStatItem('127', 'Forecasts')),
-          Container(width: 1, height: 40, color: AppColors.border),
-          Expanded(child: _buildStatItem('45', 'Products')),
-          Container(width: 1, height: 40, color: AppColors.border),
-          Expanded(child: _buildStatItem('91%', 'Avg Accuracy')),
+          Expanded(child: _buildStatItem('127', 'Болжамдар')),
+          Container(width: 1, height: 36, color: AppColors.border),
+          Expanded(child: _buildStatItem('45', 'Өнімдер')),
+          Container(width: 1, height: 36, color: AppColors.border),
+          Expanded(child: _buildStatItem('91%', 'Дәлдік')),
         ],
       ),
     );
@@ -246,11 +286,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildStatItem(String value, String label) {
     return Column(
       children: [
-        Text(value, style: AppTextStyles.titleMedium),
-        const SizedBox(height: AppDimensions.spacing4),
+        Text(
+          value,
+          style: AppTextStyles.titleMedium.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
         Text(
           label,
-          style: AppTextStyles.caption,
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecondary,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -258,36 +306,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildQuickActions() {
+    final actions = [
+      _QA('Профильді өңдеу', Icons.person_outline_rounded,
+          AppColors.primary, _editProfile),
+      _QA('Жоспарды жаңарту', Icons.rocket_launch_outlined,
+          AppColors.warning, _upgradePlan),
+      _QA('Көмек алу', Icons.help_outline_rounded, AppColors.info, _getHelp),
+    ];
+
     return Padding(
-      padding: const EdgeInsets.all(AppDimensions.spacing16),
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Expanded(
-            child: _buildActionCard(
-              'Edit Profile',
-              Icons.person_outline,
-              AppColors.primary,
-              _editProfile,
+          for (int i = 0; i < actions.length; i++) ...[
+            Expanded(
+              child: _buildActionCard(
+                actions[i].label,
+                actions[i].icon,
+                actions[i].color,
+                actions[i].onTap,
+              ),
             ),
-          ),
-          const SizedBox(width: AppDimensions.spacing12),
-          Expanded(
-            child: _buildActionCard(
-              'Upgrade Plan',
-              Icons.rocket_launch_outlined,
-              AppColors.warning,
-              _upgradePlan,
-            ),
-          ),
-          const SizedBox(width: AppDimensions.spacing12),
-          Expanded(
-            child: _buildActionCard(
-              'Get Help',
-              Icons.help_outline,
-              AppColors.info,
-              _getHelp,
-            ),
-          ),
+            if (i != actions.length - 1) const SizedBox(width: 10),
+          ],
         ],
       ),
     );
@@ -299,158 +340,137 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Color color,
     VoidCallback onTap,
   ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(AppDimensions.spacing12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            border: Border.all(color: AppColors.border, width: 1),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Icon(icon, color: color, size: 20),
               ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(height: AppDimensions.spacing8),
-            Text(
-              label,
-              style: AppTextStyles.labelSmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildMenuSection() {
+  Widget _buildMenuSection(String title, List<_MenuItemData> items) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacing16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Account', style: AppTextStyles.labelLarge),
-          const SizedBox(height: AppDimensions.spacing12),
-
-          _buildMenuItem(
-            'Personal Information',
-            Icons.person_outline,
-            () {},
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              title.toUpperCase(),
+              style: AppTextStyles.overline.copyWith(
+                color: AppColors.textSecondaryVariant,
+              ),
+            ),
           ),
-          _buildMenuItem(
-            'Company Settings',
-            Icons.business_outlined,
-            () {},
-          ),
-          _buildMenuItem(
-            'Security',
-            Icons.lock_outline,
-            () {},
-          ),
-          _buildMenuItem(
-            'Notifications',
-            Icons.notifications_outlined,
-            () {},
-          ),
-
-          const SizedBox(height: AppDimensions.spacing24),
-
-          Text('Preferences', style: AppTextStyles.labelLarge),
-          const SizedBox(height: AppDimensions.spacing12),
-
-          _buildMenuItem(
-            'Language',
-            Icons.language,
-            () {},
-            trailing: 'English',
-          ),
-          _buildMenuItem(
-            'Theme',
-            Icons.palette_outlined,
-            () {},
-            trailing: 'Light',
-          ),
-          _buildMenuItem(
-            'Data Export',
-            Icons.download_outlined,
-            () {},
-          ),
-
-          const SizedBox(height: AppDimensions.spacing24),
-
-          Text('Support', style: AppTextStyles.labelLarge),
-          const SizedBox(height: AppDimensions.spacing12),
-
-          _buildMenuItem(
-            'Help Center',
-            Icons.help_outline,
-            () {},
-          ),
-          _buildMenuItem(
-            'Contact Support',
-            Icons.support_agent_outlined,
-            () {},
-          ),
-          _buildMenuItem(
-            'Privacy Policy',
-            Icons.privacy_tip_outlined,
-            () {},
-          ),
-          _buildMenuItem(
-            'Terms of Service',
-            Icons.description_outlined,
-            () {},
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              border: Border.all(color: AppColors.border, width: 1),
+            ),
+            child: Column(
+              children: [
+                for (int i = 0; i < items.length; i++) ...[
+                  _buildMenuItem(items[i]),
+                  if (i != items.length - 1)
+                    const Divider(
+                      height: 1,
+                      color: AppColors.divider,
+                      indent: 56,
+                    ),
+                ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(
-    String title,
-    IconData icon,
-    VoidCallback onTap, {
-    String? trailing,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppDimensions.spacing8),
-        padding: const EdgeInsets.all(AppDimensions.spacing12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: AppColors.iconVariant, size: 22),
-            const SizedBox(width: AppDimensions.spacing12),
-            Expanded(
-              child: Text(title, style: AppTextStyles.labelMedium),
-            ),
-            if (trailing != null)
-              Text(
-                trailing,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+  Widget _buildMenuItem(_MenuItemData m) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: m.onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border, width: 1),
+                ),
+                child: Icon(m.icon,
+                    color: AppColors.textSecondary, size: 16),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  m.title,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-            const SizedBox(width: AppDimensions.spacing8),
-            const Icon(
-              Icons.chevron_right,
-              color: AppColors.iconVariant,
-              size: 20,
-            ),
-          ],
+              if (m.trailing != null) ...[
+                Text(
+                  m.trailing!,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textHint,
+                size: 18,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -474,66 +494,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _changeAvatar() {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: AppDimensions.spacing16),
+      backgroundColor: AppColors.surface,
+      builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Take Photo'),
+              title: const Text('Сурет түсіру'),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose from Gallery'),
+              title: const Text('Галереядан таңдау'),
               onTap: () => Navigator.pop(context),
             ),
             if (_user['avatar'] != null)
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: AppColors.error),
-                title: Text('Remove Photo', style: TextStyle(color: AppColors.error)),
+                leading: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: AppColors.error,
+                ),
+                title: const Text(
+                  'Жою',
+                  style: TextStyle(color: AppColors.error),
+                ),
                 onTap: () => Navigator.pop(context),
               ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  void _editProfile() {
-    // Navigate to edit profile screen
-  }
+  void _editProfile() {}
 
-  void _upgradePlan() {
-    // Show upgrade plan dialog or navigate
-  }
+  void _upgradePlan() {}
 
-  void _getHelp() {
-    // Navigate to help center
-  }
+  void _getHelp() {}
 
   void _logout() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text('Log Out'),
-        content: const Text('Are you sure you want to log out?'),
+        title: const Text('Шығу'),
+        content: const Text('Аккаунттан шыққыңыз келе ме?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Болдырмау'),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              // Perform logout
               final authService = context.read<AuthService>();
               await authService.logout();
-              // Navigate to welcome
               if (mounted) {
                 Navigator.of(context).pushNamedAndRemoveUntil(
                   '/welcome',
@@ -541,12 +558,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               }
             },
-            child: Text(
-              'Log Out',
+            child: const Text(
+              'Шығу',
               style: TextStyle(color: AppColors.error),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MenuItemData {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? trailing;
+  _MenuItemData(this.title, this.icon, this.onTap, {this.trailing});
+}
+
+class _QA {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  _QA(this.label, this.icon, this.color, this.onTap);
+}
+
+class _IconBubble extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _IconBubble({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            border: Border.all(color: AppColors.border, width: 1),
+          ),
+          child: Icon(icon, size: 18, color: AppColors.textSecondary),
+        ),
       ),
     );
   }

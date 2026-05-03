@@ -19,7 +19,8 @@ from .models import User, VerificationCode
 from .schemas import (
     RegisterRequest, LoginRequest, TokenResponse, UserResponse,
     SendCodeRequest, VerifyCodeRequest, CompleteRegistrationRequest,
-    GoogleAuthRequest, MessageResponse, TokenPairResponse, RefreshTokenRequest
+    GoogleAuthRequest, MessageResponse, TokenPairResponse, RefreshTokenRequest,
+    UpdateProfileRequest
 )
 from .security import (
     hash_password, verify_password, create_access_token,
@@ -79,7 +80,7 @@ def send_verification_code(
         raise
     except Exception as e:
         print(f"[ERROR] send-code failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 
 @router.post("/verify-code", response_model=MessageResponse)
@@ -238,7 +239,7 @@ def google_auth(
         raise
     except Exception as e:
         print(f"[ERROR] Google auth failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 
 # ===== STANDARD AUTH =====
@@ -304,7 +305,7 @@ def login(
         raise
     except Exception as e:
         print(f"[ERROR] login failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 
 @router.post("/refresh", response_model=TokenPairResponse)
@@ -355,4 +356,28 @@ def get_me(user: User = Depends(get_current_user)):
         is_verified=user.is_verified,
         full_name=user.full_name,
         avatar_url=user.avatar_url,
+        created_at=user.created_at,
+    )
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(
+    data: UpdateProfileRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update current user profile"""
+    if data.full_name is not None:
+        user.full_name = data.full_name.strip() or None
+    db.commit()
+    db.refresh(user)
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        is_active=user.is_active,
+        is_admin=user.is_admin,
+        is_verified=user.is_verified,
+        full_name=user.full_name,
+        avatar_url=user.avatar_url,
+        created_at=user.created_at,
     )

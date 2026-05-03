@@ -274,7 +274,7 @@ class _ForecastDetailScreenState extends State<ForecastDetailScreen> {
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: AppColors.purpleHaze.withValues(alpha: 0.1),
+                        color: AppColors.secondary.withValues(alpha: 0.10),
                       ),
                     ),
                   if (_showConfidenceInterval)
@@ -289,30 +289,28 @@ class _ForecastDetailScreenState extends State<ForecastDetailScreen> {
                         color: AppColors.background,
                       ),
                     ),
-                  // Historical data
                   LineChartBarData(
                     spots: _historicalData,
                     isCurved: true,
-                    color: AppColors.info,
+                    color: AppColors.primary,
                     barWidth: 3,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppColors.info.withValues(alpha: 0.1),
+                      color: AppColors.primary.withValues(alpha: 0.12),
                     ),
                   ),
-                  // Forecast data
                   LineChartBarData(
                     spots: _forecastData,
                     isCurved: true,
-                    color: AppColors.purpleHaze,
+                    color: AppColors.secondary,
                     barWidth: 3,
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, bar, index) {
                         return FlDotCirclePainter(
                           radius: 4,
-                          color: AppColors.purpleHaze,
+                          color: AppColors.secondary,
                           strokeWidth: 2,
                           strokeColor: AppColors.surface,
                         );
@@ -345,17 +343,17 @@ class _ForecastDetailScreenState extends State<ForecastDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _LegendItem(color: AppColors.info, label: 'Historical'),
+              _LegendItem(color: AppColors.primary, label: 'Historical'),
               const SizedBox(width: AppDimensions.spacing24),
               _LegendItem(
-                color: AppColors.purpleHaze,
+                color: AppColors.secondary,
                 label: 'Forecast',
                 isDashed: true,
               ),
               if (_showConfidenceInterval) ...[
                 const SizedBox(width: AppDimensions.spacing24),
                 _LegendItem(
-                  color: AppColors.purpleHaze.withValues(alpha: 0.3),
+                  color: AppColors.secondary.withValues(alpha: 0.3),
                   label: '95% CI',
                   isArea: true,
                 ),
@@ -413,7 +411,7 @@ class _ForecastDetailScreenState extends State<ForecastDetailScreen> {
                   title: 'MAPE',
                   value: '5.5%',
                   icon: Icons.percent,
-                  color: AppColors.purpleHaze,
+                  color: AppColors.secondary,
                 ),
               ),
             ],
@@ -430,32 +428,45 @@ class _ForecastDetailScreenState extends State<ForecastDetailScreen> {
       decoration: BoxDecoration(
         color: AppColors.primary10,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.25),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.lightbulb_outline,
-                color: AppColors.primary,
-                size: 20,
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppColors.white,
+                  size: 16,
+                ),
               ),
               const SizedBox(width: AppDimensions.spacing8),
               Text(
                 'AI Insights',
                 style: AppTextStyles.labelLarge.copyWith(
                   color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppDimensions.spacing12),
           Text(
-            'Demand is expected to increase by 21% over the forecast period. '
-            'Consider increasing inventory levels to meet projected demand.',
+            'Сұраныс болжам кезеңінде 21%-ға өседі деп күтілуде. '
+            'Ықтимал сұранысты қанағаттандыру үшін қор деңгейлерін арттыруды қарастырыңыз.',
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textPrimary,
+              height: 1.5,
             ),
           ),
         ],

@@ -25,9 +25,10 @@ class AppConfig {
 
     // Android emulator uses 10.0.2.2 to reach host's localhost
     // iOS simulator uses 127.0.0.1
+    // Real device uses Mac's local IP
     return defaultTargetPlatform == TargetPlatform.android
         ? "http://10.0.2.2:8000"
-        : "http://127.0.0.1:8000";
+        : "http://192.168.0.240:8000";
   }
 
   /// API timeout in seconds

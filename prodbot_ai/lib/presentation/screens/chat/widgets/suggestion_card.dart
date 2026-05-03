@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/theme.dart';
 
-/// Suggestion card based on Figma design "Box 1", "Box 2", "Box 3"
+/// Suggestion chip — visually mirrors the web `.suggestion-chip`
+/// from `frontend-admin/src/styles/chat.css`.
 class SuggestionCard extends StatelessWidget {
   final String text;
   final VoidCallback? onTap;
@@ -16,45 +17,49 @@ class SuggestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.spacing20,
-          vertical: AppDimensions.spacing16,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.chatBubble,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        ),
-        child: Row(
-          children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                size: 20,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: AppDimensions.spacing12),
-            ],
-            Expanded(
-              child: Text(
-                text,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textMuted,  // Figma: #847F7F
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceVariant,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+            border: Border.all(color: AppColors.border, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 14, color: AppColors.primary),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: Text(
+                  text,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                textAlign: TextAlign.center,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                size: 14,
+                color: AppColors.textHint,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Quick action card for dashboard
+/// Quick action card for dashboards.
 class QuickActionCard extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -81,8 +86,8 @@ class QuickActionCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppDimensions.spacing16),
         decoration: BoxDecoration(
           color: backgroundColor ?? AppColors.surface,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          border: Border.all(color: AppColors.border, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,8 +96,12 @@ class QuickActionCard extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: (iconColor ?? AppColors.primary).withValues(alpha: 0.1),
+                color: (iconColor ?? AppColors.primary).withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                border: Border.all(
+                  color: (iconColor ?? AppColors.primary)
+                      .withValues(alpha: 0.3),
+                ),
               ),
               child: Icon(
                 icon,
@@ -101,16 +110,10 @@ class QuickActionCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppDimensions.spacing12),
-            Text(
-              title,
-              style: AppTextStyles.labelLarge,
-            ),
+            Text(title, style: AppTextStyles.labelLarge),
             if (subtitle != null) ...[
               const SizedBox(height: AppDimensions.spacing4),
-              Text(
-                subtitle!,
-                style: AppTextStyles.caption,
-              ),
+              Text(subtitle!, style: AppTextStyles.caption),
             ],
           ],
         ),

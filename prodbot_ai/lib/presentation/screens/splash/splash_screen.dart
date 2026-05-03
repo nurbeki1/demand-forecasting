@@ -31,7 +31,7 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
@@ -43,12 +43,10 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    // Wait for animation
-    await Future.delayed(const Duration(milliseconds: 2000));
+    await Future.delayed(const Duration(milliseconds: 1800));
 
     if (!mounted) return;
 
-    // Check onboarding status
     final hasSeenOnboarding = StorageService.hasSeenOnboarding();
 
     if (!hasSeenOnboarding) {
@@ -56,7 +54,6 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
-    // Check auth status
     final isLoggedIn = await StorageService.isLoggedIn();
 
     if (mounted) {
@@ -77,63 +74,90 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: Center(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: const BoxDecoration(
-                        color: AppColors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.smart_toy_rounded,
-                        size: 60,
-                        color: AppColors.primary,
-                      ),
-                    ),
-
-                    const SizedBox(height: AppDimensions.spacing24),
-
-                    // App name
-                    const Text(
-                      'ProdBot AI',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.white,
-                        fontFamily: AppTextStyles.fontFamily,
-                      ),
-                    ),
-
-                    const SizedBox(height: AppDimensions.spacing48),
-
-                    // Loading indicator
-                    const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        color: AppColors.white,
-                        strokeWidth: 2,
-                      ),
-                    ),
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          // Web-style ambient glow (matches landing.css radial gradient)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.2),
+                  radius: 1.0,
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.18),
+                    AppColors.secondary.withValues(alpha: 0.08),
+                    Colors.transparent,
                   ],
+                  stops: const [0.0, 0.45, 1.0],
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          ),
+          Center(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.4),
+                                blurRadius: 40,
+                                spreadRadius: -4,
+                                offset: const Offset(0, 16),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 48,
+                            color: AppColors.white,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimensions.spacing24),
+                        Text(
+                          'ProdBot AI',
+                          style: AppTextStyles.headlineLarge.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimensions.spacing8),
+                        Text(
+                          'AI-сұраныс болжам жүйесі',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimensions.spacing48),
+                        const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

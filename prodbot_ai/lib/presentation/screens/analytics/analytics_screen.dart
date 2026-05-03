@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/theme.dart';
+import '../../../services/chat_service.dart';
+import '../../widgets/common/widgets.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -10,704 +11,480 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  String _selectedPeriod = '7D';
-  final List<String> _periods = ['7D', '30D', '90D', '1Y'];
+  final ChatService _chatService = ChatService();
+
+  bool _isLoading = true;
+  Map<String, dynamic>? _summary;
+  Map<String, dynamic>? _trends;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final results = await Future.wait([
+        _chatService.getAnalyticsSummary(),
+        _chatService.getAnalyticsTrends(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _summary = results[0];
+          _trends = results[1];
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Analytics'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download_outlined),
-            onPressed: _exportReport,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshData,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Period selector
-            _buildPeriodSelector(),
-
-            // Overview cards
-            _buildOverviewCards(),
-
-            // Demand chart
-            _buildDemandChart(),
-
-            // Accuracy chart
-            _buildAccuracyChart(),
-
-            // Top products
-            _buildTopProducts(),
-
-            // Category breakdown
-            _buildCategoryBreakdown(),
-
-            const SizedBox(height: AppDimensions.spacing24),
+            _buildAppBar(),
+            const Divider(height: 1, color: AppColors.borderSubtle),
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : _error != null
+                      ? _buildError()
+                      : RefreshIndicator(
+                          onRefresh: _loadData,
+                          color: AppColors.primary,
+                          backgroundColor: AppColors.surface,
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildOverviewCards(),
+                                const SizedBox(height: 24),
+                                _buildTrendsSection(),
+                                const SizedBox(height: 24),
+                                _buildTopProductsSection(),
+                                const SizedBox(height: 24),
+                                _buildDecliningSection(),
+                                const SizedBox(height: 32),
+                              ],
+                            ),
+                          ),
+                        ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPeriodSelector() {
+  Widget _buildAppBar() {
     return Padding(
-      padding: const EdgeInsets.all(AppDimensions.spacing16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
       child: Row(
-        children: _periods.map((period) {
-          final isSelected = _selectedPeriod == period;
-          return Padding(
-            padding: const EdgeInsets.only(right: AppDimensions.spacing8),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedPeriod = period),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.spacing16,
-                  vertical: AppDimensions.spacing8,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.border,
-                  ),
-                ),
-                child: Text(
-                  period,
-                  style: AppTextStyles.labelMedium.copyWith(
-                    color: isSelected ? AppColors.white : AppColors.textSecondary,
-                  ),
-                ),
-              ),
+        children: [
+          Text('Аналитика', style: AppTextStyles.titleLarge),
+          const Spacer(),
+          _IconBubble(icon: Icons.refresh_rounded, onTap: _loadData),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildError() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.border, width: 1),
             ),
-          );
-        }).toList(),
+            child: const Icon(
+              Icons.cloud_off_rounded,
+              color: AppColors.textSecondary,
+              size: 36,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Деректерді жүктеу сәтсіз аяқталды',
+            style: AppTextStyles.titleSmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Бэкенд серверінің іске қосылғанын тексеріңіз',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          AppButton.gradient(
+            text: 'Қайта жүктеу',
+            prefixIcon: Icons.refresh_rounded,
+            isFullWidth: false,
+            onPressed: _loadData,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildOverviewCards() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacing16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildOverviewCard(
-                  'Total Forecasts',
-                  '127',
-                  '+12%',
-                  Icons.analytics_outlined,
-                  AppColors.primary,
-                  true,
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spacing12),
-              Expanded(
-                child: _buildOverviewCard(
-                  'Avg Accuracy',
-                  '91.2%',
-                  '+3.5%',
-                  Icons.show_chart,
-                  AppColors.success,
-                  true,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.spacing12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildOverviewCard(
-                  'Products',
-                  '45',
-                  '+5',
-                  Icons.inventory_2_outlined,
-                  AppColors.info,
-                  true,
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spacing12),
-              Expanded(
-                child: _buildOverviewCard(
-                  'Alerts',
-                  '3',
-                  '-2',
-                  Icons.warning_amber_outlined,
-                  AppColors.warning,
-                  false,
-                ),
-              ),
-            ],
-          ),
-        ],
+    final overview = _summary?['overview'] as Map<String, dynamic>?;
+
+    final cards = [
+      _MetricCardData(
+        'Жалпы болжамдар',
+        overview?['total_forecasts']?.toString() ?? '—',
+        Icons.analytics_outlined,
+        AppColors.primary,
       ),
+      _MetricCardData(
+        'Орт. дәлдік',
+        overview?['avg_accuracy'] != null
+            ? '${(overview!['avg_accuracy'] as num).toStringAsFixed(1)}%'
+            : '—',
+        Icons.show_chart_rounded,
+        AppColors.success,
+      ),
+      _MetricCardData(
+        'Өнімдер',
+        overview?['total_products']?.toString() ?? '—',
+        Icons.inventory_2_outlined,
+        AppColors.info,
+      ),
+      _MetricCardData(
+        'Дүкендер',
+        overview?['active_stores']?.toString() ?? '—',
+        Icons.store_outlined,
+        AppColors.secondary,
+      ),
+    ];
+
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 1.45,
+      children: cards.map(_buildMetricCard).toList(),
     );
   }
 
-  Widget _buildOverviewCard(
-    String title,
-    String value,
-    String change,
-    IconData icon,
-    Color color,
-    bool isPositive,
-  ) {
+  Widget _buildMetricCard(_MetricCardData c) {
     return Container(
-      padding: const EdgeInsets.all(AppDimensions.spacing16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                ),
-                child: Icon(icon, color: color, size: 20),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: c.color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: c.color.withValues(alpha: 0.32),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.spacing6,
-                  vertical: AppDimensions.spacing2,
+            ),
+            child: Icon(c.icon, color: c.color, size: 18),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                c.value,
+                style: AppTextStyles.headlineSmall.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
                 ),
-                decoration: BoxDecoration(
-                  color: (isPositive ? AppColors.success : AppColors.error)
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                      size: 12,
-                      color: isPositive ? AppColors.success : AppColors.error,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      change,
-                      style: AppTextStyles.caption.copyWith(
-                        color: isPositive ? AppColors.success : AppColors.error,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                c.label,
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppDimensions.spacing12),
-          Text(value, style: AppTextStyles.headlineSmall),
-          const SizedBox(height: AppDimensions.spacing4),
-          Text(
-            title,
-            style: AppTextStyles.caption,
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildDemandChart() {
-    return Container(
-      margin: const EdgeInsets.all(AppDimensions.spacing16),
-      padding: const EdgeInsets.all(AppDimensions.spacing16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Demand Overview', style: AppTextStyles.titleSmall),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.spacing8,
-                  vertical: AppDimensions.spacing4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary10,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Actual',
-                      style: AppTextStyles.caption.copyWith(fontSize: 10),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppColors.info,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Forecast',
-                      style: AppTextStyles.caption.copyWith(fontSize: 10),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.spacing24),
-          SizedBox(
-            height: 200,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: 500,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.border,
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      getTitlesWidget: (value, meta) {
-                        final labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                        if (value.toInt() < labels.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(labels[value.toInt()], style: AppTextStyles.caption),
-                          );
-                        }
-                        return const SizedBox();
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) => Text(
-                        '${(value / 1000).toStringAsFixed(1)}k',
-                        style: AppTextStyles.caption,
-                      ),
-                    ),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                minX: 0,
-                maxX: 6,
-                minY: 0,
-                maxY: 2500,
-                lineBarsData: [
-                  // Actual demand
-                  LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 1200),
-                      FlSpot(1, 1400),
-                      FlSpot(2, 1100),
-                      FlSpot(3, 1600),
-                      FlSpot(4, 1800),
-                      FlSpot(5, 1500),
-                      FlSpot(6, 1700),
-                    ],
-                    isCurved: true,
-                    color: AppColors.primary,
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  // Forecast
-                  LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 1150),
-                      FlSpot(1, 1350),
-                      FlSpot(2, 1200),
-                      FlSpot(3, 1550),
-                      FlSpot(4, 1850),
-                      FlSpot(5, 1450),
-                      FlSpot(6, 1750),
-                    ],
-                    isCurved: true,
-                    color: AppColors.info,
-                    barWidth: 2,
-                    isStrokeCapRound: true,
-                    dashArray: [5, 5],
-                    dotData: const FlDotData(show: false),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildTrendsSection() {
+    final growing = _trends?['growing'] as List<dynamic>?;
+    final stable = _trends?['stable'] as List<dynamic>?;
 
-  Widget _buildAccuracyChart() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppDimensions.spacing16),
-      padding: const EdgeInsets.all(AppDimensions.spacing16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Forecast Accuracy Trend', style: AppTextStyles.titleSmall),
-          const SizedBox(height: AppDimensions.spacing24),
-          SizedBox(
-            height: 150,
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: 100,
-                barTouchData: BarTouchData(enabled: false),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-                        if (value.toInt() < labels.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(labels[value.toInt()], style: AppTextStyles.caption),
-                          );
-                        }
-                        return const SizedBox();
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 35,
-                      getTitlesWidget: (value, meta) => Text(
-                        '${value.toInt()}%',
-                        style: AppTextStyles.caption,
-                      ),
-                    ),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: 25,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.border,
-                    strokeWidth: 1,
-                  ),
-                ),
-                barGroups: [
-                  _buildBarGroup(0, 85),
-                  _buildBarGroup(1, 88),
-                  _buildBarGroup(2, 82),
-                  _buildBarGroup(3, 90),
-                  _buildBarGroup(4, 93),
-                  _buildBarGroup(5, 91),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  BarChartGroupData _buildBarGroup(int x, double y) {
-    Color barColor;
-    if (y >= 90) {
-      barColor = AppColors.success;
-    } else if (y >= 80) {
-      barColor = AppColors.warning;
-    } else {
-      barColor = AppColors.error;
+    if ((growing == null || growing.isEmpty) &&
+        (stable == null || stable.isEmpty)) {
+      return const SizedBox.shrink();
     }
 
-    return BarChartGroupData(
-      x: x,
-      barRods: [
-        BarChartRodData(
-          toY: y,
-          color: barColor,
-          width: 20,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(4),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Тренд талдауы', style: AppTextStyles.titleSmall),
+        const SizedBox(height: 12),
+        if (growing != null && growing.isNotEmpty) ...[
+          _buildTrendGroup(
+            'Өсіп жатқан',
+            growing,
+            AppColors.success,
+            Icons.trending_up_rounded,
+          ),
+          const SizedBox(height: 10),
+        ],
+        if (stable != null && stable.isNotEmpty)
+          _buildTrendGroup(
+            'Тұрақты',
+            stable,
+            AppColors.warning,
+            Icons.trending_flat_rounded,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTrendGroup(
+    String title,
+    List<dynamic> items,
+    Color color,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(7),
+                  border: Border.all(color: color.withValues(alpha: 0.32)),
+                ),
+                child: Icon(icon, color: color, size: 14),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  '${items.length}',
+                  style: AppTextStyles.caption.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: items.take(8).map((item) {
+              final productId =
+                  (item as Map<String, dynamic>)['product_id'] as String? ?? '';
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: color.withValues(alpha: 0.25)),
+                ),
+                child: Text(
+                  productId,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopProductsSection() {
+    final topByDemand = _summary?['top_by_demand'] as List<dynamic>?;
+    if (topByDemand == null || topByDemand.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final maxDemand = topByDemand
+        .map((e) => (e as Map<String, dynamic>)['avg_demand'] as num? ?? 0)
+        .reduce((a, b) => a > b ? a : b)
+        .toDouble();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Үздік өнімдер (сұраныс)', style: AppTextStyles.titleSmall),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            border: Border.all(color: AppColors.border, width: 1),
+          ),
+          child: Column(
+            children: topByDemand.take(5).toList().asMap().entries.map((e) {
+              final index = e.key;
+              final product = e.value as Map<String, dynamic>;
+              final name = product['product_id'] as String? ?? '—';
+              final demand = (product['avg_demand'] as num?)?.toDouble() ?? 0;
+              final pct = maxDemand > 0 ? demand / maxDemand : 0.0;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          name,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          demand.toStringAsFixed(0),
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: pct,
+                        backgroundColor: AppColors.borderSubtle,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          index == 0
+                              ? AppColors.primary
+                              : AppColors.primary.withValues(alpha: 0.55),
+                        ),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTopProducts() {
-    final products = [
-      {'name': 'Product Alpha', 'demand': 2450, 'growth': 12.5},
-      {'name': 'Product Beta', 'demand': 1890, 'growth': 8.3},
-      {'name': 'Product Gamma', 'demand': 1650, 'growth': -2.1},
-      {'name': 'Product Delta', 'demand': 1420, 'growth': 15.7},
-      {'name': 'Product Epsilon', 'demand': 1180, 'growth': 5.4},
-    ];
+  Widget _buildDecliningSection() {
+    final declining = _trends?['declining'] as List<dynamic>?;
+    if (declining == null || declining.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.all(AppDimensions.spacing16),
-      padding: const EdgeInsets.all(AppDimensions.spacing16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Top Products by Demand', style: AppTextStyles.titleSmall),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'View All',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ],
+    return _buildTrendGroup(
+      'Төмендеп жатқан',
+      declining,
+      AppColors.error,
+      Icons.trending_down_rounded,
+    );
+  }
+}
+
+class _MetricCardData {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  _MetricCardData(this.label, this.value, this.icon, this.color);
+}
+
+class _IconBubble extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _IconBubble({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            border: Border.all(color: AppColors.border, width: 1),
           ),
-          const SizedBox(height: AppDimensions.spacing16),
-          ...products.asMap().entries.map((entry) {
-            final index = entry.key;
-            final product = entry.value;
-            final growth = product['growth'] as double;
-            final isPositive = growth >= 0;
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppDimensions.spacing12),
-              child: Row(
-                children: [
-                  // Rank
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: index < 3 ? AppColors.primary10 : AppColors.background,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${index + 1}',
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: index < 3 ? AppColors.primary : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppDimensions.spacing12),
-                  // Product info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product['name'] as String,
-                          style: AppTextStyles.labelMedium,
-                        ),
-                        Text(
-                          '${product['demand']} units',
-                          style: AppTextStyles.caption,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Growth
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.spacing8,
-                      vertical: AppDimensions.spacing2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: (isPositive ? AppColors.success : AppColors.error)
-                          .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                          size: 12,
-                          color: isPositive ? AppColors.success : AppColors.error,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          '${growth.abs()}%',
-                          style: AppTextStyles.caption.copyWith(
-                            color: isPositive ? AppColors.success : AppColors.error,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryBreakdown() {
-    final categories = [
-      {'name': 'Electronics', 'value': 35.0, 'color': AppColors.primary},
-      {'name': 'Clothing', 'value': 25.0, 'color': AppColors.info},
-      {'name': 'Food', 'value': 20.0, 'color': AppColors.success},
-      {'name': 'Home', 'value': 12.0, 'color': AppColors.warning},
-      {'name': 'Other', 'value': 8.0, 'color': AppColors.textSecondary},
-    ];
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppDimensions.spacing16),
-      padding: const EdgeInsets.all(AppDimensions.spacing16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Category Distribution', style: AppTextStyles.titleSmall),
-          const SizedBox(height: AppDimensions.spacing24),
-          Row(
-            children: [
-              // Pie chart
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: PieChart(
-                  PieChartData(
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 30,
-                    sections: categories.map((cat) {
-                      return PieChartSectionData(
-                        value: cat['value'] as double,
-                        color: cat['color'] as Color,
-                        radius: 25,
-                        showTitle: false,
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spacing24),
-              // Legend
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: categories.map((cat) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppDimensions.spacing8),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: cat['color'] as Color,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: AppDimensions.spacing8),
-                          Expanded(
-                            child: Text(
-                              cat['name'] as String,
-                              style: AppTextStyles.caption,
-                            ),
-                          ),
-                          Text(
-                            '${(cat['value'] as double).toInt()}%',
-                            style: AppTextStyles.labelSmall,
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _exportReport() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Exporting report...'),
-        backgroundColor: AppColors.info,
-      ),
-    );
-  }
-
-  void _refreshData() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Refreshing data...'),
-        backgroundColor: AppColors.info,
+          child: Icon(icon, size: 18, color: AppColors.textSecondary),
+        ),
       ),
     );
   }

@@ -238,6 +238,29 @@ class _AppTextFieldState extends State<AppTextField> {
     return AppColors.textSecondary;
   }
 
+  // Web `.auth-field input:focus` adds a subtle 3px outer ring.
+  List<BoxShadow>? get _focusRing {
+    if (widget.errorText != null && _isFocused) {
+      return [
+        BoxShadow(
+          color: AppColors.error.withValues(alpha: 0.18),
+          blurRadius: 0,
+          spreadRadius: 3,
+        ),
+      ];
+    }
+    if (_isFocused) {
+      return [
+        BoxShadow(
+          color: AppColors.primary.withValues(alpha: 0.22),
+          blurRadius: 0,
+          spreadRadius: 3,
+        ),
+      ];
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -247,13 +270,20 @@ class _AppTextFieldState extends State<AppTextField> {
         if (widget.label != null) ...[
           Text(
             widget.label!,
-            style: AppTextStyles.labelMedium.copyWith(
+            style: AppTextStyles.labelSmall.copyWith(
               color: _labelColor,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: AppDimensions.spacing8),
+          const SizedBox(height: 6),
         ],
-        TextFormField(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            boxShadow: _focusRing,
+          ),
+          child: TextFormField(
           controller: _controller,
           focusNode: _focusNode,
           obscureText: _obscured,
@@ -340,11 +370,12 @@ class _AppTextFieldState extends State<AppTextField> {
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
               borderSide: const BorderSide(
-                color: AppColors.borderVariant,
+                color: AppColors.borderSubtle,
                 width: AppDimensions.borderWidthThin,
               ),
             ),
           ),
+        ),
         ),
         if (widget.errorText != null || widget.helperText != null) ...[
           const SizedBox(height: AppDimensions.spacing6),

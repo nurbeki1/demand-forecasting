@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../presentation/screens/splash/splash_screen.dart';
 import '../presentation/screens/onboarding/welcome_screen.dart';
 import '../presentation/screens/auth/login_screen.dart';
 import '../presentation/screens/auth/register_screen.dart';
 import '../presentation/screens/auth/forgot_password_screen.dart';
-import '../presentation/screens/main/main_screen.dart';
+import '../presentation/screens/chat/chat_home_screen.dart';
 import '../presentation/screens/home/home_screen.dart';
 import '../presentation/screens/forecast/forecast_list_screen.dart';
 import '../presentation/screens/forecast/forecast_detail_screen.dart';
@@ -66,7 +67,7 @@ class AppRouter {
         return _slideRoute(const ForgotPasswordScreen(), settings);
 
       case AppRoutes.main:
-        return _fadeRoute(const MainScreen(), settings);
+        return _fadeRoute(const ChatHomeScreen(), settings);
 
       case AppRoutes.home:
         return _fadeRoute(const HomeScreen(), settings);
@@ -196,6 +197,7 @@ class _ErrorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: Center(
         child: Column(
@@ -208,12 +210,12 @@ class _ErrorScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Page not found',
+              l10n.routerPageNotFound,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
             Text(
-              routeName ?? 'Unknown route',
+              routeName ?? l10n.routerUnknownRoute,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey,
                   ),
@@ -226,7 +228,7 @@ class _ErrorScreen extends StatelessWidget {
                   (route) => false,
                 );
               },
-              child: const Text('Go Home'),
+              child: Text(l10n.routerGoHome),
             ),
           ],
         ),

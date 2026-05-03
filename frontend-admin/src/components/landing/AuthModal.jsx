@@ -1,7 +1,7 @@
 /**
- * AuthModal - Premium Authentication Modal
+ * AuthModal - Variant A (chat-native dark UI)
  * Features:
- * - Email verification flow (send code → verify → set password)
+ * - Email verification flow (send code -> verify -> set password)
  * - Google OAuth
  * - Login
  * - Full i18n support
@@ -112,7 +112,7 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
 // ============================================
 // REGISTER FORM - Multi-step
 // ============================================
-function RegisterForm({ onSwitch, onSuccess, setLoading, loading, onGoogleClick }) {
+function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
   const [step, setStep] = useState(REGISTER_STEPS.EMAIL);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");

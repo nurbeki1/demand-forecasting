@@ -764,21 +764,19 @@ class _CreateForecastScreenState extends State<CreateForecastScreen> {
       child: SafeArea(
         child: Row(
           children: [
-            // Back button
             Expanded(
-              child: AppButton(
+              child: AppButton.outline(
                 text: _currentStep == 0 ? 'Cancel' : 'Back',
-                variant: AppButtonVariant.outline,
                 onPressed: _previousStep,
               ),
             ),
-
             const SizedBox(width: AppDimensions.spacing12),
-
-            // Next/Create button
             Expanded(
-              child: AppButton(
+              child: AppButton.gradient(
                 text: _currentStep == 3 ? 'Create Forecast' : 'Next',
+                suffixIcon: _currentStep == 3
+                    ? Icons.check_rounded
+                    : Icons.arrow_forward_rounded,
                 onPressed: _nextStep,
                 isLoading: _isLoading,
               ),

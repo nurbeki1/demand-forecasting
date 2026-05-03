@@ -505,6 +505,7 @@ def build_decision_response(
     df: pd.DataFrame,
     horizon_days: int = 7,
     store_id: Optional[str] = None,
+    model_type: str = "random_forest",
 ) -> DecisionAssistantChatResponse:
     """
     Build structured Decision Assistant response with trust, insights, and alerts.
@@ -533,7 +534,7 @@ def build_decision_response(
         )
 
     # Get model and predictions
-    trained = get_or_train_model(sub, product_id, store_id)
+    trained = get_or_train_model(sub, product_id, store_id, model_type=model_type)
     future_df, preds = predict(trained, horizon_days)
 
     predictions = [
@@ -1350,7 +1351,7 @@ def _track_and_store(
 # MAIN CHAT HANDLER
 # =========================================================
 
-def handle_ai_chat(message: str, user_id: int, language: str = "kk") -> Dict[str, Any]:
+def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type: str = "random_forest") -> Dict[str, Any]:
     """
     Main handler for AI chat messages with Decision Assistant pipeline.
 
@@ -1431,6 +1432,7 @@ def handle_ai_chat(message: str, user_id: int, language: str = "kk") -> Dict[str
                 entities=entities,
                 df=df,
                 horizon_days=days,
+                model_type=model_type,
             )
 
             # Track and store for memory

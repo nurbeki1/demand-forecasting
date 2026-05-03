@@ -9,7 +9,13 @@ from pydantic import BaseModel
 from typing import Optional, List
 import io
 import logging
+import os
 from datetime import datetime
+
+import pandas as pd
+
+_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_PATH = os.path.join(_DIR, "retail_store_inventory.csv")
 
 from services.report_service import get_report_service
 from services.ai_chat_service import get_analytics_summary, get_analytics_trends
@@ -83,47 +89,49 @@ async def get_forecast_report(
 
         report_service = get_report_service()
 
-        # Get model and predictions
-        model_data = get_or_train_model(product_id=product_id)
-        if not model_data:
-            raise HTTPException(status_code=404, detail="Product not found")
+        # Load data and filter by product
+        df = pd.read_csv(DATA_PATH, parse_dates=["Date"])
+        sub = df[df["Product ID"] == product_id].copy()
+        if sub.empty or len(sub) < 30:
+            raise HTTPException(status_code=404, detail="Product not found or not enough data")
 
-        model = model_data['model']
-        df = model_data['df']
-        metrics = model_data['metrics']
+        # Get model and predictions
+        trained = get_or_train_model(sub, product_id)
+        metrics = trained["metrics"]
 
         # Get predictions
-        predictions = predict(model, df, horizon_days=horizon_days)
+        future_df, raw_preds = predict(trained, horizon_days)
 
         # Prepare history data
         history = []
-        if not df.empty:
-            recent_df = df.tail(30)
-            for _, row in recent_df.iterrows():
-                history.append({
-                    'date': str(row.get('Date', '')),
-                    'demand': float(row.get('Units Sold', 0)),
-                    'inventory': float(row.get('Inventory Level', 0)),
-                    'price': float(row.get('Unit Price', 0)),
-                })
+        recent_df = sub.sort_values("Date").tail(30)
+        for _, row in recent_df.iterrows():
+            history.append({
+                'date': str(row.get('Date', '')),
+                'demand': float(row.get('Demand Forecast', 0)),
+                'inventory': float(row.get('Inventory Level', 0)),
+                'price': float(row.get('Price', 0)),
+            })
 
         # Prepare forecast data
         forecast = []
-        for pred in predictions:
+        for d, p in zip(future_df["Date"], raw_preds):
             forecast.append({
-                'date': pred.get('date', ''),
-                'predicted_demand': pred.get('predicted_demand', 0),
-                'lower_bound': pred.get('predicted_demand', 0) * 0.85,
-                'upper_bound': pred.get('predicted_demand', 0) * 1.15,
+                'date': str(d.date()),
+                'predicted_demand': round(float(p), 2),
+                'lower_bound': round(float(p) * 0.85, 2),
+                'upper_bound': round(float(p) * 1.15, 2),
             })
+
+        predictions_list = [{'date': f['date'], 'predicted_demand': f['predicted_demand']} for f in forecast]
 
         # Generate insights
         insight_gen = InsightGenerator()
         insights = insight_gen.generate_full_insight(
             product_id=product_id,
-            predictions=predictions,
+            predictions=predictions_list,
             metrics=metrics,
-            history_df=df
+            history_df=sub
         )
 
         # Generate Excel report

@@ -256,12 +256,10 @@ class _ForecastListScreenState extends State<ForecastListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: _GradientFab(
         onPressed: _navigateToCreate,
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('New Forecast'),
+        icon: Icons.add_rounded,
+        label: 'Жаңа болжам',
       ),
     );
   }
@@ -312,36 +310,43 @@ class _ForecastListScreenState extends State<ForecastListScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: 88,
+              height: 88,
               decoration: BoxDecoration(
-                color: AppColors.primary10,
+                gradient: AppColors.primaryGradient,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 24,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
               child: const Icon(
                 Icons.analytics_outlined,
                 size: 40,
-                color: AppColors.primary,
+                color: AppColors.white,
               ),
             ),
             const SizedBox(height: AppDimensions.spacing24),
             Text(
-              'No forecasts found',
+              'Болжамдар табылмады',
               style: AppTextStyles.titleMedium,
             ),
             const SizedBox(height: AppDimensions.spacing8),
             Text(
-              'Create your first forecast to get started with demand predictions',
+              'Сұранысты болжау үшін алғашқы болжамыңызды жасаңыз',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppDimensions.spacing24),
-            ElevatedButton.icon(
+            _GradientFab(
               onPressed: _navigateToCreate,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Forecast'),
+              icon: Icons.add_rounded,
+              label: 'Болжам жасау',
             ),
           ],
         ),
@@ -405,6 +410,59 @@ class _ForecastListScreenState extends State<ForecastListScreen> {
               );
             }),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GradientFab extends StatelessWidget {
+  final VoidCallback onPressed;
+  final IconData icon;
+  final String label;
+
+  const _GradientFab({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.32),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: AppColors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

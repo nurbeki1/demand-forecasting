@@ -9,10 +9,18 @@ class ChatService {
 
   /// Send a message to the AI chat
   /// Returns ChatResponse with reply, intent, suggestions, and optional chart data
-  Future<ChatResponse> sendMessage(String message) async {
+  Future<ChatResponse> sendMessage(
+    String message, {
+    String language = 'kk',
+    String modelType = 'random_forest',
+  }) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/chat',
-      data: {'message': message},
+      data: {
+        'message': message,
+        'language': language,
+        'model_type': modelType,
+      },
     );
     return ChatResponse.fromJson(response);
   }
@@ -51,5 +59,19 @@ class ChatService {
   /// Get analytics trends
   Future<Map<String, dynamic>> getAnalyticsTrends() async {
     return await _apiClient.get<Map<String, dynamic>>('/analytics/trends');
+  }
+
+  /// Recalculate KZ analysis with new markup (mirrors web `recalculateKZAnalysis`).
+  Future<Map<String, dynamic>> recalculateKZAnalysis({
+    required String productName,
+    required int markupPercent,
+  }) async {
+    return await _apiClient.post<Map<String, dynamic>>(
+      '/kz/analyze',
+      data: {
+        'product_name': productName,
+        'markup_percent': markupPercent,
+      },
+    );
   }
 }

@@ -20,11 +20,11 @@ function getHeaders() {
  * @param {string} [language='kk'] - Language code for AI response (kk, ru, en)
  * @returns {Promise<{reply: string, intent: string, entities: object, suggestions: string[], data?: object}>}
  */
-export async function sendChatMessage(message, language = 'kk') {
+export async function sendChatMessage(message, language = 'kk', modelType = 'random_forest') {
   const res = await fetch(`${BASE_URL}/chat`, {
     method: "POST",
     headers: getHeaders(),
-    body: JSON.stringify({ message, language }),
+    body: JSON.stringify({ message, language, model_type: modelType }),
   });
 
   if (!res.ok) {

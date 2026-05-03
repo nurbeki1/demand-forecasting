@@ -1,0 +1,73 @@
+{
+  "@@locale": "kk",
+  "appTitle": "ProdBot AI",
+
+  "welcomePoweredByAi": "AI-демеу",
+  "welcomeTitle": "Қош келдіңіз",
+  "welcomeBrandHighlight": "ProdBot AI",
+  "welcomeSubtitle": "Сұраныс болжам платформасы.\nАқылды талдау бір сұрау қашықтықта.",
+  "welcomeStart": "Бастау",
+  "welcomeLogin": "Кіру",
+  "welcomeOr": "немесе",
+
+  "loginTitle": "Кіру",
+  "loginSubtitle": "Аккаунтыңызға кіру үшін деректерді енгізіңіз",
+  "loginEmailLabel": "Email",
+  "loginEmailHint": "you@company.com",
+  "loginPasswordLabel": "Құпия сөз",
+  "loginPasswordHint": "Құпия сөзді енгізіңіз",
+  "loginRememberMe": "Мені есте сақтау",
+  "loginForgotPassword": "Ұмыттыңыз ба?",
+  "loginButton": "Кіру",
+  "loginNoAccount": "Аккаунт жоқ па?",
+  "loginRegister": "Тіркелу",
+
+  "validationEmailRequired": "Email қажет",
+  "validationEmailInvalid": "Жарамды email енгізіңіз",
+  "validationPasswordRequired": "Құпия сөз қажет",
+  "validationPasswordShort": "Кемінде 4 таңба",
+
+  "chatNewChat": "Жаңа чат",
+  "chatSearchHint": "Іздеу…",
+  "chatRecentChats": "Соңғы чаттар",
+  "chatNoConversations": "Чат әлі жоқ",
+  "chatSettings": "Параметрлер",
+  "chatLogout": "Шығу",
+  "chatLogoutTooltip": "Шығу",
+  "chatDeleteTitle": "Чатты жою",
+  "chatDeleteBody": "Бұл чатты жою керек пе?",
+  "chatCancel": "Болдырмау",
+  "chatDelete": "Жою",
+  "chatAiAssistant": "AI Assistant",
+  "chatWelcomeType1": "Қош келдіңіз!",
+  "chatWelcomeType2": "Кез-келген сұрақ қойыңыз",
+  "chatWelcomeType3": "AI жауаптары тексерілуі тиіс",
+  "chatAskAnythingHint": "Кез-келген сұрақ қойыңыз…",
+  "chatMessageHint": "Хабарлама…",
+  "chatDisclaimer": "AI қате жіберуі мүмкін. Маңызды ақпаратты тексеріңіз.",
+  "suggestionTopProducts": "Үздік өнімдер",
+  "suggestionSalesForecast": "Сату болжамы",
+  "suggestionTrending": "Танымал тауарлар",
+  "suggestionCompare": "Өнімдерді салыстыру",
+
+  "roleYou": "Сіз",
+  "roleAiAssistant": "AI Assistant",
+
+  "modelPickerTitle": "AI моделі",
+  "modelRfDesc": "Тұрақты, кез-келген деректе жақсы жұмыс істейді",
+  "modelLgbmDesc": "Өте жылдам, үлкен деректер үшін оңтайлы",
+  "modelXgbDesc": "Жоғары дәлдік, күрделі үлгілерді анықтайды",
+
+  "miniChartTitle": "Сұраныс болжамы",
+  "miniChartHistory": "Тарих",
+  "miniChartForecast": "Болжам",
+
+  "productsCarouselTitle": "Өнімдер ({count})",
+  "productPriceUnknown": "Бағасы көрсетілмеген",
+
+  "chatErrorGeneric": "Қате: серверге қосылу мүмкін болмады. Кейінірек қайталап көріңіз.",
+
+  "routerPageNotFound": "Бет табылмады",
+  "routerUnknownRoute": "Белгісіз маршрут",
+  "routerGoHome": "Басты бетке"
+}

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/theme.dart';
 import '../../../services/auth_service.dart';
-import '../../widgets/common/app_button.dart';
-import '../../widgets/common/app_text_field.dart';
+import '../../widgets/common/widgets.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -24,13 +23,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your email';
-    }
+    if (value == null || value.isEmpty) return 'Email қажет';
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
-      return 'Please enter a valid email';
-    }
+    if (!emailRegex.hasMatch(value)) return 'Жарамды email енгізіңіз';
     return null;
   }
 
@@ -61,121 +56,120 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          icon: const Icon(Icons.arrow_back_rounded, size: 22),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: AppDimensions.screenPadding,
-          child: _emailSent ? _buildSuccessContent() : _buildFormContent(),
-        ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.7),
+                  radius: 1.0,
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.10),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 16,
+              ),
+              child: _emailSent ? _buildSuccess(context) : _buildForm(context),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFormContent() {
+  Widget _buildForm(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: AppDimensions.spacing16),
-
-        // Title
-        Text(
-          'Forgot Password?',
-          style: AppTextStyles.headlineLarge,
+        Center(
+          child: BrandLogo(
+            size: 64,
+            radius: 18,
+            icon: Icons.lock_reset_rounded,
+            withGlow: true,
+          ),
         ),
-        const SizedBox(height: AppDimensions.spacing8),
-
-        // Subtitle
+        const SizedBox(height: 24),
         Text(
-          'No worries! Enter your email address and we\'ll send you a link to reset your password.',
+          'Құпия сөзді ұмыттыңыз ба?',
+          style: AppTextStyles.displaySmall,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Email енгізіңіз — қалпына келтіру сілтемесін жібереміз.',
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
+          textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 32),
 
-        const SizedBox(height: AppDimensions.spacing32),
-
-        // Email field
         AppTextField.email(
+          label: 'Email',
+          hintText: 'email@example.com',
           controller: _emailController,
           errorText: _emailError,
           onChanged: (_) {
-            if (_emailError != null) {
-              setState(() => _emailError = null);
-            }
+            if (_emailError != null) setState(() => _emailError = null);
           },
           onFieldSubmitted: (_) => _handleResetPassword(),
         ),
 
-        // Error message
         Consumer<AuthService>(
           builder: (context, authService, _) {
             if (authService.error != null) {
               return Padding(
-                padding: const EdgeInsets.only(top: AppDimensions.spacing16),
-                child: Container(
-                  padding: const EdgeInsets.all(AppDimensions.spacing12),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorSmooth,
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                    border: Border.all(
-                      color: AppColors.error.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: AppDimensions.spacing8),
-                      Expanded(
-                        child: Text(
-                          authService.error!,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                padding: const EdgeInsets.only(top: 12),
+                child: _ErrorBanner(message: authService.error!),
               );
             }
             return const SizedBox.shrink();
           },
         ),
 
-        const SizedBox(height: AppDimensions.spacing32),
+        const SizedBox(height: 24),
 
-        // Submit button
         Consumer<AuthService>(
           builder: (context, authService, _) {
-            return AppButton.primary(
-              text: 'Send Reset Link',
+            return AppButton.gradient(
+              text: 'Сілтемені жіберу',
               isLoading: authService.isLoading,
-              onPressed: authService.isLoading ? null : _handleResetPassword,
+              onPressed:
+                  authService.isLoading ? null : _handleResetPassword,
             );
           },
         ),
 
-        const SizedBox(height: AppDimensions.spacing24),
+        const SizedBox(height: 20),
 
-        // Back to login link
         Center(
           child: GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: Text.rich(
               TextSpan(
-                text: 'Remember your password? ',
-                style: AppTextStyles.bodySmall,
+                text: 'Құпия сөзді есте сақтайсыз ба? ',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
                 children: [
                   TextSpan(
-                    text: 'Log in',
+                    text: 'Кіру',
                     style: AppTextStyles.link.copyWith(
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -188,72 +182,89 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildSuccessContent() {
+  Widget _buildSuccess(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: AppDimensions.spacing48),
-
-        // Success icon
+        const SizedBox(height: 40),
         Container(
-          width: 100,
-          height: 100,
+          width: 96,
+          height: 96,
           decoration: BoxDecoration(
-            color: AppColors.successSmooth,
+            color: AppColors.success.withValues(alpha: 0.12),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.success.withValues(alpha: 0.35),
+              width: 1,
+            ),
           ),
           child: const Icon(
-            Icons.mark_email_read_outlined,
-            size: 48,
+            Icons.mark_email_read_rounded,
+            size: 44,
             color: AppColors.success,
           ),
         ),
-
-        const SizedBox(height: AppDimensions.spacing32),
-
-        // Title
+        const SizedBox(height: 28),
         Text(
-          'Check Your Email',
+          'Email тексеріңіз',
           style: AppTextStyles.headlineMedium,
           textAlign: TextAlign.center,
         ),
-
-        const SizedBox(height: AppDimensions.spacing12),
-
-        // Subtitle
+        const SizedBox(height: 12),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacing16),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'We\'ve sent a password reset link to\n${_emailController.text}',
+            'Қалпына келтіру сілтемесі жіберілді:\n${_emailController.text}',
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
         ),
-
-        const SizedBox(height: AppDimensions.spacing32),
-
-        // Back to login button
-        AppButton.primary(
-          text: 'Back to Login',
+        const SizedBox(height: 32),
+        AppButton.gradient(
+          text: 'Кіруге оралу',
           onPressed: () {
             Navigator.of(context).popUntil((route) => route.isFirst);
           },
         ),
-
-        const SizedBox(height: AppDimensions.spacing16),
-
-        // Resend link
+        const SizedBox(height: 12),
         TextButton(
-          onPressed: () {
-            setState(() => _emailSent = false);
-          },
+          onPressed: () => setState(() => _emailSent = false),
           child: Text(
-            'Didn\'t receive the email? Resend',
-            style: AppTextStyles.link,
+            'Email алмадыңыз ба? Қайта жіберу',
+            style: AppTextStyles.link.copyWith(color: AppColors.primary),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  final String message;
+  const _ErrorBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.error, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTextStyles.caption.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

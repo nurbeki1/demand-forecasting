@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../data/models/chat_models.dart';
+import '../../../widgets/common/widgets.dart';
 import 'suggestion_card.dart';
 
 class ChatMessageData {
@@ -24,6 +25,10 @@ class ChatMessageData {
   });
 }
 
+/// Chat message — visual treatment matches the web platform
+/// (`frontend-admin/src/styles/chat.css`):
+/// - User bubble: indigo→purple gradient
+/// - Bot bubble: dark elevated surface with subtle border
 class ChatMessage extends StatelessWidget {
   final ChatMessageData data;
   final Function(String)? onSuggestionTap;
@@ -35,9 +40,9 @@ class ChatMessage extends StatelessWidget {
   });
 
   static const List<String> _defaultSuggestions = [
-    'Forecast for P0001',
-    'Top 5 products',
-    'Compare East and West',
+    'P0001 болжамы',
+    'Үздік 5 өнім',
+    'Шығыс пен батысты салыстыру',
   ];
 
   List<String> get _suggestions => data.suggestions ?? _defaultSuggestions;
@@ -52,21 +57,33 @@ class ChatMessage extends StatelessWidget {
 
   Widget _buildUserMessage() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppDimensions.spacing12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(width: AppDimensions.spacing48),
+          const SizedBox(width: 56),
           Flexible(
             child: Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spacing16,
-                vertical: AppDimensions.spacing12,
+                horizontal: 14,
+                vertical: 10,
               ),
               decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+                gradient: AppColors.primaryGradient,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(18),
+                  topRight: Radius.circular(18),
+                  bottomLeft: Radius.circular(18),
+                  bottomRight: Radius.circular(4),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.28),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Text(
                 data.text,
@@ -76,19 +93,20 @@ class ChatMessage extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: AppDimensions.spacing8),
+          const SizedBox(width: 8),
           // User avatar
           Container(
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: AppColors.primary20,
+              color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border, width: 1),
             ),
             child: const Icon(
-              Icons.person,
+              Icons.person_rounded,
               size: 18,
-              color: AppColors.primary,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -98,62 +116,54 @@ class ChatMessage extends StatelessWidget {
 
   Widget _buildBotMessage() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppDimensions.spacing12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Bot avatar
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: AppColors.primary10,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.smart_toy_rounded,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
+              const BrandLogo(
+                size: 32,
+                radius: 9,
+                icon: Icons.auto_awesome_rounded,
               ),
-              const SizedBox(width: AppDimensions.spacing8),
+              const SizedBox(width: 8),
               Flexible(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.spacing16,
-                    vertical: AppDimensions.spacing12,
+                    horizontal: 14,
+                    vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.chatBubble,
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+                    color: AppColors.surfaceVariant,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(4),
+                      topRight: Radius.circular(18),
+                      bottomLeft: Radius.circular(18),
+                      bottomRight: Radius.circular(18),
+                    ),
+                    border: Border.all(color: AppColors.border, width: 1),
                   ),
                   child: _buildFormattedText(data.text),
                 ),
               ),
-              const SizedBox(width: AppDimensions.spacing48),
+              const SizedBox(width: 56),
             ],
           ),
 
-          // Show product images carousel
           if (data.images != null && data.images!.isNotEmpty) ...[
-            const SizedBox(height: AppDimensions.spacing12),
+            const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.only(left: 40),
               child: ProductCarousel(images: data.images!),
             ),
           ],
 
-          // Show suggestions
           if (data.showSuggestions) ...[
-            const SizedBox(height: AppDimensions.spacing12),
+            const SizedBox(height: 12),
             ..._suggestions.map((suggestion) => Padding(
-                  padding: const EdgeInsets.only(
-                    left: 40,
-                    bottom: AppDimensions.spacing8,
-                  ),
+                  padding: const EdgeInsets.only(left: 40, bottom: 8),
                   child: SuggestionCard(
                     text: suggestion,
                     onTap: () => onSuggestionTap?.call(suggestion),
@@ -165,7 +175,6 @@ class ChatMessage extends StatelessWidget {
     );
   }
 
-  /// Formats text with basic markdown-like styling
   Widget _buildFormattedText(String text) {
     final spans = <TextSpan>[];
     final lines = text.split('\n');
@@ -173,38 +182,33 @@ class ChatMessage extends StatelessWidget {
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
 
-      // Check for headers (lines starting with ##)
       if (line.startsWith('## ')) {
         spans.add(TextSpan(
           text: line.substring(3),
           style: AppTextStyles.titleSmall.copyWith(
             color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
           ),
         ));
       } else if (line.startsWith('**') && line.endsWith('**')) {
-        // Bold text
         spans.add(TextSpan(
           text: line.substring(2, line.length - 2),
           style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textMuted,
-            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
           ),
         ));
       } else if (line.startsWith('- ') || line.startsWith('• ')) {
-        // Bullet points
         spans.add(TextSpan(
           text: '  • ${line.substring(2)}',
           style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textMuted,
+            color: AppColors.textPrimary,
           ),
         ));
       } else {
-        // Regular text - parse inline bold
         spans.addAll(_parseInlineBold(line));
       }
 
-      // Add newline except for last line
       if (i < lines.length - 1) {
         spans.add(const TextSpan(text: '\n'));
       }
@@ -214,57 +218,52 @@ class ChatMessage extends StatelessWidget {
       text: TextSpan(
         children: spans,
         style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textMuted,
+          color: AppColors.textPrimary,
         ),
       ),
     );
   }
 
-  /// Parse inline bold text (text between **)
   List<TextSpan> _parseInlineBold(String text) {
     final spans = <TextSpan>[];
     final regex = RegExp(r'\*\*(.+?)\*\*');
     int lastEnd = 0;
 
     for (final match in regex.allMatches(text)) {
-      // Add text before the match
       if (match.start > lastEnd) {
         spans.add(TextSpan(
           text: text.substring(lastEnd, match.start),
           style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textMuted,
+            color: AppColors.textPrimary,
           ),
         ));
       }
 
-      // Add bold text
       spans.add(TextSpan(
         text: match.group(1),
         style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textMuted,
-          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
         ),
       ));
 
       lastEnd = match.end;
     }
 
-    // Add remaining text
     if (lastEnd < text.length) {
       spans.add(TextSpan(
         text: text.substring(lastEnd),
         style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textMuted,
+          color: AppColors.textPrimary,
         ),
       ));
     }
 
-    // If no matches, return original text
     if (spans.isEmpty) {
       spans.add(TextSpan(
         text: text,
         style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textMuted,
+          color: AppColors.textPrimary,
         ),
       ));
     }
@@ -273,7 +272,7 @@ class ChatMessage extends StatelessWidget {
   }
 }
 
-/// Product carousel widget for displaying multiple product cards
+/// Product carousel widget for displaying multiple product cards.
 class ProductCarousel extends StatefulWidget {
   final List<ProductImage> images;
 
@@ -321,7 +320,6 @@ class _ProductCarouselState extends State<ProductCarousel> {
           ),
         ),
         const SizedBox(height: 8),
-        // Page indicators
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
@@ -345,7 +343,6 @@ class _ProductCarouselState extends State<ProductCarousel> {
   }
 }
 
-/// Individual product card widget
 class ProductCard extends StatelessWidget {
   final ProductImage product;
 
@@ -358,58 +355,61 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        boxShadow: AppDimensions.shadowCard,
         border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product image
           ClipRRect(
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(AppDimensions.radiusMd),
             ),
             child: SizedBox(
-              height: 100,
+              height: 110,
               width: double.infinity,
               child: product.imageUrl.isNotEmpty
                   ? CachedNetworkImage(
                       imageUrl: product.imageUrl,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
-                        color: AppColors.chatBubble,
+                        color: AppColors.surfaceVariant,
                         child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          ),
                         ),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: AppColors.chatBubble,
+                        color: AppColors.surfaceVariant,
                         child: const Icon(
                           Icons.image_not_supported_outlined,
                           color: AppColors.textHint,
-                          size: 40,
+                          size: 36,
                         ),
                       ),
                     )
                   : Container(
-                      color: AppColors.chatBubble,
+                      color: AppColors.surfaceVariant,
                       child: const Icon(
                         Icons.shopping_bag_outlined,
                         color: AppColors.textHint,
-                        size: 40,
+                        size: 36,
                       ),
                     ),
             ),
           ),
-          // Product info
           Padding(
-            padding: const EdgeInsets.all(AppDimensions.spacing12),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product name
                 Text(
                   product.name,
                   style: AppTextStyles.bodySmall.copyWith(
@@ -420,26 +420,23 @@ class ProductCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
-                // Price and rating row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Price
                     Text(
                       '\$${product.price.toStringAsFixed(2)}',
                       style: AppTextStyles.titleSmall.copyWith(
                         color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    // Rating
                     if (product.rating > 0)
                       Row(
                         children: [
                           const Icon(
-                            Icons.star,
+                            Icons.star_rounded,
                             size: 14,
-                            color: Colors.amber,
+                            color: AppColors.warning,
                           ),
                           const SizedBox(width: 2),
                           Text(

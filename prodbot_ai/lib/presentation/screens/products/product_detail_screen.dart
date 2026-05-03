@@ -399,23 +399,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
           const SizedBox(height: AppDimensions.spacing24),
 
-          // Actions
           Row(
             children: [
               Expanded(
-                child: AppButton(
+                child: AppButton.outline(
                   text: 'Add Stock',
-                  variant: AppButtonVariant.outline,
-                  icon: Icons.add,
+                  prefixIcon: Icons.add,
                   onPressed: () {},
                 ),
               ),
               const SizedBox(width: AppDimensions.spacing12),
               Expanded(
-                child: AppButton(
+                child: AppButton.outline(
                   text: 'Adjust',
-                  variant: AppButtonVariant.outline,
-                  icon: Icons.edit,
+                  prefixIcon: Icons.edit,
                   onPressed: () {},
                 ),
               ),
@@ -613,12 +610,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
           const SizedBox(height: AppDimensions.spacing24),
 
-          // Generate new forecast button
-          AppButton(
+          AppButton.gradient(
             text: 'Generate New Forecast',
-            icon: Icons.refresh,
+            prefixIcon: Icons.refresh,
             onPressed: () {},
-            fullWidth: true,
           ),
         ],
       ),
@@ -702,15 +697,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         child: Row(
           children: [
             Expanded(
-              child: AppButton(
+              child: AppButton.outline(
                 text: 'View Forecast',
-                variant: AppButtonVariant.outline,
                 onPressed: () {},
               ),
             ),
             const SizedBox(width: AppDimensions.spacing12),
             Expanded(
-              child: AppButton(
+              child: AppButton.gradient(
                 text: 'Create Forecast',
                 onPressed: () {},
               ),

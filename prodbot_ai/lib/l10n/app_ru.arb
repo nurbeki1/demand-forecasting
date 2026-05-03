@@ -1,0 +1,73 @@
+{
+  "@@locale": "ru",
+  "appTitle": "ProdBot AI",
+
+  "welcomePoweredByAi": "На базе ИИ",
+  "welcomeTitle": "Добро пожаловать",
+  "welcomeBrandHighlight": "ProdBot AI",
+  "welcomeSubtitle": "Платформа прогноза спроса. Умный анализ на расстоянии одного вопроса.",
+  "welcomeStart": "Начать",
+  "welcomeLogin": "Войти",
+  "welcomeOr": "или",
+
+  "loginTitle": "Вход",
+  "loginSubtitle": "Введите данные для входа в аккаунт",
+  "loginEmailLabel": "Email",
+  "loginEmailHint": "you@company.com",
+  "loginPasswordLabel": "Пароль",
+  "loginPasswordHint": "Введите пароль",
+  "loginRememberMe": "Запомнить меня",
+  "loginForgotPassword": "Забыли пароль?",
+  "loginButton": "Войти",
+  "loginNoAccount": "Нет аккаунта?",
+  "loginRegister": "Регистрация",
+
+  "validationEmailRequired": "Укажите email",
+  "validationEmailInvalid": "Введите корректный email",
+  "validationPasswordRequired": "Укажите пароль",
+  "validationPasswordShort": "Не менее 4 символов",
+
+  "chatNewChat": "Новый чат",
+  "chatSearchHint": "Поиск…",
+  "chatRecentChats": "Недавние чаты",
+  "chatNoConversations": "Чатов пока нет",
+  "chatSettings": "Настройки",
+  "chatLogout": "Выйти",
+  "chatLogoutTooltip": "Выйти",
+  "chatDeleteTitle": "Удалить чат",
+  "chatDeleteBody": "Удалить этот чат?",
+  "chatCancel": "Отмена",
+  "chatDelete": "Удалить",
+  "chatAiAssistant": "AI Assistant",
+  "chatWelcomeType1": "Добро пожаловать!",
+  "chatWelcomeType2": "Задайте любой вопрос",
+  "chatWelcomeType3": "Ответы ИИ нужно проверять",
+  "chatAskAnythingHint": "Задайте любой вопрос…",
+  "chatMessageHint": "Сообщение…",
+  "chatDisclaimer": "ИИ может ошибаться. Проверяйте важную информацию.",
+  "suggestionTopProducts": "Топ товаров",
+  "suggestionSalesForecast": "Прогноз продаж",
+  "suggestionTrending": "Популярные товары",
+  "suggestionCompare": "Сравнить товары",
+
+  "roleYou": "Вы",
+  "roleAiAssistant": "AI Assistant",
+
+  "modelPickerTitle": "Модель ИИ",
+  "modelRfDesc": "Стабильная, хорошо работает на любых данных",
+  "modelLgbmDesc": "Очень быстрая, для больших данных",
+  "modelXgbDesc": "Высокая точность, сложные закономерности",
+
+  "miniChartTitle": "Прогноз спроса",
+  "miniChartHistory": "История",
+  "miniChartForecast": "Прогноз",
+
+  "productsCarouselTitle": "Товары ({count})",
+  "productPriceUnknown": "Цена не указана",
+
+  "chatErrorGeneric": "Ошибка: не удалось связаться с сервером. Попробуйте позже.",
+
+  "routerPageNotFound": "Страница не найдена",
+  "routerUnknownRoute": "Неизвестный маршрут",
+  "routerGoHome": "На главную"
+}

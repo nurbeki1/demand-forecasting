@@ -1,203 +1,226 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/theme.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../widgets/common/widgets.dart';
 import '../auth/login_screen.dart';
 import '../auth/register_screen.dart';
 
-/// Welcome screen based on Figma design "JUZ40 Admin"
-/// Node: 33737-76120
+/// Welcome screen — modeled on the web landing CTA hero
+/// (`frontend-admin/src/styles/landing.css` `.scene-text__content--cta`).
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.screenPaddingHorizontal,
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          // Ambient radial glow — matches `.landing-immersive::before`
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.5),
+                  radius: 1.1,
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.16),
+                    AppColors.secondary.withValues(alpha: 0.07),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
           ),
-          child: Column(
-            children: [
-              const Spacer(flex: 2),
-
-              // Logo - 137x137 from Figma
-              Image.asset(
-                'assets/images/logo.png',
-                width: 137,
-                height: 137,
-              ),
-
-              const SizedBox(height: AppDimensions.spacing40),
-
-              // "Welcome to" text - Plus Jakarta Sans Bold 36px
-              Text(
-                'Welcome to',
-                style: AppTextStyles.displaySmall.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-
-              const SizedBox(height: AppDimensions.spacing8),
-
-              // "ProdBot AI" text - Plus Jakarta Sans Bold 36px, green
-              Text(
-                'ProdBot AI',
-                style: AppTextStyles.displaySmall.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-
-              const Spacer(flex: 2),
-
-              // Log in button - 379x56, green background, radius 50
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
-                    elevation: 0,
-                    shadowColor: Colors.black.withValues(alpha: 0.1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                  ),
-                  child: Text(
-                    'Log in',
-                    style: AppTextStyles.button,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: AppDimensions.spacing24),
-
-              // Sign up button - 379x56, light green background, radius 50
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE8FAF4), // Light green from Figma
-                    foregroundColor: AppColors.primary,
-                    elevation: 0,
-                    shadowColor: Colors.black.withValues(alpha: 0.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                  ),
-                  child: Text(
-                    'Sign up',
-                    style: AppTextStyles.button.copyWith(
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: AppDimensions.spacing48),
-
-              // "or continue with" divider
-              Row(
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: const Color(0xFFDEDEDE),
+                  const Spacer(flex: 3),
+
+                  // Brand mark with glow
+                  const BrandLogo(
+                    size: 88,
+                    radius: 22,
+                    icon: Icons.auto_awesome_rounded,
+                    withGlow: true,
+                  ),
+
+                  const SizedBox(height: 36),
+
+                  // "Powered by AI" pill — mirrors web pill chips
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.6),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.welcomePoweredByAi,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.spacing16,
+
+                  const SizedBox(height: 24),
+
+                  Text(
+                    l10n.welcomeTitle,
+                    style: AppTextStyles.displaySmall.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Gradient brand title — matches `.gradient-text` from web
+                  ShaderMask(
+                    blendMode: BlendMode.srcIn,
+                    shaderCallback: (bounds) =>
+                        AppColors.primaryGradient.createShader(
+                      Rect.fromLTWH(0, 0, bounds.width, bounds.height),
                     ),
                     child: Text(
-                      'or continue with',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: AppColors.textPrimary,
+                      l10n.welcomeBrandHighlight,
+                      style: AppTextStyles.displaySmall.copyWith(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: const Color(0xFFDEDEDE),
+
+                  const SizedBox(height: 16),
+
+                  Text(
+                    l10n.welcomeSubtitle,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.6,
                     ),
+                    textAlign: TextAlign.center,
                   ),
+
+                  const Spacer(flex: 3),
+
+                  // Primary CTA — gradient indigo→purple (matches `.cta-button`)
+                  AppButton.gradient(
+                    text: l10n.welcomeStart,
+                    suffixIcon: Icons.arrow_forward_rounded,
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const RegisterScreen(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  AppButton.outline(
+                    text: l10n.welcomeLogin,
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Divider
+                  Row(
+                    children: [
+                      const Expanded(child: Divider(color: AppColors.border)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          l10n.welcomeOr,
+                          style: AppTextStyles.overline.copyWith(
+                            color: AppColors.textHint,
+                          ),
+                        ),
+                      ),
+                      const Expanded(child: Divider(color: AppColors.border)),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SocialButton(
+                          icon: 'assets/icons/google.png',
+                          fallbackIcon: Icons.g_mobiledata_rounded,
+                          label: 'Google',
+                          onTap: () {},
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _SocialButton(
+                          icon: 'assets/icons/apple.png',
+                          fallbackIcon: Icons.apple,
+                          label: 'Apple',
+                          onTap: () {},
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
                 ],
               ),
-
-              const SizedBox(height: AppDimensions.spacing32),
-
-              // Social login buttons - 3 buttons, responsive width
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Google
-                  Expanded(
-                    child: _SocialButton(
-                      icon: 'assets/icons/google.png',
-                      fallbackIcon: Icons.g_mobiledata_rounded,
-                      onTap: () {
-                        // TODO: Google login
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppDimensions.spacing12),
-                  // Apple
-                  Expanded(
-                    child: _SocialButton(
-                      icon: 'assets/icons/apple.png',
-                      fallbackIcon: Icons.apple,
-                      onTap: () {
-                        // TODO: Apple login
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppDimensions.spacing12),
-                  // X (Twitter)
-                  Expanded(
-                    child: _SocialButton(
-                      icon: 'assets/icons/x.png',
-                      fallbackIcon: Icons.close,
-                      onTap: () {
-                        // TODO: X login
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: AppDimensions.spacing48),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-/// Social login button - responsive width, 56 height, gray background (#F7F7F7), radius 50
 class _SocialButton extends StatelessWidget {
   final String icon;
   final IconData fallbackIcon;
+  final String label;
   final VoidCallback onTap;
 
   const _SocialButton({
     required this.icon,
     required this.fallbackIcon,
+    required this.label,
     required this.onTap,
   });
 
@@ -205,44 +228,38 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
       child: Container(
-        height: 56,
+        height: 50,
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F7F7), // Gray background from Figma
-          borderRadius: BorderRadius.circular(50),
-          border: Border.all(
-            color: const Color(0xFFEDEDED), // Border from Figma
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              icon,
+              width: 20,
+              height: 20,
+              errorBuilder: (_, __, ___) => Icon(
+                fallbackIcon,
+                size: 22,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: AppTextStyles.labelMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
-        child: Center(
-          child: _buildIcon(),
-        ),
       ),
-    );
-  }
-
-  Widget _buildIcon() {
-    // Try to load image, fallback to icon
-    return Image.asset(
-      icon,
-      width: 24,
-      height: 24,
-      errorBuilder: (context, error, stackTrace) {
-        return Icon(
-          fallbackIcon,
-          size: 24,
-          color: AppColors.textPrimary,
-        );
-      },
     );
   }
 }
