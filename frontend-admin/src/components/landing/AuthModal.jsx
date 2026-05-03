@@ -27,7 +27,7 @@ const REGISTER_STEPS = {
 // ============================================
 // LOGIN FORM
 // ============================================
-function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
+export function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -112,7 +112,7 @@ function LoginForm({ onSwitch, onSuccess, setLoading, loading }) {
 // ============================================
 // REGISTER FORM - Multi-step
 // ============================================
-function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
+export function RegisterForm({ onSwitch, onSuccess, setLoading, loading }) {
   const [step, setStep] = useState(REGISTER_STEPS.EMAIL);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
