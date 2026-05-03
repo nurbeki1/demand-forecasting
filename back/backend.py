@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, Dict, Any, List
+from typing import Optional
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
-import pandas as pd
 from fastapi import FastAPI, HTTPException, Query, Depends, File, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -42,29 +41,10 @@ from services.ai_chat_service import (
     get_analytics_summary,
     get_analytics_trends,
 )
-from services.forecast_service import get_forecast_chart
 from services.model_service import (
-    get_or_train_model,
-    train_model_preview,
-    predict,
     clear_cache,
     get_cache_info,
-    get_cache_key,
-    get_feature_importance,
     get_model_structure,
-    _model_cache,
-    CAT_COLS,
-    DATE_COL,
-    TARGET_COL,
-)
-from services.trust_service import TrustCalculator
-from services.insight_service import InsightGenerator
-from services.alert_service import AlertService, BusinessAlert
-from services.suggestion_service import SuggestionService, FollowUpSuggestion
-from app.insight_schemas import (
-    DecisionAssistantResponse,
-    PredictionPoint,
-    RiskLevel,
 )
 
 APP_TITLE = "Demand Forecasting System"
@@ -101,6 +81,7 @@ def run_migrations():
                     ("full_name", "ALTER TABLE users ADD COLUMN full_name VARCHAR"),
                     ("subscription_plan", "ALTER TABLE users ADD COLUMN subscription_plan VARCHAR(32) DEFAULT 'free'"),
                     ("created_at", "ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
+                    ("is_onboarding_completed", "ALTER TABLE users ADD COLUMN is_onboarding_completed BOOLEAN DEFAULT FALSE"),
                 ]
 
                 for col_name, sql in migrations:
@@ -214,95 +195,13 @@ async def shutdown_event():
 
 
 # =========================================================
-# DATASET CONFIG
-# =========================================================
-
-DEFAULT_CSV_PATH = os.environ.get(
-    "DATASET_PATH",
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "retail_store_inventory.csv"),
-)
-
-
-# =========================================================
 # SCHEMAS
 # =========================================================
-
-class ModelMetrics(BaseModel):
-    mae: float
-    rmse: float
-    r2: float
-
-
-class ForecastResponse(BaseModel):
-    product_id: str
-    store_id: Optional[str] = None
-    horizon_days: int
-    last_date_in_history: str
-    predictions: List[Dict[str, Any]]
-    model_metrics: Optional[ModelMetrics] = None
-
 
 class ChatRequest(BaseModel):
     message: str
     language: str = "kk"  # Default to Kazakh, supports kk, ru, en
     model_type: str = "random_forest"  # ML model: random_forest, lightgbm, xgboost
-
-
-class ProductInfo(BaseModel):
-    product_id: str
-    category: Optional[str] = None
-    total_records: int
-
-
-class HistoryResponse(BaseModel):
-    product_id: str
-    records: List[Dict[str, Any]]
-    total: int
-
-
-# =========================================================
-# DATASET HELPERS
-# =========================================================
-
-_df_cache: Optional[pd.DataFrame] = None
-
-
-def load_dataset(csv_path: str) -> pd.DataFrame:
-    if not os.path.exists(csv_path):
-        raise HTTPException(
-            status_code=503,
-            detail=f"Dataset unavailable. Expected at: {csv_path}"
-        )
-
-    df = pd.read_csv(csv_path)
-
-    required = {DATE_COL, "Product ID", TARGET_COL}
-    missing = required - set(df.columns)
-    if missing:
-        raise ValueError(f"Missing required columns: {missing}")
-
-    df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
-    df = df.dropna(subset=[DATE_COL, TARGET_COL])
-
-    df["Product ID"] = df["Product ID"].astype(str)
-    if "Store ID" in df.columns:
-        df["Store ID"] = df["Store ID"].astype(str)
-
-    return df
-
-
-def get_df() -> pd.DataFrame:
-    global _df_cache
-    if _df_cache is None:
-        _df_cache = load_dataset(DEFAULT_CSV_PATH)
-    return _df_cache
-
-
-def reload_dataset() -> int:
-    """Перезагружает датасет. Возвращает количество записей."""
-    global _df_cache
-    _df_cache = load_dataset(DEFAULT_CSV_PATH)
-    return len(_df_cache)
 
 
 # =========================================================
@@ -318,66 +217,65 @@ def root():
 # PRODUCTS & HISTORY
 # =========================================================
 
-@app.get("/products", response_model=List[ProductInfo])
-def get_products(user=Depends(get_admin_user)):
-    """Получить список всех продуктов (Admin only)"""
-    df = get_df()
-
-    products = []
-    for pid in df["Product ID"].unique():
-        sub = df[df["Product ID"] == pid]
-        category = sub["Category"].iloc[0] if "Category" in sub.columns else None
-        products.append(
-            ProductInfo(
-                product_id=pid,
-                category=category,
-                total_records=len(sub),
-            )
-        )
-
-    return sorted(products, key=lambda x: x.product_id)
-
-
-@app.get("/history/{product_id}", response_model=HistoryResponse)
-def get_history(
-    product_id: str,
-    store_id: Optional[str] = Query(None),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
+@app.get("/products")
+def get_products(
+    q: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
     user=Depends(get_admin_user),
 ):
-    """Получить исторические данные по продукту (Admin only)"""
-    df = get_df()
+    """Return top Amazon products (Admin only)"""
+    import pandas as pd
+    from pathlib import Path
 
-    sub = df[df["Product ID"] == product_id]
-    if store_id and "Store ID" in sub.columns:
-        sub = sub[sub["Store ID"] == store_id]
+    csv_path = Path(__file__).parent / "data" / "amazon" / "Amazon-Products.csv"
+    if not csv_path.exists():
+        return []
 
-    if len(sub) == 0:
-        raise HTTPException(status_code=404, detail=f"Product {product_id} not found")
+    df = pd.read_csv(csv_path, nrows=100_000)
+    df.columns = df.columns.str.strip()
+    df["no_of_ratings"] = (
+        df["no_of_ratings"].astype(str).str.replace(",", "").str.strip()
+    )
+    df["no_of_ratings"] = pd.to_numeric(df["no_of_ratings"], errors="coerce").fillna(0)
+    df["ratings"] = pd.to_numeric(df["ratings"], errors="coerce")
+    df = df.dropna(subset=["name", "ratings"])
+    df = df[df["ratings"] >= 3.5]
 
-    # Сортируем по дате
-    sub = sub.sort_values(DATE_COL)
-    total = len(sub)
+    if q:
+        mask = df["name"].str.contains(q, case=False, na=False) | df["main_category"].str.contains(q, case=False, na=False)
+        df = df[mask]
 
-    # Пагинация
-    sub = sub.iloc[offset : offset + limit]
+    # Pick top products per category for variety
+    per_cat = max(1, limit // df["main_category"].nunique()) if df["main_category"].nunique() > 0 else limit
+    sampled = (
+        df.groupby("main_category", group_keys=False)
+        .apply(lambda g: g.nlargest(per_cat, "no_of_ratings"))
+        .reset_index(drop=True)
+    )
+    sampled = sampled.nlargest(limit, "no_of_ratings")
 
-    records = []
-    for _, row in sub.iterrows():
-        records.append({
-            "date": str(row[DATE_COL].date()),
-            "units_sold": float(row[TARGET_COL]),
-            "category": row.get("Category"),
-            "region": row.get("Region"),
-            "price": float(row.get("Price", 0)),
-            "inventory_level": float(row.get("Inventory Level", 0)),
+    results = []
+    for i, (_, row) in enumerate(sampled.iterrows()):
+        cat = str(row["main_category"]).replace(" ", "_").replace("&", "and")[:12].upper()
+        results.append({
+            "product_id": f"{cat}_{i+1:03d}",
+            "name": str(row["name"])[:80],
+            "category": str(row["main_category"]).title(),
+            "sub_category": str(row.get("sub_category", "")).title(),
+            "rating": float(row["ratings"]),
+            "review_count": int(row["no_of_ratings"]),
+            "total_records": int(row["no_of_ratings"]),
         })
 
-    return HistoryResponse(
-        product_id=product_id,
-        records=records,
-        total=total,
+    return results
+
+
+@app.get("/history/{product_id}")
+def get_history(product_id: str, user=Depends(get_admin_user)):
+    """Historical sales data endpoint (deprecated — use /chat for analysis)"""
+    raise HTTPException(
+        status_code=410,
+        detail="Historical data endpoint removed. Use /chat for product analysis.",
     )
 
 
@@ -385,171 +283,22 @@ def get_history(
 # FORECAST
 # =========================================================
 
-@app.get("/forecast", response_model=ForecastResponse)
-def forecast(
-    product_id: str = Query(...),
-    store_id: Optional[str] = Query(None),
-    horizon_days: int = Query(7, ge=1, le=30),
-    model_type: str = Query("random_forest", enum=["random_forest", "lightgbm", "xgboost"]),
-    user=Depends(get_admin_user),
-):
-    """Получить прогноз спроса на продукт (Admin only)"""
-    df = get_df()
-
-    sub = df[df["Product ID"] == product_id]
-    if store_id and "Store ID" in sub.columns:
-        sub = sub[sub["Store ID"] == store_id]
-
-    if len(sub) < 30:
-        raise HTTPException(status_code=400, detail="Not enough data for this product")
-
-    # Используем кэшированную модель или обучаем новую
-    trained = get_or_train_model(sub, product_id, store_id, model_type=model_type)
-
-    # Получаем предсказания
-    future_df, preds = predict(trained, horizon_days)
-
-    predictions = [
-        {"date": str(d.date()), "predicted_units_sold": round(float(p), 2)}
-        for d, p in zip(future_df[DATE_COL], preds)
-    ]
-
-    return ForecastResponse(
-        product_id=product_id,
-        store_id=store_id,
-        horizon_days=horizon_days,
-        last_date_in_history=str(trained["last_date"].date()),
-        predictions=predictions,
-        model_metrics=ModelMetrics(**trained["metrics"]),
+@app.get("/forecast")
+def forecast(product_id: str = Query(...), user=Depends(get_admin_user)):
+    """Forecast endpoint (deprecated — use /chat for AI-powered demand analysis)"""
+    raise HTTPException(
+        status_code=410,
+        detail="Forecast endpoint removed. Use /chat for AI-powered demand analysis with web search.",
     )
 
 
-# =========================================================
-# FORECAST V2 - Decision Assistant with Trust Layer
-# =========================================================
-
-@app.get("/forecast/v2", response_model=DecisionAssistantResponse)
-def forecast_v2(
-    product_id: str = Query(...),
-    store_id: Optional[str] = Query(None),
-    horizon_days: int = Query(7, ge=1, le=30),
-    model_type: str = Query("random_forest", enum=["random_forest", "lightgbm", "xgboost"]),
-    user=Depends(get_admin_user),
-):
-    """
-    Decision Assistant endpoint with insights and trust layer.
-    Returns enhanced forecast with actionable insights and confidence metrics.
-    """
-    df = get_df()
-
-    sub = df[df["Product ID"] == product_id]
-    if store_id and "Store ID" in sub.columns:
-        sub = sub[sub["Store ID"] == store_id]
-
-    if len(sub) < 30:
-        raise HTTPException(status_code=400, detail="Not enough data for this product")
-
-    # Get model and predictions
-    trained = get_or_train_model(sub, product_id, store_id, model_type=model_type)
-    future_df, preds = predict(trained, horizon_days)
-
-    # Build predictions list
-    predictions = [
-        PredictionPoint(
-            date=str(d.date()),
-            predicted_units_sold=round(float(p), 2)
-        )
-        for d, p in zip(future_df[DATE_COL], preds)
-    ]
-
-    # Get feature importance for insights
-    feature_importance_data = get_feature_importance(product_id, store_id)
-    feature_importances = feature_importance_data.get("features", [])
-
-    # Get category and inventory from latest record
-    latest_record = sub.sort_values(DATE_COL).iloc[-1]
-    category = latest_record.get("Category") if "Category" in sub.columns else None
-    inventory_level = int(latest_record.get("Inventory Level", 0)) if "Inventory Level" in sub.columns else None
-
-    # Calculate trust layer
-    trust_calculator = TrustCalculator()
-    historical_demand = sub[TARGET_COL]
-    trust_layer = trust_calculator.calculate_trust_layer(
-        model_metrics=trained["metrics"],
-        trained_at=trained["trained_at"],
-        last_data_date=trained["last_date"],
-        historical_demand=historical_demand,
-        sample_size=len(sub),
+@app.get("/forecast/v2")
+def forecast_v2(product_id: str = Query(...), user=Depends(get_admin_user)):
+    """Forecast v2 endpoint (deprecated — use /chat)"""
+    raise HTTPException(
+        status_code=410,
+        detail="Forecast endpoint removed. Use /chat for AI-powered demand analysis.",
     )
-
-    # Generate insights
-    insight_generator = InsightGenerator()
-    predictions_dict = [{"date": p.date, "predicted_units_sold": p.predicted_units_sold} for p in predictions]
-    insights = insight_generator.generate_insights(
-        product_id=product_id,
-        predictions=predictions_dict,
-        historical_data=sub,
-        model_metrics=trained["metrics"],
-        feature_importances=feature_importances,
-        inventory_level=inventory_level,
-        category=category,
-    )
-
-    # Calculate totals
-    total_predicted = sum(p.predicted_units_sold for p in predictions)
-    avg_daily = total_predicted / len(predictions) if predictions else 0
-
-    # Generate business alerts
-    alert_service = AlertService()
-    alerts = alert_service.generate_alerts(
-        product_id=product_id,
-        predictions=predictions_dict,
-        historical_data=sub,
-        model_metrics=trained["metrics"],
-        inventory_level=inventory_level,
-        category=category,
-    )
-
-    # Generate follow-up suggestions
-    suggestion_service = SuggestionService()
-    forecast_context = {
-        "risk_level": insights.risk.level.value,
-        "confidence": trust_layer.confidence.value,
-        "trend_direction": "increasing" if avg_daily > sub[TARGET_COL].tail(7).mean() else "decreasing" if avg_daily < sub[TARGET_COL].tail(7).mean() * 0.9 else "stable",
-        "category": category,
-    }
-    suggestions = suggestion_service.generate_suggestions(
-        product_id=product_id,
-        forecast_context=forecast_context,
-        alerts=[a.model_dump() for a in alerts],
-        user_role="admin",
-    )
-
-    # Determine alert level
-    alert_level = insights.risk.level if insights.risk.level != RiskLevel.LOW else None
-
-    # Build response with alerts and suggestions
-    response_data = {
-        "product_id": product_id,
-        "store_id": store_id,
-        "horizon_days": horizon_days,
-        "last_date_in_history": str(trained["last_date"].date()),
-        "predictions": predictions,
-        "model_metrics": trained["metrics"],
-        "insights": insights,
-        "trust": trust_layer,
-        "alert_level": alert_level,
-        "category": category,
-        "current_inventory": inventory_level,
-        "total_predicted_demand": round(total_predicted, 2),
-        "avg_daily_demand": round(avg_daily, 2),
-        # New fields
-        "alerts": [a.model_dump() for a in alerts],
-        "suggestions": [s.model_dump() for s in suggestions],
-        "has_critical_alert": any(a.severity.value == "critical" for a in alerts),
-    }
-
-    return response_data
 
 
 # =========================================================
@@ -563,70 +312,8 @@ def get_active_alerts(
     limit: int = Query(20, ge=1, le=100),
     user=Depends(get_admin_user),
 ):
-    """
-    Get active business alerts.
-    Can filter by product_id and severity.
-    """
-    df = get_df()
-    all_alerts = []
-
-    # If product_id specified, get alerts for that product
-    if product_id:
-        product_ids = [product_id]
-    else:
-        # Get top products by recent activity
-        product_ids = df["Product ID"].value_counts().head(10).index.tolist()
-
-    alert_service = AlertService()
-
-    for pid in product_ids:
-        sub = df[df["Product ID"] == pid]
-        if len(sub) < 30:
-            continue
-
-        try:
-            trained = get_or_train_model(sub, pid, None)
-            _, preds = predict(trained, 7)
-
-            predictions = [
-                {"date": str(d.date()), "predicted_units_sold": round(float(p), 2)}
-                for d, p in zip(
-                    pd.date_range(trained["last_date"] + pd.Timedelta(days=1), periods=7),
-                    preds
-                )
-            ]
-
-            latest = sub.sort_values(DATE_COL).iloc[-1]
-            inventory = int(latest.get("Inventory Level", 0)) if "Inventory Level" in sub.columns else None
-            category = latest.get("Category") if "Category" in sub.columns else None
-
-            alerts = alert_service.generate_alerts(
-                product_id=pid,
-                predictions=predictions,
-                historical_data=sub,
-                model_metrics=trained["metrics"],
-                inventory_level=inventory,
-                category=category,
-            )
-
-            all_alerts.extend(alerts)
-        except Exception:
-            continue
-
-    # Filter by severity if specified
-    if severity:
-        all_alerts = [a for a in all_alerts if a.severity.value == severity]
-
-    # Sort by severity and limit
-    severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
-    all_alerts.sort(key=lambda x: severity_order.get(x.severity.value, 4))
-
-    return {
-        "alerts": [a.model_dump() for a in all_alerts[:limit]],
-        "total": len(all_alerts),
-        "critical_count": sum(1 for a in all_alerts if a.severity.value == "critical"),
-        "high_count": sum(1 for a in all_alerts if a.severity.value == "high"),
-    }
+    """Get active business alerts"""
+    return {"alerts": [], "total": 0, "critical_count": 0, "high_count": 0}
 
 
 # =========================================================
@@ -656,80 +343,19 @@ def delete_chat_history(user=Depends(get_current_user)):
     return clear_chat_history(user.id)
 
 
-class ScenarioChangeRequest(BaseModel):
-    """Request model for scenario change"""
-    feature: str
-    change_type: str = "percent"  # "absolute" | "percent" | "set"
-    value: float
-
-
 @app.post("/chat/scenario")
-def run_chat_scenario(
-    product_id: str = Query(..., description="Product ID to simulate"),
-    horizon_days: int = Query(7, ge=1, le=30, description="Forecast horizon"),
-    changes: List[ScenarioChangeRequest] = [],
-    user=Depends(get_current_user),
-):
-    """
-    Run what-if scenario simulation.
-
-    Simulates changes to price, discount, promotion, etc. and shows
-    impact on demand forecast.
-
-    Example:
-        POST /chat/scenario?product_id=SKU001&horizon_days=7
-        Body: [{"feature": "Price", "change_type": "percent", "value": -10}]
-    """
-    from services.scenario_service import scenario_service, ScenarioChange
-
-    df = get_df()
-    sub = df[df["Product ID"] == product_id]
-
-    if len(sub) < 30:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Not enough data for product {product_id}. Need at least 30 records."
-        )
-
-    # Convert request models to ScenarioChange dataclasses
-    scenario_changes = [
-        ScenarioChange(
-            feature=c.feature,
-            change_type=c.change_type,
-            value=c.value
-        )
-        for c in changes
-    ]
-
-    try:
-        result = scenario_service.simulate_scenario(
-            product_id=product_id,
-            df=sub,
-            horizon_days=horizon_days,
-            changes=scenario_changes,
-        )
-
-        return {
-            "product_id": product_id,
-            "horizon_days": horizon_days,
-            "baseline_predictions": result.baseline_predictions,
-            "scenario_predictions": result.scenario_predictions,
-            "total_baseline": result.total_baseline,
-            "total_scenario": result.total_scenario,
-            "change_percent": result.change_percent,
-            "change_absolute": result.change_absolute,
-            "impact_explanation": result.impact_explanation,
-            "feature_impacts": result.feature_impacts,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+def run_chat_scenario(user=Depends(get_current_user)):
+    """Scenario simulation (deprecated — use /chat for analysis)"""
+    raise HTTPException(
+        status_code=410,
+        detail="Scenario simulation removed. Use /chat for AI-powered analysis.",
+    )
 
 
 @app.get("/chat/scenario/features")
 def get_scenario_features(user=Depends(get_current_user)):
     """Get available features for scenario simulation"""
-    from services.scenario_service import scenario_service
-    return scenario_service.get_available_features()
+    return {"features": []}
 
 
 # =========================================================
@@ -754,8 +380,8 @@ def analytics_trends(user=Depends(get_admin_user)):
 
 @app.get("/forecast/chart/{product_id}")
 def forecast_chart(product_id: str, horizon: int = 7, user=Depends(get_admin_user)):
-    """Получить данные для графика (Admin only)"""
-    return get_forecast_chart(product_id, horizon)
+    """Forecast chart (deprecated)"""
+    raise HTTPException(status_code=410, detail="Forecast chart removed. Use /chat for analysis.")
 
 
 # =========================================================
@@ -767,24 +393,21 @@ async def upload_csv(
     file: UploadFile = File(...),
     user=Depends(get_admin_user),
 ):
-    """Загрузить новый CSV датасет (Admin only)"""
+    """Upload CSV dataset (Admin only)"""
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed")
 
     try:
         contents = await file.read()
-        # Сохраняем файл
-        with open(DEFAULT_CSV_PATH, "wb") as f:
+        upload_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploaded_dataset.csv")
+        with open(upload_path, "wb") as f:
             f.write(contents)
 
-        # Перезагружаем датасет
-        records = reload_dataset()
-        # Очищаем кэш моделей
         cleared = clear_cache()
-
         return {
             "message": "Dataset uploaded successfully",
-            "records": records,
+            "filename": file.filename,
+            "size_bytes": len(contents),
             "models_cleared": cleared,
         }
     except Exception as e:
@@ -809,47 +432,9 @@ def clear_model_cache(user=Depends(get_admin_user)):
 
 
 @app.post("/models/retrain/{product_id}")
-def retrain_model(
-    product_id: str,
-    store_id: Optional[str] = Query(None),
-    model_type: str = Query("random_forest", enum=["random_forest", "lightgbm", "xgboost"]),
-    user=Depends(get_admin_user),
-):
-    """Принудительно переобучить модель для продукта (Admin only)"""
-    df = get_df()
-
-    sub = df[df["Product ID"] == product_id]
-    if store_id and "Store ID" in sub.columns:
-        sub = sub[sub["Store ID"] == store_id]
-
-    if len(sub) < 30:
-        raise HTTPException(status_code=400, detail="Not enough data for this product")
-
-    # Capture old metrics before retrain
-    cache_key = get_cache_key(product_id, store_id, model_type)
-    old_metrics = _model_cache[cache_key]["metrics"] if cache_key in _model_cache else None
-    old_trained_at = str(_model_cache[cache_key]["trained_at"]) if cache_key in _model_cache else None
-
-    trained = get_or_train_model(sub, product_id, store_id, force_retrain=True, model_type=model_type)
-
-    improvement = None
-    if old_metrics:
-        improvement = {
-            "mae_change": round(trained["metrics"]["mae"] - old_metrics["mae"], 4),
-            "rmse_change": round(trained["metrics"]["rmse"] - old_metrics["rmse"], 4),
-            "r2_change": round(trained["metrics"]["r2"] - old_metrics["r2"], 4),
-        }
-
-    return {
-        "message": "Model retrained successfully",
-        "product_id": product_id,
-        "store_id": store_id,
-        "metrics": trained["metrics"],
-        "old_metrics": old_metrics,
-        "trained_at": str(trained["trained_at"]),
-        "old_trained_at": old_trained_at,
-        "improvement": improvement,
-    }
+def retrain_model(product_id: str, user=Depends(get_admin_user)):
+    """Retrain model (deprecated — models now trained from Amazon dataset automatically)"""
+    raise HTTPException(status_code=410, detail="Manual retrain removed. Models train automatically from Amazon data.")
 
 
 # =========================================================
@@ -857,90 +442,15 @@ def retrain_model(
 # =========================================================
 
 @app.get("/forecast/compare")
-async def forecast_compare(
-    product_id: str = Query(...),
-    store_id: Optional[str] = Query(None),
-    horizon_days: int = Query(7, ge=1, le=30),
-    model_type: str = Query("random_forest", enum=["random_forest", "lightgbm", "xgboost"]),
-    user=Depends(get_admin_user),
-):
-    """Compare current cached model vs freshly retrained model"""
-    import asyncio
-
-    df = get_df()
-    sub = df[df["Product ID"] == product_id]
-    if store_id and "Store ID" in sub.columns:
-        sub = sub[sub["Store ID"] == store_id]
-
-    if len(sub) < 30:
-        raise HTTPException(status_code=400, detail="Not enough data for this product")
-
-    cache_key = get_cache_key(product_id, store_id, model_type)
-
-    # Get current model predictions (if cached)
-    current_data = None
-    if cache_key in _model_cache:
-        current_trained = _model_cache[cache_key]
-        _, current_preds = predict(current_trained, horizon_days)
-        current_data = {
-            "predictions": [round(float(p), 2) for p in current_preds],
-            "metrics": current_trained["metrics"],
-            "trained_at": str(current_trained["trained_at"]),
-        }
-
-    # Train new model without caching (CPU-intensive, run in thread)
-    new_trained = await asyncio.to_thread(train_model_preview, sub, product_id, store_id, model_type)
-    future_df, new_preds = predict(new_trained, horizon_days)
-
-    dates = [str(d.date()) for d in future_df[DATE_COL]]
-
-    new_data = {
-        "predictions": [round(float(p), 2) for p in new_preds],
-        "metrics": new_trained["metrics"],
-        "trained_at": str(new_trained["trained_at"]),
-    }
-
-    # Calculate comparison
-    comparison = None
-    if current_data:
-        comparison = {
-            "mae_diff": round(new_trained["metrics"]["mae"] - current_data["metrics"]["mae"], 4),
-            "rmse_diff": round(new_trained["metrics"]["rmse"] - current_data["metrics"]["rmse"], 4),
-            "r2_diff": round(new_trained["metrics"]["r2"] - current_data["metrics"]["r2"], 4),
-        }
-
-    return {
-        "product_id": product_id,
-        "dates": dates,
-        "current": current_data,
-        "retrained": new_data,
-        "comparison": comparison,
-    }
+async def forecast_compare(product_id: str = Query(...), user=Depends(get_admin_user)):
+    """Forecast compare (deprecated)"""
+    raise HTTPException(status_code=410, detail="Forecast compare removed. Use /chat for analysis.")
 
 
 @app.post("/forecast/compare/accept")
-def forecast_compare_accept(
-    product_id: str = Query(...),
-    store_id: Optional[str] = Query(None),
-    user=Depends(get_admin_user),
-):
-    """Accept retrained model — force retrain and save to cache"""
-    df = get_df()
-    sub = df[df["Product ID"] == product_id]
-    if store_id and "Store ID" in sub.columns:
-        sub = sub[sub["Store ID"] == store_id]
-
-    if len(sub) < 30:
-        raise HTTPException(status_code=400, detail="Not enough data")
-
-    trained = get_or_train_model(sub, product_id, store_id, force_retrain=True)
-
-    return {
-        "message": "New model accepted and saved",
-        "product_id": product_id,
-        "metrics": trained["metrics"],
-        "trained_at": str(trained["trained_at"]),
-    }
+def forecast_compare_accept(product_id: str = Query(...), user=Depends(get_admin_user)):
+    """Accept retrained model (deprecated)"""
+    raise HTTPException(status_code=410, detail="Forecast compare removed. Use /chat for analysis.")
 
 
 # =========================================================
@@ -970,31 +480,17 @@ def model_structure():
 
 
 @app.get("/models/features/{product_id}")
-def model_features(
-    product_id: str,
-    store_id: Optional[str] = Query(None),
-    user=Depends(get_admin_user),
-):
-    """Получить важность признаков для продукта (Admin only)"""
-    return get_feature_importance(product_id, store_id)
+def model_features(product_id: str, user=Depends(get_admin_user)):
+    """Model feature importance (Amazon-based model)"""
+    structure = get_model_structure()
+    return {"product_id": product_id, "features": [], "structure": structure}
 
 
 @app.get("/models/visualize/{product_id}")
-def model_visualize(
-    product_id: str,
-    store_id: Optional[str] = Query(None),
-    user=Depends(get_admin_user),
-):
-    """Полная визуализация модели (Admin only)"""
+def model_visualize(product_id: str, user=Depends(get_admin_user)):
+    """Model visualization (Amazon-based model)"""
     structure = get_model_structure()
-    features = get_feature_importance(product_id, store_id)
-
-    return {
-        "structure": structure,
-        "feature_importance": features.get("features", []),
-        "metrics": features.get("metrics", {}),
-        "product_id": product_id,
-    }
+    return {"structure": structure, "feature_importance": [], "metrics": {}, "product_id": product_id}
 
 
 # =========================================================

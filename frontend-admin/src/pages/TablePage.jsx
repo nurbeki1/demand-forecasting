@@ -67,6 +67,9 @@ export default function TablePage() {
     ? products.filter((p) => p.category === selectedCategory)
     : products;
 
+  const selectedMeta = products.find((p) => p.product_id === selectedProduct);
+  const selectedLabel = selectedMeta?.name || selectedProduct || "";
+
   const totalPages = Math.ceil(total / pageSize);
 
   return (
@@ -115,7 +118,7 @@ export default function TablePage() {
                   <option value="">{t('common.selectProduct')}</option>
                   {filteredProducts.map((p) => (
                     <option key={p.product_id} value={p.product_id}>
-                      {p.product_id} ({p.total_records} {t('table.records')})
+                      {p.name || p.product_id} ({p.total_records} {t('table.records')})
                     </option>
                   ))}
                 </select>
@@ -128,7 +131,7 @@ export default function TablePage() {
             <div className="cardHeader">
               <div>
                 <div className="cardTitle">
-                  {selectedProduct ? `${t('table.salesHistory')} - ${selectedProduct}` : t('table.salesHistory')}
+                  {selectedProduct ? `${t('table.salesHistory')} — ${selectedLabel}` : t('table.salesHistory')}
                 </div>
                 {total > 0 && (
                   <div className="cardSub">
@@ -223,7 +226,10 @@ export default function TablePage() {
                         style={{ cursor: "pointer" }}
                       >
                         <td>
-                          <strong>{p.product_id}</strong>
+                          <strong>{p.name || p.product_id}</strong>
+                          {p.name ? (
+                            <div style={{ fontSize: 12, opacity: 0.75 }}>{p.product_id}</div>
+                          ) : null}
                         </td>
                         <td>{p.category || "-"}</td>
                         <td>{p.total_records}</td>

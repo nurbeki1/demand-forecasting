@@ -19,11 +19,33 @@ DATA_PATH = os.path.join(_DIR, "retail_store_inventory.csv")
 
 from services.report_service import get_report_service
 from services.ai_chat_service import get_analytics_summary, get_analytics_trends
+from services.retail_product_resolve import (
+    AmbiguousProductError,
+    ProductNotFoundError,
+    display_label_for_product_id,
+    resolve_product_id,
+)
 from app.deps import get_current_user, get_admin_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reports", tags=["reports"])
+
+
+def _resolve_product_or_raise(df: pd.DataFrame, query: str) -> str:
+    try:
+        return resolve_product_id(df, query)
+    except AmbiguousProductError as e:
+        matches = [
+            {"product_id": pid, "name": display_label_for_product_id(df, pid)}
+            for pid in e.product_ids[:50]
+        ]
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "ambiguous_product", "matches": matches},
+        )
+    except ProductNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Product not found: {query}")
 
 
 class ReportRequest(BaseModel):
@@ -91,6 +113,8 @@ async def get_forecast_report(
 
         # Load data and filter by product
         df = pd.read_csv(DATA_PATH, parse_dates=["Date"])
+        df["Product ID"] = df["Product ID"].astype(str)
+        product_id = _resolve_product_or_raise(df, product_id)
         sub = df[df["Product ID"] == product_id].copy()
         if sub.empty or len(sub) < 30:
             raise HTTPException(status_code=404, detail="Product not found or not enough data")

@@ -21,6 +21,7 @@ from .schemas import (
     SendCodeRequest, VerifyCodeRequest, CompleteRegistrationRequest,
     GoogleAuthRequest, MessageResponse, TokenPairResponse, RefreshTokenRequest,
     UpdateProfileRequest, MockSubscribeRequest,
+    user_model_to_response,
 )
 from .security import (
     hash_password, verify_password, create_access_token,
@@ -349,17 +350,7 @@ def refresh_token(
 @router.get("/me", response_model=UserResponse)
 def get_me(user: User = Depends(get_current_user)):
     """Get current user info"""
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        is_active=user.is_active,
-        is_admin=user.is_admin,
-        is_verified=user.is_verified,
-        subscription_plan=getattr(user, "subscription_plan", None) or "free",
-        full_name=user.full_name,
-        avatar_url=user.avatar_url,
-        created_at=user.created_at,
-    )
+    return user_model_to_response(user)
 
 
 @router.post("/mock-subscribe", response_model=UserResponse)
@@ -386,14 +377,28 @@ def update_me(
         user.full_name = data.full_name.strip() or None
     db.commit()
     db.refresh(user)
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        is_active=user.is_active,
-        is_admin=user.is_admin,
-        is_verified=user.is_verified,
-        subscription_plan=getattr(user, "subscription_plan", None) or "free",
-        full_name=user.full_name,
-        avatar_url=user.avatar_url,
-        created_at=user.created_at,
-    )
+    return user_model_to_response(user)
+
+
+@router.post("/me/onboarding-complete", response_model=UserResponse)
+def complete_onboarding(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Mark first-time platform tour as completed for the current user."""
+    user.is_onboarding_completed = True
+    db.commit()
+    db.refresh(user)
+    return user_model_to_response(user)
+
+
+@router.post("/me/onboarding-reset", response_model=UserResponse)
+def reset_onboarding(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Clear tour completion so the onboarding modal can be shown again."""
+    user.is_onboarding_completed = False
+    db.commit()
+    db.refresh(user)
+    return user_model_to_response(user)

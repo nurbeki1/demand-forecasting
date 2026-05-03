@@ -1,0 +1,123 @@
+/* Spotlight tour — overrides (base driver.css imported from JSX) */
+/* Не blur на .driver-overlay: Chrome/WebKit бүзады да, SVG тесігінен кейін де фонды бұлдырады. */
+
+.onboarding-driver-popover.driver-popover,
+.driver-popover.onboarding-driver-popover {
+  background: var(--bg-secondary, #1a1a2e) !important;
+  color: var(--text-primary, #e5e5e5) !important;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12)) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset !important;
+  min-width: 280px !important;
+  max-width: min(360px, calc(100vw - 32px)) !important;
+  font-family: var(--font-sans, Inter, system-ui, sans-serif) !important;
+  padding: 18px 16px 16px !important;
+  pointer-events: auto !important;
+}
+
+.onboarding-driver-popover.driver-popover *,
+.driver-popover.onboarding-driver-popover * {
+  pointer-events: auto !important;
+}
+
+.onboarding-driver-popover .driver-popover-title {
+  color: var(--text-primary, #fff) !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  padding-right: 28px !important;
+}
+
+.onboarding-driver-popover .driver-popover-description {
+  color: var(--text-secondary, #a3a3a3) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  margin-top: 8px !important;
+}
+
+.onboarding-driver-popover .driver-popover-close-btn {
+  color: var(--text-tertiary, #737373) !important;
+}
+
+.onboarding-driver-popover .driver-popover-close-btn:hover,
+.onboarding-driver-popover .driver-popover-close-btn:focus {
+  color: var(--text-primary, #fff) !important;
+}
+
+.onboarding-driver-popover .driver-popover-progress-text {
+  color: var(--text-tertiary, #737373) !important;
+  font-size: 12px !important;
+}
+
+.onboarding-driver-popover .driver-popover-footer {
+  margin-top: 16px !important;
+}
+
+/* Артқа / Келесі арасында отступ */
+.onboarding-driver-popover .driver-popover-navigation-btns {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.onboarding-driver-popover .driver-popover-navigation-btns button + button {
+  margin-left: 0 !important;
+}
+
+.onboarding-driver-popover .driver-popover-footer button {
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: inline-block !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12)) !important;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease !important;
+  background: transparent !important;
+  color: var(--text-secondary, #a3a3a3) !important;
+}
+
+.onboarding-driver-popover .driver-popover-footer button:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06)) !important;
+  color: var(--text-primary, #fff) !important;
+}
+
+/* Primary = last navigation button (Next / Done) */
+.onboarding-driver-popover .driver-popover-navigation-btns button:last-of-type {
+  background: var(--accent, #10a37f) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+.onboarding-driver-popover .driver-popover-navigation-btns button:last-of-type:hover {
+  background: var(--accent-hover, #0d8a6b) !important;
+  color: #fff !important;
+}
+
+.onboarding-driver-popover .driver-popover-arrow {
+  border-color: transparent !important;
+}
+.onboarding-driver-popover .driver-popover-arrow-side-right {
+  border-left-color: var(--bg-secondary, #1a1a2e) !important;
+}
+.onboarding-driver-popover .driver-popover-arrow-side-left {
+  border-right-color: var(--bg-secondary, #1a1a2e) !important;
+}
+.onboarding-driver-popover .driver-popover-arrow-side-top {
+  border-bottom-color: var(--bg-secondary, #1a1a2e) !important;
+}
+.onboarding-driver-popover .driver-popover-arrow-side-bottom {
+  border-top-color: var(--bg-secondary, #1a1a2e) !important;
+}
+
+.driver-active-element {
+  outline: 2px solid var(--accent, #10a37f) !important;
+  outline-offset: 2px !important;
+  border-radius: 10px !important;
+}

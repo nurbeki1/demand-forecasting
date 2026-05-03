@@ -118,7 +118,7 @@ export default function ReportsPage() {
                   >
                     {products.map((p) => (
                       <option key={p.product_id} value={p.product_id}>
-                        {p.product_id}
+                        {p.name || p.product_id}
                       </option>
                     ))}
                   </select>

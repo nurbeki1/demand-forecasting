@@ -64,6 +64,23 @@ class UserResponse(BaseModel):
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
     created_at: Optional[datetime] = None
+    is_onboarding_completed: bool = False
+
+
+def user_model_to_response(user) -> UserResponse:
+    """Map SQLAlchemy User ORM object to API response."""
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        is_active=user.is_active,
+        is_admin=user.is_admin,
+        is_verified=user.is_verified,
+        subscription_plan=getattr(user, "subscription_plan", None) or "free",
+        full_name=user.full_name,
+        avatar_url=user.avatar_url,
+        created_at=user.created_at,
+        is_onboarding_completed=bool(getattr(user, "is_onboarding_completed", False)),
+    )
 
 
 class UpdateProfileRequest(BaseModel):

@@ -24,6 +24,8 @@ class User(Base):
     # "free" | "paid" (or "pro"); controls ML model picker in chat / APIs
     subscription_plan: Mapped[str] = mapped_column(String(32), default="free")
 
+    is_onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 class UserSettings(Base):

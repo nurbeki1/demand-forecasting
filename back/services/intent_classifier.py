@@ -191,6 +191,7 @@ INTENT_PATTERNS = {
     ],
     # Kazakhstan Market Analysis
     Intent.KZ_ANALYSIS: [
+        # Russian
         r"казахстан|кз|kazakhstan",
         r"продавать в.*(городах|регионах|кз)",
         r"прибыль.*(город|регион)",
@@ -202,9 +203,21 @@ INTENT_PATTERNS = {
         r"regional.*analysis",
         r"рынок казахстан",
         r"рынок кз",
+        # Kazakh Cyrillic
+        r"қазақстан|қр",
+        r"қалалар",           # cities
+        r"анализ жаса",       # do analysis
+        r"талдау",            # analysis
+        r"сату.*қалалар|қалалар.*сату",  # sell in cities
+        r"қай қалада",        # in which city
+        r"пайда",             # profit
+        r"нарық.*қазақ|қазақ.*нарық",   # Kazakhstan market
+        r"осы.*(өнім|продукт).*(қазақ|қалал)",
+        r"(қазақ|қалал).*(өнім|продукт|анализ|талдау)",
     ],
     # KZ Analysis Detail - progressive disclosure follow-ups
     Intent.KZ_ANALYSIS_DETAIL: [
+        # Russian
         r"покажи\s*(всё|все|всю|полн|детал)",
         r"анализ\s*по\s*городам",
         r"таблиц.*город",
@@ -220,6 +233,14 @@ INTENT_PATTERNS = {
         r"больше\s*информации",
         r"дай\s*детали",
         r"полная\s*версия",
+        # Kazakh Cyrillic
+        r"толық\s*талдау",      # full analysis
+        r"толығырақ",           # more detailed
+        r"қалалар\s*бойынша",   # by cities
+        r"барлық\s*(қала|ақпарат)",  # all cities/info
+        r"көбірек\s*ақпарат",   # more info
+        r"тәуекел",             # risks
+        r"кеңес",               # tips/advice
     ],
     Intent.KZ_CITY_PROFIT: [
         r"(алматы|астана|шымкент|караганда|актобе|тараз|павлодар|атырау|костанай|актау|уральск)",

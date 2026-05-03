@@ -14,6 +14,31 @@ function getHeaders() {
   return headers;
 }
 
+async function readForecastHttpError(res) {
+  const text = await res.text().catch(() => "");
+  try {
+    const j = JSON.parse(text);
+    const d = j.detail;
+    if (
+      d &&
+      typeof d === "object" &&
+      d.error === "ambiguous_product" &&
+      Array.isArray(d.matches)
+    ) {
+      const sample = d.matches
+        .slice(0, 5)
+        .map((m) => m.name || m.product_id)
+        .join(", ");
+      return `Бірнеше өнім сәйкес келді (${d.matches.length}). Таңдаңыз: ${sample}`;
+    }
+    if (typeof d === "string") return d;
+    if (d != null) return typeof d === "object" ? JSON.stringify(d) : String(d);
+  } catch {
+    /* ignore */
+  }
+  return text || `HTTP ${res.status}`;
+}
+
 export async function getForecast({ productId, storeId, horizonDays }) {
   const params = new URLSearchParams({
     product_id: productId,
@@ -26,8 +51,8 @@ export async function getForecast({ productId, storeId, horizonDays }) {
 
   const res = await fetch(url, { headers: getHeaders() });
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Failed to fetch forecast (${res.status}). ${text}`);
+    const detail = await readForecastHttpError(res);
+    throw new Error(`Failed to fetch forecast (${res.status}). ${detail}`);
   }
   return res.json();
 }
@@ -47,8 +72,8 @@ export async function getForecastV2({ productId, storeId, horizonDays }) {
 
   const res = await fetch(url, { headers: getHeaders() });
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Failed to fetch forecast v2 (${res.status}). ${text}`);
+    const detail = await readForecastHttpError(res);
+    throw new Error(`Failed to fetch forecast v2 (${res.status}). ${detail}`);
   }
   return res.json();
 }
@@ -68,11 +93,13 @@ export async function getHistory(productId, { storeId, limit = 100, offset = 0 }
   });
   if (storeId) params.set("store_id", storeId);
 
-  const res = await fetch(`${BASE_URL}/history/${productId}?${params}`, {
+  const enc = encodeURIComponent(productId);
+  const res = await fetch(`${BASE_URL}/history/${enc}?${params}`, {
     headers: getHeaders(),
   });
   if (!res.ok) {
-    throw new Error(`Failed to fetch history (${res.status})`);
+    const detail = await readForecastHttpError(res);
+    throw new Error(`Failed to fetch history (${res.status}). ${detail}`);
   }
   return res.json();
 }
@@ -123,7 +150,8 @@ export async function retrainModel(productId, storeId) {
   const params = new URLSearchParams();
   if (storeId) params.set("store_id", storeId);
 
-  const res = await fetch(`${BASE_URL}/models/retrain/${productId}?${params}`, {
+  const enc = encodeURIComponent(productId);
+  const res = await fetch(`${BASE_URL}/models/retrain/${enc}?${params}`, {
     method: "POST",
     headers: getHeaders(),
   });
@@ -226,7 +254,8 @@ export async function downloadDailyReport() {
 
 export async function downloadForecastReport(productId, horizonDays = 7) {
   const params = new URLSearchParams({ horizon_days: String(horizonDays) });
-  await downloadBlob(`${BASE_URL}/reports/forecast/${productId}?${params}`);
+  const enc = encodeURIComponent(productId);
+  await downloadBlob(`${BASE_URL}/reports/forecast/${enc}?${params}`);
 }
 
 export async function downloadAnalyticsReport() {
@@ -257,8 +286,8 @@ export async function compareForecast({ productId, storeId, horizonDays = 7 }) {
     headers: getHeaders(),
   });
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Comparison failed (${res.status}). ${text}`);
+    const detail = await readForecastHttpError(res);
+    throw new Error(`Comparison failed (${res.status}). ${detail}`);
   }
   return res.json();
 }

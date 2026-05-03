@@ -100,7 +100,7 @@ export default function ModelComparePanel() {
             <select value={productId} onChange={(e) => setProductId(e.target.value)}>
               {products.map((p) => (
                 <option key={p.product_id} value={p.product_id}>
-                  {p.product_id}
+                  {p.name || p.product_id}
                 </option>
               ))}
             </select>

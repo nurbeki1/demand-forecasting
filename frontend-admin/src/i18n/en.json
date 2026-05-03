@@ -281,6 +281,57 @@
     "googleError": "Google authorization error",
     "serverError": "Server connection error"
   },
+  "onboarding": {
+    "finish": "Got it",
+    "progressText": "{{current}} / {{total}}",
+    "replay": "Show tour again",
+    "replayTitle": "Platform tour",
+    "replayHint": "Open the welcome steps again (saved per account).",
+    "replayToast": "Tour unlocked — it should appear shortly.",
+    "spotlight": {
+      "newChatTitle": "Start a fresh thread",
+      "newChatBody": "Use New chat whenever you want a clean context. Your recent conversations stay in the list below.",
+      "recentChatsTitle": "Recent chats",
+      "recentChatsBody": "Jump back to an earlier thread from here. Each line is a saved conversation with the assistant.",
+      "settingsTitle": "Settings",
+      "settingsBody": "Open Settings to adjust language and other options. You can replay this tour from Settings anytime.",
+      "subscriptionTitle": "Subscription",
+      "subscriptionBody": "Check your plan or upgrade here. PRO unlocks extra models and capabilities in chat.",
+      "profileTitle": "Profile & sign out",
+      "profileBody": "Tap your initials for the profile page, or use the arrow to log out securely.",
+      "composerTitle": "Ask the assistant",
+      "composerBody": "Type a question in any language, pick a model when available, then send. Voice input works if your browser allows the microphone.",
+      "suggestionsTitle": "Quick prompts",
+      "suggestionsBody": "These chips pre-fill common questions — tap one to speed up your first message."
+    },
+    "steps": {
+      "welcome": {
+        "title": "Welcome to the platform",
+        "body": "You are signed in. This short tour highlights the essentials so you can start working with forecasts and AI tools confidently."
+      },
+      "home": {
+        "titleAdmin": "Your admin home",
+        "bodyAdmin": "The dashboard is your starting point: KPIs, trends, and quick access to forecasts, reports, and data tools.",
+        "titleUser": "Your chat home",
+        "bodyUser": "The main page is the AI chat: ask questions about products, demand, and trends in everyday language."
+      },
+      "features": {
+        "titleAdmin": "Core workflows",
+        "bodyAdmin": "Open Forecast to build charts and scenarios, browse Reports, manage the product table, upload new data, and compare models when you need deeper analysis.",
+        "titleUser": "How to get answers",
+        "bodyUser": "Type a clear question, refer to a product or category if you can, and use follow-ups to narrow the reply. The assistant uses your account context and history."
+      },
+      "settings": {
+        "title": "Profile & preferences",
+        "bodyAdmin": "Your account badge and language live in the sidebar. Log out from the bottom of the sidebar when you are done.",
+        "bodyUser": "Open your profile from the chat menu to view your account. Language switches live in the sidebar; use logout when you finish."
+      },
+      "done": {
+        "title": "You are ready",
+        "body": "You can reopen sections from the sidebar anytime. Press “Got it” to save this tour and hide it for your account."
+      }
+    }
+  },
   "chat": {
     "title": "AI Chat",
     "placeholder": "Ask about products, forecasts, trends...",
@@ -585,7 +636,7 @@
     "region": "Region",
     "inventory": "Inventory",
     "productsSummary": "Products Summary",
-    "productId": "Product ID",
+    "productId": "Product",
     "totalRecords": "Total Records"
   },
   "upload": {
@@ -641,7 +692,8 @@
     "loadingModel": "Loading..."
   },
   "controls": {
-    "productId": "Product ID",
+    "product": "Product (name or ID)",
+    "productPlaceholder": "e.g. Groceries or P0001",
     "storeId": "Store ID (optional)",
     "horizonDays": "Horizon days",
     "getForecast": "Get Forecast"

@@ -533,7 +533,14 @@ function ChatSidebar({
         </button>
 
         {/* New Chat */}
-        <button className="sidebar-icon-btn" onClick={onNewChat} title={t('chat.newChat')} aria-label={t('chat.newChat')}>
+        <button
+          type="button"
+          className="sidebar-icon-btn"
+          data-onboarding="chat-new"
+          onClick={onNewChat}
+          title={t('chat.newChat')}
+          aria-label={t('chat.newChat')}
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 20h9"/>
             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
@@ -568,7 +575,7 @@ function ChatSidebar({
       </div>
 
       {/* Expanded Content - Recent Chats (always rendered, hidden via CSS) */}
-      <div className="sidebar-expanded-content">
+      <div className="sidebar-expanded-content" data-onboarding="chat-recent">
         <div className="section-title">{t('chat.recentChats')}</div>
         <div className="chat-list">
           {conversations.length === 0 ? (
@@ -614,7 +621,14 @@ function ChatSidebar({
       {/* Bottom Icons */}
       <div className="sidebar-bottom">
         {/* Settings */}
-        <button className="sidebar-icon-btn" onClick={onShowSettings} title={t('chat.settings')} aria-label={t('chat.settings')}>
+        <button
+          type="button"
+          className="sidebar-icon-btn"
+          data-onboarding="chat-settings"
+          onClick={onShowSettings}
+          title={t('chat.settings')}
+          aria-label={t('chat.settings')}
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -624,6 +638,7 @@ function ChatSidebar({
 
         <button
           type="button"
+          data-onboarding="chat-subscription"
           className={`sidebar-icon-btn sidebar-subscription-btn${premiumUnlocked ? " sidebar-subscription-btn--pro" : ""}`}
           onClick={onOpenSubscription}
           title={premiumUnlocked ? t("chat.subscriptionProHint") : t("chat.subscription")}
@@ -637,7 +652,7 @@ function ChatSidebar({
         </button>
 
         {/* User Avatar with Logout */}
-        <div className="sidebar-user-row">
+        <div className="sidebar-user-row" data-onboarding="chat-profile">
           <button
             className="user-avatar-small"
             onClick={onProfile}
@@ -718,10 +733,11 @@ export default function ChatPage() {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
 
-    // Load history from backend (persistent across sessions)
-    getChatHistory().then((dbMessages) => {
+    // Load history: merge DB (persistent) + localStorage (local sessions)
+    const localConvs = getConversations();
+
+    getChatHistory(100).then((dbMessages) => {
       if (dbMessages && dbMessages.length > 0) {
-        // Convert DB messages to frontend format
         const frontendMessages = dbMessages.map((m) => ({
           role: m.role,
           content: m.content,
@@ -730,7 +746,6 @@ export default function ChatPage() {
           timestamp: m.timestamp,
         }));
 
-        // Build a single "history" conversation from DB messages
         const historyConvId = "db_history";
         const historyConv = {
           id: historyConvId,
@@ -739,38 +754,31 @@ export default function ChatPage() {
           updatedAt: dbMessages[dbMessages.length - 1]?.timestamp || new Date().toISOString(),
         };
 
-        // Merge with localStorage conversations (deduplicate by id)
-        const localConvs = getConversations().filter(c => c.id !== historyConvId);
-        const merged = [historyConv, ...localConvs];
+        // DB history first, then any other local conversations
+        const otherLocalConvs = localConvs.filter(c => c.id !== historyConvId);
+        const merged = [historyConv, ...otherLocalConvs];
         setConversations(merged);
 
-        // Auto-load the DB history as the current conversation
-        const currentId = getCurrentConversationId();
-        if (!currentId || currentId === historyConvId) {
-          setMessages(frontendMessages);
-          setCurrentConversationIdState(historyConvId);
-          setCurrentConversationId(historyConvId);
-        } else {
-          const local = localConvs.find(c => c.id === currentId);
-          if (local) loadConversation(currentId, merged);
-        }
-      } else {
-        // No DB history — fall back to localStorage
-        const savedConversations = getConversations();
-        setConversations(savedConversations);
-        const currentId = getCurrentConversationId();
-        if (currentId && savedConversations.find(c => c.id === currentId)) {
-          loadConversation(currentId, savedConversations);
-        }
+        // Show history in sidebar but always start with a fresh empty chat
+        setMessages([]);
+        setCurrentConversationIdState(null);
+        setCurrentConversationId(null);
+      } else if (localConvs.length > 0) {
+        // No DB history yet — show local conversations in sidebar, start fresh
+        setConversations(localConvs);
+        setMessages([]);
+        setCurrentConversationIdState(null);
+        setCurrentConversationId(null);
       }
+      // If both empty: show empty state (new user)
     }).catch(() => {
-      // API unavailable — use localStorage only
-      const savedConversations = getConversations();
-      setConversations(savedConversations);
-      const currentId = getCurrentConversationId();
-      if (currentId && savedConversations.find(c => c.id === currentId)) {
-        loadConversation(currentId, savedConversations);
+      // Backend unavailable — show local conversations in sidebar, start fresh
+      if (localConvs.length > 0) {
+        setConversations(localConvs);
       }
+      setMessages([]);
+      setCurrentConversationIdState(null);
+      setCurrentConversationId(null);
     });
   }, []);
 
@@ -1066,7 +1074,7 @@ export default function ChatPage() {
                 <TypewriterText />
 
                 {/* Centered Input */}
-                <div className="empty-input-wrapper">
+                <div className="empty-input-wrapper" data-onboarding="chat-composer-empty">
                   <div className="empty-input-box">
                     <input
                       ref={inputRef}
@@ -1122,7 +1130,7 @@ export default function ChatPage() {
                 </div>
 
                 {/* Quick suggestions */}
-                <div className="empty-suggestions">
+                <div className="empty-suggestions" data-onboarding="chat-suggestions">
                   {[t('chat.topProducts'), t('chat.salesForecast'), t('chat.trendingItems'), t('chat.compareProducts')].map((s, idx) => (
                     <button
                       key={idx}
@@ -1219,7 +1227,7 @@ export default function ChatPage() {
 
               {/* Bottom Input */}
               <div className="chat-input-area">
-                <div className="chat-input-wrapper">
+                <div className="chat-input-wrapper" data-onboarding="chat-composer-filled">
                   <div className="chat-input-box">
                     <input
                       ref={inputRef}

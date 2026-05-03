@@ -168,6 +168,16 @@ export function AuthProvider({ children }) {
     setError(null);
   }, []);
 
+  /** Shallow-merge into user + sync auth_user cache (e.g. onboarding fallback). */
+  const mergeUser = useCallback((partial) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...partial };
+      setCachedUser(next);
+      return next;
+    });
+  }, []);
+
   // Computed values
   const isLoading = authStatus === AuthStatus.LOADING;
   const isAuthenticated = authStatus === AuthStatus.AUTHENTICATED && !!user;
@@ -195,6 +205,7 @@ export function AuthProvider({ children }) {
     logout,
     checkAuth,
     refreshUser: checkAuth,
+    mergeUser,
   };
 
   return (

@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
@@ -14,6 +15,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import LanguageSwitcher from "../LanguageSwitcher";
+import { toast } from "sonner";
+import { replayPlatformOnboarding } from "../../utils/replayOnboarding";
 
 const iconStroke = 2;
 const iconSize = 20;
@@ -28,9 +31,10 @@ function IconForecastWorkspace({ size = iconSize, strokeWidth = iconStroke }) {
 }
 
 export default function Sidebar() {
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, logout, checkAuth, mergeUser } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [replayBusy, setReplayBusy] = useState(false);
 
   const adminMenuItems = [
     { path: "/admin", label: t("nav.dashboard"), Icon: LayoutDashboard },
@@ -55,6 +59,17 @@ export default function Sidebar() {
   const handleLogout = () => {
     navigate("/");
     setTimeout(() => logout(), 100);
+  };
+
+  const handleReplayOnboarding = async () => {
+    if (!user?.id || replayBusy) return;
+    setReplayBusy(true);
+    try {
+      await replayPlatformOnboarding(user, checkAuth, mergeUser);
+      toast.success(t("onboarding.replayToast"));
+    } finally {
+      setReplayBusy(false);
+    }
   };
 
   return (
@@ -107,6 +122,20 @@ export default function Sidebar() {
       <div className="sidebar-language-section">
         <div className="sidebar-language-label">{t("settings.language")}</div>
         <LanguageSwitcher variant="buttons" />
+      </div>
+
+      <div className="sidebar-block">
+        <button
+          type="button"
+          onClick={handleReplayOnboarding}
+          disabled={replayBusy}
+          className="sidebar-tour-button"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {replayBusy ? t("common.loading") : t("onboarding.replay")}
+        </button>
       </div>
 
       <div className="sidebar-block">

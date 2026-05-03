@@ -7,6 +7,8 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { SettingsProvider, useSettings } from "../../context/SettingsContext";
+import { toast } from "sonner";
+import { replayPlatformOnboarding } from "../../utils/replayOnboarding";
 
 import "../../styles/settings.css";
 
@@ -19,9 +21,10 @@ const NAV_ITEMS = [
 
 function SettingsPanelContent({ onClose }) {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, checkAuth, mergeUser } = useAuth();
   const { settings, updateSettings } = useSettings();
   const [activeNav, setActiveNav] = useState("general");
+  const [replayBusy, setReplayBusy] = useState(false);
   const contentRef = useRef(null);
 
   const handleLanguageChange = (e) => {
@@ -64,6 +67,18 @@ function SettingsPanelContent({ onClose }) {
     const element = document.getElementById(`settings-${sectionId}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleReplayOnboarding = async () => {
+    if (!user?.id || replayBusy) return;
+    setReplayBusy(true);
+    try {
+      await replayPlatformOnboarding(user, checkAuth, mergeUser);
+      toast.success(t("onboarding.replayToast"));
+      onClose();
+    } finally {
+      setReplayBusy(false);
     }
   };
 
@@ -142,6 +157,21 @@ function SettingsPanelContent({ onClose }) {
                   <option value="ru">{t('languages.ru')}</option>
                   <option value="en">{t('languages.en')}</option>
                 </select>
+              </div>
+
+              <div className="settings-row">
+                <div className="settings-row-label">
+                  <span className="settings-row-title">{t('onboarding.replayTitle')}</span>
+                  <span className="settings-row-desc">{t('onboarding.replayHint')}</span>
+                </div>
+                <button
+                  type="button"
+                  className="settings-btn-claude"
+                  onClick={handleReplayOnboarding}
+                  disabled={replayBusy}
+                >
+                  {replayBusy ? t("common.loading") : t("onboarding.replay")}
+                </button>
               </div>
             </div>
 

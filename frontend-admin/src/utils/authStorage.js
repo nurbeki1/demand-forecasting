@@ -68,9 +68,9 @@ export function clearAllAuthData() {
     localStorage.removeItem(key);
   });
 
-  // Clear chat-related data on logout
-  localStorage.removeItem('chat_conversations');
-  localStorage.removeItem('current_conversation_id');
+  // NOTE: chat_conversations and current_conversation_id are intentionally
+  // NOT cleared here — chat history is persisted in the backend DB and
+  // should survive logout/login cycles.
 }
 
 /**

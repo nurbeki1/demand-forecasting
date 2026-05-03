@@ -141,6 +141,37 @@ def _db_load_history(user_id: int, limit: int = 50) -> List[Dict[str, Any]]:
         return []
 
 
+def _restore_last_product_from_history(user_id: int, db_history: List[Dict[str, Any]]) -> None:
+    """
+    Scan DB history in reverse to find the last product the user discussed.
+    Sets chat_memory last_product so resolve_reference works after session restore.
+    """
+    # KZ/product intents that carry a meaningful search_query
+    product_intents = {
+        "kz_analysis", "kz_analysis_detail", "kz_city_profit",
+        "product_search", "product_info", "product_analysis",
+        "comparison", "smart_forecast",
+    }
+    for msg in reversed(db_history):
+        if msg.get("role") != "user":
+            continue
+        intent = msg.get("intent", "")
+        if intent not in product_intents:
+            continue
+        # Re-classify to extract entities
+        try:
+            from services.intent_classifier import classify_intent
+            _, entities = classify_intent(msg["content"])
+            sq = entities.get("search_query")
+            pids = entities.get("product_ids", [])
+            product = sq or (pids[-1] if pids else None)
+            if product:
+                chat_memory.track_entities(user_id=user_id, search_query=product, intent=intent)
+                return
+        except Exception:
+            continue
+
+
 def _db_clear_history(user_id: int) -> int:
     """Delete all chat messages for user. Returns count deleted."""
     try:
@@ -1101,10 +1132,20 @@ async def build_kz_response(
     # If no product name, try to extract from message
     if not search_query:
         words = message.strip().split()
-        kz_words = {"казахстан", "кз", "kazakhstan", "продавать", "анализ", "прибыль", "город", "алматы", "астана", "в"}
-        filtered = [w for w in words if w.lower() not in kz_words]
+        kz_words = {
+            # Russian
+            "казахстан", "кз", "kazakhstan", "продавать", "анализ", "прибыль",
+            "город", "алматы", "астана", "в", "для", "по", "рынок", "продай",
+            "сделай", "покажи", "дай", "этот", "продукт", "товар",
+            # Kazakh
+            "қазақстан", "қр", "қалалар", "қалаларына", "қалаларда",
+            "арнап", "арналған", "анализ", "жасасы", "жаса", "жасашы",
+            "талдау", "сату", "сатуға", "болады", "ма", "осы", "бұл",
+            "өнімді", "продуктты", "тауарды", "қай", "қайда",
+        }
+        filtered = [w for w in words if w.lower() not in kz_words and len(w) > 1]
         if filtered:
-            search_query = " ".join(filtered[:4])
+            search_query = " ".join(filtered[:5])
 
     # Handle KZ_ANALYSIS_DETAIL - progressive disclosure follow-up
     if intent == Intent.KZ_ANALYSIS_DETAIL:
@@ -1543,6 +1584,10 @@ def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type:
                 intent=msg.get("intent"),
                 data=msg.get("data"),
             )
+
+        # Restore last_product from DB history so resolve_reference works after restart
+        if db_history:
+            _restore_last_product_from_history(user_id, db_history)
 
     # Step 1: Check for pronoun references ("it", "this product", etc.)
     resolved_reference = chat_memory.resolve_reference(user_id, message)

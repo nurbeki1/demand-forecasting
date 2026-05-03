@@ -26,8 +26,9 @@ def safe_num(x, default=0.0):
 
 def get_forecast_chart(product_id: str, horizon_days: int):
     df = pd.read_csv(DATA_PATH, parse_dates=["Date"])
+    df["Product ID"] = df["Product ID"].astype(str)
 
-    sub = df[df["Product ID"] == product_id].copy()
+    sub = df[df["Product ID"] == str(product_id)].copy()
 
     if sub.empty:
         raise ValueError(f"Product {product_id} not found")

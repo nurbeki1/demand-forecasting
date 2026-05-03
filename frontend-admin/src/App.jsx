@@ -36,6 +36,7 @@ import ProfilePage from "./pages/ProfilePage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import SubscriptionPaymentPage from "./pages/SubscriptionPaymentPage";
 import AdminSupportPage from "./pages/AdminSupportPage";
+import OnboardingGate from "./components/OnboardingGate";
 
 // Styles
 import "./styles/dashboard.css";
@@ -341,7 +342,9 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <AuthGuard>
-            <AppRoutes />
+            <OnboardingGate>
+              <AppRoutes />
+            </OnboardingGate>
           </AuthGuard>
         </AuthProvider>
         <Toaster

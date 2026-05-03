@@ -197,6 +197,40 @@
   cursor: not-allowed;
 }
 
+/* Primary actions (e.g. replay onboarding) */
+.settings-btn-claude {
+  width: 280px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px 18px;
+  background: #6366f1;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.settings-btn-claude:hover:not(:disabled) {
+  background: #5558e3;
+}
+
+.settings-btn-claude:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+}
+
+.settings-btn-claude:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .settings-input-claude::placeholder {
   color: #606060;
 }
@@ -462,6 +496,10 @@
 
   .settings-input-claude,
   .settings-select-claude {
+    width: 100%;
+  }
+
+  .settings-btn-claude {
     width: 100%;
   }
 
