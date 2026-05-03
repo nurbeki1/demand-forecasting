@@ -51,3 +51,4 @@ prodbot_ai/.packages
 .claude/
 # Trained ML models (large binary files)
 back/models/*.pkl
+.github/
