@@ -156,7 +156,11 @@ export default function LoginPage() {
           </div>
 
           <div className="auth-google-container">
-            {googleError && <div className="auth-error auth-google-error">{googleError}</div>}
+            {googleError && (
+              <div key={googleError} className="auth-error auth-google-error">
+                {googleError}
+              </div>
+            )}
             <div id="google-signin-login-page" />
           </div>
         </div>

@@ -7,7 +7,6 @@ import { useState, useEffect, useRef, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
-import AuthModal from "../components/landing/AuthModal";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import "../styles/landing.css";
@@ -235,7 +234,6 @@ function InfoCard({ position, icon, title, description, isVisible, delay }) {
 // MAIN LANDING PAGE
 // ============================================
 export default function LandingPage() {
-  const [modalOpen, setModalOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState(0);
   const [lookAtCenter, setLookAtCenter] = useState(false);
@@ -315,7 +313,7 @@ export default function LandingPage() {
     if (isAuthenticated) {
       navigate(isAdmin ? "/admin" : "/user");
     } else {
-      setModalOpen(true);
+      navigate("/subscriptions");
     }
   };
 
@@ -485,12 +483,6 @@ export default function LandingPage() {
         ))}
       </div>
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSuccess={() => setModalOpen(false)}
-      />
     </div>
   );
 }

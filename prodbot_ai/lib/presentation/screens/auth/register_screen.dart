@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/theme.dart';
 import '../../../services/auth_service.dart';
+import '../../widgets/auth/auth_motion.dart';
 import '../../widgets/common/widgets.dart';
 
 /// Register screen styled after the web `AuthModal` register flow.
@@ -12,21 +13,50 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends State<RegisterScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  late AnimationController _entrance;
+  late AnimationController _pulse;
+
   String? _nameError;
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
   bool _acceptTerms = false;
+  int _formErrorTick = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 980),
+    );
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2800),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (authReduceMotion(context)) {
+        _entrance.value = 1.0;
+      } else {
+        _entrance.forward();
+        _pulse.repeat(reverse: true);
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _entrance.dispose();
+    _pulse.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -107,11 +137,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _emailError = emailError;
         _passwordError = passwordError;
         _confirmPasswordError = confirmPasswordError;
+        _formErrorTick++;
       });
       return;
     }
 
     if (!_acceptTerms) {
+      setState(() => _formErrorTick++);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Шартты қабылдауыңыз керек'),
@@ -152,20 +184,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0, -0.7),
-                  radius: 1.0,
-                  colors: [
-                    AppColors.secondary.withValues(alpha: 0.10),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AuthAmbientBackdrop()),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
@@ -177,166 +196,192 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Center(
-                      child: BrandLogo(
-                        size: 64,
-                        radius: 18,
-                        icon: Icons.person_add_rounded,
-                        withGlow: true,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    Text(
-                      'Тіркелу',
-                      style: AppTextStyles.displaySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Жаңа аккаунт жасау үшін деректерді енгізіңіз',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    AppTextField(
-                      label: 'Толық аты',
-                      hintText: 'Атыңызды енгізіңіз',
-                      controller: _nameController,
-                      errorText: _nameError,
-                      keyboardType: TextInputType.name,
-                      textCapitalization: TextCapitalization.words,
-                      prefixIcon: const Icon(Icons.person_outline_rounded),
-                      onChanged: (_) {
-                        if (_nameError != null) {
-                          setState(() => _nameError = null);
-                        }
-                      },
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    AppTextField.email(
-                      label: 'Email',
-                      hintText: 'email@example.com',
-                      controller: _emailController,
-                      errorText: _emailError,
-                      onChanged: (_) {
-                        if (_emailError != null) {
-                          setState(() => _emailError = null);
-                        }
-                      },
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    AppTextField.password(
-                      label: 'Құпия сөз',
-                      hintText: '••••••••',
-                      controller: _passwordController,
-                      errorText: _passwordError,
-                      textInputAction: TextInputAction.next,
-                      onChanged: (_) {
-                        setState(() {
-                          if (_passwordError != null) _passwordError = null;
-                        });
-                      },
-                    ),
-
-                    if (_passwordController.text.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Row(
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 0,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: passwordStrength,
-                                backgroundColor: AppColors.border,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  _getStrengthColor(passwordStrength),
-                                ),
-                                minHeight: 4,
+                          Center(
+                            child: AuthLogoPulse(
+                              animation: _pulse,
+                              child: const BrandLogo(
+                                size: 64,
+                                radius: 18,
+                                icon: Icons.person_add_rounded,
+                                withGlow: true,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(height: 24),
                           Text(
-                            _getStrengthText(passwordStrength),
-                            style: AppTextStyles.caption.copyWith(
-                              color: _getStrengthColor(passwordStrength),
-                              fontWeight: FontWeight.w600,
+                            'Тіркелу',
+                            style: AppTextStyles.displaySmall,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Жаңа аккаунт жасау үшін деректерді енгізіңіз',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
-                    ],
-
-                    const SizedBox(height: 14),
-
-                    AppTextField.password(
-                      label: 'Құпия сөзді растау',
-                      hintText: '••••••••',
-                      controller: _confirmPasswordController,
-                      errorText: _confirmPasswordError,
-                      onChanged: (_) {
-                        if (_confirmPasswordError != null) {
-                          setState(() => _confirmPasswordError = null);
-                        }
-                      },
                     ),
 
-                    const SizedBox(height: 16),
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 1,
+                      child: const SizedBox(height: 32),
+                    ),
 
-                    InkWell(
-                      onTap: () =>
-                          setState(() => _acceptTerms = !_acceptTerms),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 2,
+                      child: AuthShakeWrapper(
+                        trigger: _formErrorTick,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: Checkbox(
-                                value: _acceptTerms,
-                                onChanged: (v) =>
-                                    setState(() => _acceptTerms = v ?? false),
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
+                            AppTextField(
+                              label: 'Толық аты',
+                              hintText: 'Атыңызды енгізіңіз',
+                              controller: _nameController,
+                              errorText: _nameError,
+                              keyboardType: TextInputType.name,
+                              textCapitalization: TextCapitalization.words,
+                              prefixIcon:
+                                  const Icon(Icons.person_outline_rounded),
+                              onChanged: (_) {
+                                if (_nameError != null) {
+                                  setState(() => _nameError = null);
+                                }
+                              },
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text.rich(
-                                TextSpan(
-                                  text: 'Мен ',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: AppColors.textSecondary,
+                            const SizedBox(height: 14),
+                            AppTextField.email(
+                              label: 'Email',
+                              hintText: 'email@example.com',
+                              controller: _emailController,
+                              errorText: _emailError,
+                              onChanged: (_) {
+                                if (_emailError != null) {
+                                  setState(() => _emailError = null);
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 14),
+                            AppTextField.password(
+                              label: 'Құпия сөз',
+                              hintText: '••••••••',
+                              controller: _passwordController,
+                              errorText: _passwordError,
+                              textInputAction: TextInputAction.next,
+                              onChanged: (_) {
+                                setState(() {
+                                  if (_passwordError != null) {
+                                    _passwordError = null;
+                                  }
+                                });
+                              },
+                            ),
+                            if (_passwordController.text.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: passwordStrength,
+                                        backgroundColor: AppColors.border,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          _getStrengthColor(passwordStrength),
+                                        ),
+                                        minHeight: 4,
+                                      ),
+                                    ),
                                   ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    _getStrengthText(passwordStrength),
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: _getStrengthColor(
+                                          passwordStrength),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 14),
+                            AppTextField.password(
+                              label: 'Құпия сөзді растау',
+                              hintText: '••••••••',
+                              controller: _confirmPasswordController,
+                              errorText: _confirmPasswordError,
+                              onChanged: (_) {
+                                if (_confirmPasswordError != null) {
+                                  setState(() => _confirmPasswordError = null);
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            InkWell(
+                              onTap: () => setState(
+                                  () => _acceptTerms = !_acceptTerms),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    TextSpan(
-                                      text: 'қызмет шарттарын',
-                                      style: AppTextStyles.link.copyWith(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w600,
+                                    SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: Checkbox(
+                                        value: _acceptTerms,
+                                        onChanged: (v) => setState(() =>
+                                            _acceptTerms = v ?? false),
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
                                       ),
                                     ),
-                                    const TextSpan(text: ' және '),
-                                    TextSpan(
-                                      text: 'құпиялылық саясатын',
-                                      style: AppTextStyles.link.copyWith(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w600,
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text.rich(
+                                        TextSpan(
+                                          text: 'Мен ',
+                                          style: AppTextStyles.bodySmall
+                                              .copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                          children: [
+                                            TextSpan(
+                                              text: 'қызмет шарттарын',
+                                              style: AppTextStyles.link.copyWith(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const TextSpan(text: ' және '),
+                                            TextSpan(
+                                              text: 'құпиялылық саясатын',
+                                              style: AppTextStyles.link.copyWith(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const TextSpan(
+                                                text: ' қабылдаймын'),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                    const TextSpan(text: ' қабылдаймын'),
                                   ],
                                 ),
                               ),
@@ -346,56 +391,85 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
 
-                    Consumer<AuthService>(
-                      builder: (context, authService, _) {
-                        if (authService.error != null) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: _ErrorBanner(message: authService.error!),
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 3,
+                      child: Consumer<AuthService>(
+                        builder: (context, authService, _) {
+                          if (authService.error != null) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: AuthShakeWrapper(
+                                trigger: authService.error,
+                                child: _ErrorBanner(
+                                    message: authService.error!),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 4,
+                      child: const SizedBox(height: 24),
+                    ),
+
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 4,
+                      child: Consumer<AuthService>(
+                        builder: (context, authService, _) {
+                          return AppButton.gradient(
+                            text: 'Аккаунт жасау',
+                            isLoading: authService.isLoading,
+                            onPressed: authService.isLoading
+                                ? null
+                                : _handleRegister,
                           );
-                        }
-                        return const SizedBox.shrink();
-                      },
+                        },
+                      ),
                     ),
 
-                    const SizedBox(height: 24),
-
-                    Consumer<AuthService>(
-                      builder: (context, authService, _) {
-                        return AppButton.gradient(
-                          text: 'Аккаунт жасау',
-                          isLoading: authService.isLoading,
-                          onPressed:
-                              authService.isLoading ? null : _handleRegister,
-                        );
-                      },
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 5,
+                      child: const SizedBox(height: 20),
                     ),
 
-                    const SizedBox(height: 20),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Аккаунт бар ма? ',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _navigateToLogin,
-                          child: Text(
-                            'Кіру',
-                            style: AppTextStyles.link.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 5,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Аккаунт бар ма? ',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                        ),
-                      ],
+                          GestureDetector(
+                            onTap: _navigateToLogin,
+                            child: Text(
+                              'Кіру',
+                              style: AppTextStyles.link.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
-                    const SizedBox(height: 32),
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 6,
+                      child: const SizedBox(height: 32),
+                    ),
                   ],
                 ),
               ),

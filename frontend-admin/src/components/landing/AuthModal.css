@@ -531,13 +531,125 @@
   position: relative;
 }
 
+/* ---------- /login — motion (respect prefers-reduced-motion) ---------- */
+
+@keyframes auth-login-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-bg-float-a {
+  0% {
+    opacity: 0.55;
+    transform: translate(-4%, -2%) scale(1);
+  }
+  100% {
+    opacity: 0.95;
+    transform: translate(5%, 3%) scale(1.06);
+  }
+}
+
+@keyframes auth-bg-float-b {
+  0% {
+    opacity: 0.35;
+    transform: translate(3%, 8%) scale(1.05);
+  }
+  100% {
+    opacity: 0.65;
+    transform: translate(-5%, 2%) scale(1);
+  }
+}
+
+@keyframes auth-logo-glow-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 8px 26px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(16, 163, 127, 0.38),
+      0 0 24px rgba(16, 163, 127, 0.14);
+  }
+  50% {
+    box-shadow:
+      0 12px 34px rgba(0, 0, 0, 0.42),
+      0 0 0 1px rgba(16, 163, 127, 0.48),
+      0 0 36px rgba(16, 163, 127, 0.22);
+  }
+}
+
+@keyframes auth-shake-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  12% {
+    transform: translateX(-7px);
+  }
+  28% {
+    transform: translateX(7px);
+  }
+  44% {
+    transform: translateX(-4px);
+  }
+  60% {
+    transform: translateX(4px);
+  }
+  76% {
+    transform: translateX(-2px);
+  }
+}
+
 .auth-login-page-backdrop {
   position: fixed;
   inset: 0;
   z-index: 0;
-  background:
-    radial-gradient(circle at 50% -15%, rgba(16, 163, 127, 0.05), transparent 45%),
-    #050506;
+  overflow: hidden;
+  background: #050506;
+}
+
+.auth-login-page-backdrop::before,
+.auth-login-page-backdrop::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.auth-login-page-backdrop::before {
+  width: 85vw;
+  height: 85vw;
+  max-width: 720px;
+  max-height: 720px;
+  left: 50%;
+  top: -42%;
+  translate: -50% 0;
+  background: radial-gradient(
+    circle,
+    rgba(16, 163, 127, 0.14) 0%,
+    rgba(16, 163, 127, 0.04) 38%,
+    transparent 62%
+  );
+  animation: auth-bg-float-a 20s ease-in-out infinite alternate;
+}
+
+.auth-login-page-backdrop::after {
+  width: 70vw;
+  height: 70vw;
+  max-width: 520px;
+  max-height: 520px;
+  left: -8%;
+  bottom: -28%;
+  background: radial-gradient(
+    circle,
+    rgba(6, 182, 212, 0.06) 0%,
+    transparent 58%
+  );
+  animation: auth-bg-float-b 16s ease-in-out infinite alternate;
 }
 
 .auth-login-page-header {
@@ -548,6 +660,78 @@
   border-bottom: 1px solid var(--auth-border-subtle);
   background: rgba(9, 9, 11, 0.92);
   backdrop-filter: blur(12px);
+  animation: auth-login-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-login-page-panel > .auth-modal-header {
+  animation: auth-login-enter 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
+}
+
+.auth-login-page-panel > .auth-tabs {
+  animation: auth-login-enter 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.13s both;
+}
+
+.auth-login-page-panel > .auth-forms {
+  animation: auth-login-enter 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+}
+
+.auth-login-page-panel > .auth-divider {
+  animation: auth-login-enter 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+
+.auth-login-page-panel > .auth-google-container {
+  animation: auth-login-enter 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.38s both;
+}
+
+.auth-login-page-panel .auth-modal-logo {
+  animation:
+    auth-login-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.04s both,
+    auth-logo-glow-pulse 3.2s ease-in-out 0.75s infinite;
+}
+
+.auth-login-page-panel .auth-tab-indicator {
+  transition: transform 0.42s cubic-bezier(0.34, 1.45, 0.44, 1);
+}
+
+.auth-login-page-panel .auth-error {
+  animation: auth-shake-x 0.52s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  transform-origin: center top;
+}
+
+.auth-login-page-panel .auth-submit {
+  transition: transform 0.14s ease;
+}
+
+.auth-login-page-panel .auth-submit:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-login-page-header,
+  .auth-login-page-panel > .auth-modal-header,
+  .auth-login-page-panel > .auth-tabs,
+  .auth-login-page-panel > .auth-forms,
+  .auth-login-page-panel > .auth-divider,
+  .auth-login-page-panel > .auth-google-container,
+  .auth-login-page-panel .auth-modal-logo,
+  .auth-login-page-panel .auth-error {
+    animation: none !important;
+  }
+
+  .auth-login-page-backdrop::before,
+  .auth-login-page-backdrop::after {
+    animation: none !important;
+  }
+
+  .auth-login-page-panel .auth-modal-logo {
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.45),
+      0 0 0 1px rgba(16, 163, 127, 0.45) !important;
+  }
+
+  .auth-login-page-panel .auth-submit:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .auth-login-page-back-link {

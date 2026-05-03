@@ -33,6 +33,7 @@ import ReportsPage from "./pages/ReportsPage";
 import ForecastComparisonPage from "./pages/ForecastComparisonPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import ProfilePage from "./pages/ProfilePage";
+import SubscriptionPage from "./pages/SubscriptionPage";
 
 // Styles
 import "./styles/dashboard.css";
@@ -178,6 +179,9 @@ function AppRoutes() {
           LANDING PAGE - Public (with auth modal)
           ============================================ */}
       <Route path="/" element={<LandingPage />} />
+
+      {/* Pricing — open to guests and logged-in users */}
+      <Route path="/subscriptions" element={<SubscriptionPage />} />
 
       {/* ============================================
           PUBLIC ROUTES

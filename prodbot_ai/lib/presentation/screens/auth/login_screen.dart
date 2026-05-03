@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/auth_service.dart';
+import '../../widgets/auth/auth_motion.dart';
 import '../../widgets/common/widgets.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
@@ -16,19 +17,48 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
 
+  late AnimationController _entrance;
+  late AnimationController _pulse;
+
   bool _rememberMe = false;
   String? _emailError;
   String? _passwordError;
+  int _fieldErrorTick = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 920),
+    );
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2800),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (authReduceMotion(context)) {
+        _entrance.value = 1.0;
+      } else {
+        _entrance.forward();
+        _pulse.repeat(reverse: true);
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _entrance.dispose();
+    _pulse.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _emailFocusNode.dispose();
@@ -71,6 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _emailError = emailError;
         _passwordError = passwordError;
+        _fieldErrorTick++;
       });
       return;
     }
@@ -113,20 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0, -0.7),
-                  radius: 1.0,
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.10),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: AuthAmbientBackdrop()),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
@@ -138,166 +156,238 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Center(
-                      child: BrandLogo(
-                        size: 64,
-                        radius: 18,
-                        icon: Icons.lock_rounded,
-                        withGlow: true,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    Text(
-                      l10n.loginTitle,
-                      style: AppTextStyles.displaySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      l10n.loginSubtitle,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    AppTextField.email(
-                      label: l10n.loginEmailLabel,
-                      hintText: l10n.loginEmailHint,
-                      controller: _emailController,
-                      focusNode: _emailFocusNode,
-                      errorText: _emailError,
-                      onChanged: (_) {
-                        if (_emailError != null) {
-                          setState(() => _emailError = null);
-                        }
-                      },
-                      onFieldSubmitted: (_) =>
-                          _passwordFocusNode.requestFocus(),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    AppTextField.password(
-                      label: l10n.loginPasswordLabel,
-                      hintText: l10n.loginPasswordHint,
-                      controller: _passwordController,
-                      focusNode: _passwordFocusNode,
-                      errorText: _passwordError,
-                      onChanged: (_) {
-                        if (_passwordError != null) {
-                          setState(() => _passwordError = null);
-                        }
-                      },
-                      onFieldSubmitted: (_) => _handleLogin(),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        InkWell(
-                          onTap: () =>
-                              setState(() => _rememberMe = !_rememberMe),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: Checkbox(
-                                    value: _rememberMe,
-                                    onChanged: (v) =>
-                                        setState(() => _rememberMe = v ?? false),
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  l10n.loginRememberMe,
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 0,
+                      child: Center(
+                        child: AuthLogoPulse(
+                          animation: _pulse,
+                          child: const BrandLogo(
+                            size: 64,
+                            radius: 18,
+                            icon: Icons.lock_rounded,
+                            withGlow: true,
                           ),
                         ),
-                        TextButton(
-                          onPressed: _navigateToForgotPassword,
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            l10n.loginForgotPassword,
-                            style: AppTextStyles.link.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
+                    ),
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 1,
+                      child: const SizedBox(height: 24),
                     ),
 
-                    Consumer<AuthService>(
-                      builder: (context, authService, _) {
-                        if (authService.error != null) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: _ErrorBanner(message: authService.error!),
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            l10n.loginTitle,
+                            style: AppTextStyles.displaySmall,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            l10n.loginSubtitle,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 2,
+                      child: const SizedBox(height: 32),
+                    ),
+
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 2,
+                      child: AuthShakeWrapper(
+                        trigger: _fieldErrorTick,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            AppTextField.email(
+                              label: l10n.loginEmailLabel,
+                              hintText: l10n.loginEmailHint,
+                              controller: _emailController,
+                              focusNode: _emailFocusNode,
+                              errorText: _emailError,
+                              onChanged: (_) {
+                                if (_emailError != null) {
+                                  setState(() => _emailError = null);
+                                }
+                              },
+                              onFieldSubmitted: (_) =>
+                                  _passwordFocusNode.requestFocus(),
+                            ),
+                            const SizedBox(height: 16),
+                            AppTextField.password(
+                              label: l10n.loginPasswordLabel,
+                              hintText: l10n.loginPasswordHint,
+                              controller: _passwordController,
+                              focusNode: _passwordFocusNode,
+                              errorText: _passwordError,
+                              onChanged: (_) {
+                                if (_passwordError != null) {
+                                  setState(() => _passwordError = null);
+                                }
+                              },
+                              onFieldSubmitted: (_) => _handleLogin(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 3,
+                      child: const SizedBox(height: 12),
+                    ),
+
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 3,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          InkWell(
+                            onTap: () =>
+                                setState(() => _rememberMe = !_rememberMe),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: Checkbox(
+                                      value: _rememberMe,
+                                      onChanged: (v) => setState(
+                                          () => _rememberMe = v ?? false),
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    l10n.loginRememberMe,
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _navigateToForgotPassword,
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              l10n.loginForgotPassword,
+                              style: AppTextStyles.link.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 4,
+                      child: Consumer<AuthService>(
+                        builder: (context, authService, _) {
+                          if (authService.error != null) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: AuthShakeWrapper(
+                                trigger: authService.error,
+                                child: _ErrorBanner(
+                                    message: authService.error!),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 5,
+                      child: const SizedBox(height: 24),
+                    ),
+
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 5,
+                      child: Consumer<AuthService>(
+                        builder: (context, authService, _) {
+                          return AppButton.gradient(
+                            text: l10n.loginButton,
+                            isLoading: authService.isLoading,
+                            onPressed: authService.isLoading
+                                ? null
+                                : _handleLogin,
                           );
-                        }
-                        return const SizedBox.shrink();
-                      },
+                        },
+                      ),
                     ),
 
-                    const SizedBox(height: 24),
-
-                    Consumer<AuthService>(
-                      builder: (context, authService, _) {
-                        return AppButton.gradient(
-                          text: l10n.loginButton,
-                          isLoading: authService.isLoading,
-                          onPressed:
-                              authService.isLoading ? null : _handleLogin,
-                        );
-                      },
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 6,
+                      child: const SizedBox(height: 20),
                     ),
 
-                    const SizedBox(height: 20),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${l10n.loginNoAccount} ',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _navigateToRegister,
-                          child: Text(
-                            l10n.loginRegister,
-                            style: AppTextStyles.link.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 6,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${l10n.loginNoAccount} ',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                        ),
-                      ],
+                          GestureDetector(
+                            onTap: _navigateToRegister,
+                            child: Text(
+                              l10n.loginRegister,
+                              style: AppTextStyles.link.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
-                    const SizedBox(height: 32),
+                    authStaggeredChild(
+                      parent: _entrance,
+                      step: 7,
+                      child: const SizedBox(height: 32),
+                    ),
                   ],
                 ),
               ),
