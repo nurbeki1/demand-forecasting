@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   LineChart,
@@ -650,7 +650,8 @@ export default function ChatPage() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationIdState] = useState(null);
-  const [showSettings, setShowSettings] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [showSettings, setShowSettings] = useState(searchParams.get("view") === "settings");
 
   // Model selection
   const [selectedModel, setSelectedModel] = useState("random_forest");
