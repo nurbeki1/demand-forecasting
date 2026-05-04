@@ -26,7 +26,7 @@ def load_amazon_products(sample_size: int = None) -> pd.DataFrame:
     if _amazon_products_cache is not None:
         return _amazon_products_cache
 
-    products_path = AMAZON_DIR / "Amazon-Products.csv"
+    products_path = AMAZON_DIR / "Amazon-Products-sample.csv"
     if not products_path.exists():
         return pd.DataFrame()
 

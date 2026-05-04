@@ -52,3 +52,4 @@ prodbot_ai/.packages
 # Trained ML models (large binary files)
 back/models/*.pkl
 .github/
+back/data/amazon/Amazon-Products.csv

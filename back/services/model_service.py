@@ -464,7 +464,7 @@ def get_feature_importance(product_id: str, store_id: Optional[str] = None, mode
 # Path to Amazon dataset
 _AMAZON_CSV = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "amazon", "Amazon-Products.csv",
+    "data", "amazon", "Amazon-Products-sample.csv",
 )
 
 # Cache key for market model

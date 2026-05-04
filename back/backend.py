@@ -227,7 +227,7 @@ def get_products(
     import pandas as pd
     from pathlib import Path
 
-    csv_path = Path(__file__).parent / "data" / "amazon" / "Amazon-Products.csv"
+    csv_path = Path(__file__).parent / "data" / "amazon" / "Amazon-Products-sample.csv"
     if not csv_path.exists():
         return []
 

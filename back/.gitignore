@@ -15,8 +15,8 @@ __pycache__/
 .pytest_cache/
 htmlcov/
 
-# Data files (too large for git)
-data/amazon/*.csv
+# Data files (too large for git — only large originals ignored)
+data/amazon/Amazon-Products.csv
 data/ecommerce/*.csv
 *.zip
 

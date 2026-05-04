@@ -26,7 +26,7 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 # AMAZON DATA HELPERS
 # =============================================================================
 
-_AMAZON_CSV = Path(__file__).parent.parent.parent / "data" / "amazon" / "Amazon-Products.csv"
+_AMAZON_CSV = Path(__file__).parent.parent.parent / "data" / "amazon" / "Amazon-Products-sample.csv"
 _amazon_top_cache: Optional[List[Dict[str, Any]]] = None
 
 
