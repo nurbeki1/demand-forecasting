@@ -329,8 +329,9 @@ def chat(request: Request, payload: ChatRequest, user=Depends(get_current_user))
         return handle_ai_chat(payload.message, user.id, language=payload.language, model_type=mt)
     except Exception as e:
         import logging, traceback
-        logging.error(f"[CHAT ERROR] user={user.id} msg={payload.message[:50]!r}: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Chat error: {type(e).__name__}: {str(e)}")
+        tb = traceback.format_exc()
+        logging.error(f"[CHAT ERROR] user={user.id} msg={payload.message[:50]!r}: {e}\n{tb}")
+        raise HTTPException(status_code=500, detail=f"Chat error: {type(e).__name__}: {str(e)} | trace: {tb[-500:]}")
 
 
 @app.get("/chat/history")
