@@ -331,7 +331,7 @@ def chat(request: Request, payload: ChatRequest, user=Depends(get_current_user))
         import logging, traceback
         tb = traceback.format_exc()
         logging.error(f"[CHAT ERROR] user={user.id} msg={payload.message[:50]!r}: {e}\n{tb}")
-        raise HTTPException(status_code=500, detail=f"Chat error: {type(e).__name__}: {str(e)} | trace: {tb[:2000]}")
+        raise HTTPException(status_code=500, detail=f"Chat error: {type(e).__name__}: {str(e)}")
 
 
 @app.get("/chat/history")
