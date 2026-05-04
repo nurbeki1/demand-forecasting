@@ -10,7 +10,16 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # ─── OpenAI (жауап жазу) ────────────────────────────────────────────────────
-_openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_openai_client = None
+_OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if _OPENAI_API_KEY:
+    try:
+        _openai_client = OpenAI(api_key=_OPENAI_API_KEY)
+        logger.info("[LLM] OpenAI client: ON")
+    except Exception as e:
+        logger.warning(f"[LLM] OpenAI init failed: {e}")
+else:
+    logger.warning("[LLM] OPENAI_API_KEY not set — OpenAI client disabled")
 
 # ─── Gemini (контекст бақылаушы) ────────────────────────────────────────────
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -148,6 +157,9 @@ def _ask_openai(
     history: Optional[List[Dict[str, str]]] = None,
 ) -> str:
     """OpenAI GPT-4o-mini шақыру (өзгеріссіз)."""
+    if not _openai_client:
+        raise RuntimeError("OPENAI_API_KEY is not configured on this server.")
+
     messages = [{"role": "system", "content": system_prompt}]
 
     if history:
