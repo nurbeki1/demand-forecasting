@@ -1,8 +1,8 @@
 import os
 import json
 import logging
-from typing import List, Dict, Optional, Any
-from openai import OpenAI
+from typing import List, Dict, Optional, Any, AsyncGenerator
+from openai import OpenAI, AsyncOpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,10 +11,12 @@ logger = logging.getLogger(__name__)
 
 # ─── OpenAI (жауап жазу) ────────────────────────────────────────────────────
 _openai_client = None
+_async_openai_client = None
 _OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if _OPENAI_API_KEY:
     try:
         _openai_client = OpenAI(api_key=_OPENAI_API_KEY)
+        _async_openai_client = AsyncOpenAI(api_key=_OPENAI_API_KEY)
         logger.info("[LLM] OpenAI client: ON")
     except Exception as e:
         logger.warning(f"[LLM] OpenAI init failed: {e}")
@@ -176,3 +178,43 @@ def _ask_openai(
     )
 
     return response.choices[0].message.content
+
+
+# ─── Streaming ───────────────────────────────────────────────────────────────
+
+async def _ask_openai_stream(
+    system_prompt: str,
+    user_prompt: str,
+    history: Optional[List[Dict[str, str]]] = None,
+) -> AsyncGenerator[str, None]:
+    """Stream OpenAI response token by token using AsyncOpenAI."""
+    if not _async_openai_client:
+        raise RuntimeError("OPENAI_API_KEY is not configured on this server.")
+
+    messages = [{"role": "system", "content": system_prompt}]
+    if history:
+        for msg in history[-10:]:
+            if msg.get("role") in ("user", "assistant") and msg.get("content"):
+                messages.append({"role": msg["role"], "content": msg["content"][:1500]})
+    messages.append({"role": "user", "content": user_prompt})
+
+    stream = await _async_openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        temperature=0.5,
+        stream=True,
+    )
+    async for chunk in stream:
+        delta = chunk.choices[0].delta.content
+        if delta:
+            yield delta
+
+
+async def ask_llm_stream(
+    system_prompt: str,
+    user_prompt: str,
+    history: Optional[List[Dict[str, str]]] = None,
+) -> AsyncGenerator[str, None]:
+    """Public streaming interface (skips Gemini context — sync-incompatible)."""
+    async for token in _ask_openai_stream(system_prompt, user_prompt, history):
+        yield token

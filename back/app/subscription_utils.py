@@ -23,6 +23,12 @@ def allowed_ml_models_for_user(user) -> FrozenSet[str]:
     return ALLOWED_MODELS_FREE
 
 
+def is_paid_user(user) -> bool:
+    """Returns True if user has an active paid subscription."""
+    raw = getattr(user, "subscription_plan", None) or "free"
+    return str(raw).strip().lower() in ("paid", "pro", "subscriber")
+
+
 def enforce_chat_model_type(user, model_type: str) -> str:
     if model_type not in ALLOWED_MODELS_FULL:
         raise HTTPException(

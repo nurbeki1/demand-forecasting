@@ -35,6 +35,54 @@ export async function sendChatMessage(message, language = 'kk', modelType = 'ran
 }
 
 /**
+ * Send a message to the AI chat with streaming (SSE)
+ * @param {string} message
+ * @param {string} language
+ * @param {string} modelType
+ * @param {(token: string) => void} onChunk - called for each text token
+ * @param {(meta: object) => void} onMeta - called with final metadata or structured response
+ */
+export async function sendChatMessageStream(message, language = 'kk', modelType = 'random_forest', onChunk, onMeta) {
+  const response = await fetch(`${BASE_URL}/chat/stream`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ message, language, model_type: modelType }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || `Stream request failed (${response.status})`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop(); // keep incomplete chunk in buffer
+
+    for (const part of parts) {
+      if (!part.startsWith("data: ")) continue;
+      const raw = part.slice(6).trim();
+      if (raw === "[DONE]") return;
+
+      try {
+        const event = JSON.parse(raw);
+        if (event.type === "chunk") onChunk?.(event.text);
+        else if (event.type === "meta" || event.type === "structured") onMeta?.(event);
+      } catch {
+        // ignore malformed SSE lines
+      }
+    }
+  }
+}
+
+/**
  * Get chat history for the current user
  * @param {number} [limit] - Optional limit on number of messages
  * @returns {Promise<Array<{role: string, content: string, timestamp: string, intent?: string, data?: object}>>}

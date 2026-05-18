@@ -15,6 +15,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import {
   sendChatMessage,
+  sendChatMessageStream,
   getChatHistory,
   clearChatHistory,
   recalculateKZAnalysis,
@@ -865,35 +866,56 @@ export default function ChatPage() {
 
     const userMessage = { role: "user", content: text };
     const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    setMessages([...newMessages, { role: "assistant", content: "", _streaming: true }]);
     setInputValue("");
     setLoading(true);
 
+    let fullReply = "";
+    let extraFields = {};
+
     try {
-      const response = await sendChatMessage(text, i18n.language, selectedModel);
-      const assistantMessage = {
-        role: "assistant",
-        content: response.reply,
-        intent: response.intent,
-        response_type: response.response_type,
-        images: response.images,
-        data: response.data,
-        suggested_questions: response.suggested_questions,
-        available_details: response.available_details,
-      };
-      const finalMessages = [...newMessages, assistantMessage];
-      setMessages(finalMessages);
-      saveCurrentConversation(finalMessages);
+      await sendChatMessageStream(
+        text,
+        i18n.language,
+        selectedModel,
+        (token) => {
+          fullReply += token;
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { ...updated[updated.length - 1], content: fullReply };
+            return updated;
+          });
+        },
+        (meta) => {
+          if (meta.type === "structured") {
+            const d = meta.data || {};
+            fullReply = d.reply || "";
+            extraFields = {
+              intent: d.intent,
+              response_type: d.response_type,
+              images: d.images,
+              data: d.data,
+              suggested_questions: d.suggested_questions,
+              available_details: d.available_details,
+            };
+          } else {
+            extraFields = {
+              intent: meta.intent,
+              suggested_questions: meta.suggested_questions,
+            };
+          }
+        },
+      );
     } catch (e) {
-      const errorMessages = [...newMessages, {
-        role: "assistant",
-        content: t('auth.serverError'),
-      }];
-      setMessages(errorMessages);
-    } finally {
-      setLoading(false);
-      inputRef.current?.focus();
+      fullReply = t("auth.serverError");
     }
+
+    const assistantMessage = { role: "assistant", content: fullReply, ...extraFields };
+    const finalMessages = [...newMessages, assistantMessage];
+    setMessages(finalMessages);
+    saveCurrentConversation(finalMessages);
+    setLoading(false);
+    inputRef.current?.focus();
   };
 
   const handleKeyPress = (e) => {

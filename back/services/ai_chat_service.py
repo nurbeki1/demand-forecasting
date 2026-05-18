@@ -37,6 +37,53 @@ from app.insight_schemas import (
 )
 
 # =========================================================
+# WEB SEARCH CONTEXT BUILDER (paid users)
+# =========================================================
+
+def _build_web_search_context(analysis: dict) -> str:
+    """Format comprehensive_product_analysis result as LLM context string."""
+    parts = []
+    name = analysis.get("product_name", "")
+    if name:
+        parts.append(f"Продукт: {name}")
+
+    price = analysis.get("wholesale_price_usd")
+    if price:
+        parts.append(f"Оптовая цена: ${price:.2f}")
+
+    avg_retail = analysis.get("avg_retail_price_kzt")
+    if avg_retail:
+        parts.append(f"Средняя розничная цена (KZT): {avg_retail:,.0f}")
+
+    margin = analysis.get("profit_margin_percent")
+    if margin is not None:
+        parts.append(f"Маржа: {margin:.1f}%")
+
+    trend = analysis.get("trend_direction")
+    if trend:
+        parts.append(f"Тренд спроса: {trend}")
+
+    risks = analysis.get("risks", [])
+    if risks:
+        parts.append(f"Риски: {', '.join(risks)}")
+
+    competitors = analysis.get("competitors", [])
+    if competitors:
+        comp_lines = [f"  - {c.get('seller','?')}: {c.get('price_kzt',0):,.0f} KZT" for c in competitors[:3]]
+        parts.append("Конкуренты на Kaspi:\n" + "\n".join(comp_lines))
+
+    reviews = analysis.get("reviews", {})
+    if reviews.get("avg_rating"):
+        parts.append(f"Рейтинг: {reviews['avg_rating']}/5 ({reviews.get('review_count', '?')} отзывов)")
+
+    similar = analysis.get("similar_products", [])
+    if similar:
+        parts.append(f"Похожие товары: {', '.join(similar[:5])}")
+
+    return "\n".join(parts) if parts else "Данные веб-поиска недоступны."
+
+
+# =========================================================
 # INTENT ROUTING CONFIGURATION
 # =========================================================
 
@@ -216,7 +263,7 @@ from services.amazon_data_service import (
     get_trending_products,
     get_product_alerts,
 )
-from services.llm_client import ask_llm
+from services.llm_client import ask_llm, ask_llm_stream
 from services.forecast_service import get_forecast_chart
 from memory.chat_memory import chat_memory
 
@@ -1557,7 +1604,7 @@ def _track_and_store(
 # MAIN CHAT HANDLER
 # =========================================================
 
-def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type: str = "random_forest") -> Dict[str, Any]:
+def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type: str = "random_forest", subscription_plan: str = "free") -> Dict[str, Any]:
     """
     Main handler for AI chat messages with Decision Assistant pipeline.
 
@@ -1687,8 +1734,32 @@ def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type:
         if m.get("role") in ("user", "assistant")
     ]
 
-    # Step 5: Build RAG context
-    context = build_rag_context(intent, entities)
+    # Step 5: Build context — web search for paid users, CSV for free
+    paid = str(subscription_plan).strip().lower() in ("paid", "pro", "subscriber")
+    context = ""
+    if paid:
+        search_query = (
+            entities.get("search_query")
+            or (product_ids[0] if product_ids else None)
+            or message[:80]
+        )
+        try:
+            import asyncio as _asyncio
+            _loop = _asyncio.new_event_loop()
+            _asyncio.set_event_loop(_loop)
+            try:
+                analysis = _loop.run_until_complete(
+                    web_search_service.comprehensive_product_analysis(search_query)
+                )
+            finally:
+                _loop.close()
+            context = _build_web_search_context(analysis)
+        except Exception as _e:
+            import logging as _log
+            _log.warning(f"[WebSearch] Failed for paid user, falling back to CSV: {_e}")
+            context = build_rag_context(intent, entities)
+    else:
+        context = build_rag_context(intent, entities)
 
     # Step 6: Build system prompt
     lang_instructions = {
@@ -1773,6 +1844,170 @@ def handle_ai_chat(message: str, user_id: int, language: str = "kk", model_type:
         result["images"] = product_images
 
     return result
+
+
+async def handle_ai_chat_stream(
+    message: str,
+    user_id: int,
+    language: str = "ru",
+    model_type: str = "random_forest",
+    subscription_plan: str = "free",
+):
+    """
+    Streaming version of handle_ai_chat.
+    Yields SSE-formatted strings.
+
+    TEXT_INTENTS: streams tokens one by one, then yields a 'meta' event.
+    STRUCTURED/KZ_INTENTS: yields a single 'structured' event with full data.
+    """
+    import json as _json
+
+    def _sse(payload: dict) -> str:
+        return f"data: {_json.dumps(payload, ensure_ascii=False, default=str)}\n\n"
+
+    # ── Steps 0-3: session restore, reference resolution, intent classification ──
+    session_info = chat_memory.get_session_info(user_id)
+    if not session_info.get("exists") or session_info.get("message_count", 0) == 0:
+        db_history = _db_load_history(user_id, limit=30)
+        for msg in db_history:
+            chat_memory.add_message(
+                user_id=user_id,
+                role=msg["role"],
+                content=msg["content"],
+                intent=msg.get("intent"),
+                data=msg.get("data"),
+            )
+        if db_history:
+            _restore_last_product_from_history(user_id, db_history)
+
+    resolved_reference = chat_memory.resolve_reference(user_id, message)
+    intent, entities = classify_intent(message)
+    if resolved_reference and not entities.get("product_ids") and not entities.get("search_query"):
+        entities["search_query"] = resolved_reference
+
+    product_ids = entities.get("product_ids", [])
+    days = entities.get("days", 7)
+
+    # ── Route A: KZ intents → single structured event ──
+    if intent in KZ_INTENTS:
+        try:
+            response = await build_kz_response(intent, entities, message, user_id)
+            _track_and_store(
+                user_id=user_id,
+                message=message,
+                response=response.get("reply", ""),
+                intent=intent,
+                entities=entities,
+                data=response.get("data"),
+            )
+            yield _sse({"type": "structured", "data": response})
+            yield "data: [DONE]\n\n"
+            return
+        except Exception as e:
+            import logging as _logging
+            _logging.warning(f"[Stream] KZ Analysis failed: {e}")
+            # Fall through to LLM text flow
+
+    # ── Route B: Structured intents (Decision Assistant) → single structured event ──
+    if intent in STRUCTURED_INTENTS and product_ids:
+        try:
+            from backend import get_df
+            df = get_df()
+            response = build_decision_response(
+                product_id=product_ids[0],
+                intent=intent,
+                entities=entities,
+                df=df,
+                horizon_days=days,
+                model_type=model_type,
+            )
+            _track_and_store(
+                user_id=user_id,
+                message=message,
+                response=response.reply,
+                intent=intent,
+                entities=entities,
+                data=response.data,
+            )
+            yield _sse({"type": "structured", "data": response.model_dump()})
+            yield "data: [DONE]\n\n"
+            return
+        except Exception as e:
+            import logging as _logging
+            _logging.warning(f"[Stream] Decision Assistant failed, falling back to LLM: {e}")
+
+    # ── Route C: Text intents → stream tokens ──
+    raw_history = chat_memory.get_history(user_id, limit=12)
+    llm_history = [
+        {"role": m["role"], "content": m["content"]}
+        for m in raw_history
+        if m.get("role") in ("user", "assistant")
+    ]
+
+    # Web search for paid users, CSV for free
+    paid = str(subscription_plan).strip().lower() in ("paid", "pro", "subscriber")
+    if paid:
+        search_query = (
+            entities.get("search_query")
+            or (product_ids[0] if product_ids else None)
+            or message[:80]
+        )
+        try:
+            analysis = await web_search_service.comprehensive_product_analysis(search_query)
+            context = _build_web_search_context(analysis)
+        except Exception as _e:
+            import logging as _log
+            _log.warning(f"[WebSearch/Stream] Failed, falling back to CSV: {_e}")
+            context = build_rag_context(intent, entities)
+    else:
+        context = build_rag_context(intent, entities)
+
+    lang_instructions = {
+        "kk": "МАҢЫЗДЫ: Қазақ тілінде жауап беріңіз. Барлық жауаптар қазақша болуы керек.",
+        "ru": "ВАЖНО: Отвечайте на русском языке. Все ответы должны быть на русском.",
+        "en": "IMPORTANT: Respond in English. All responses must be in English.",
+    }
+    lang_instruction = lang_instructions.get(language, lang_instructions["ru"])
+
+    entity_ctx = chat_memory.get_entity_context(user_id)
+    entity_hint = ""
+    if entity_ctx.get("last_product"):
+        entity_hint = f"\n[Соңғы талқыланған өнім: {entity_ctx['last_product']}]"
+
+    system_prompt = f"{lang_instruction}{entity_hint}\n\n" + SYSTEM_PROMPT.format(
+        context=context,
+        history="",
+    )
+
+    full_reply = ""
+    try:
+        async for token in ask_llm_stream(system_prompt, message, history=llm_history):
+            full_reply += token
+            yield _sse({"type": "chunk", "text": token})
+    except Exception as e:
+        error_msg = {"kk": "Кешіріңіз, қате орын алды", "ru": "Извините, произошла ошибка", "en": "Sorry, an error occurred"}
+        full_reply = f"{error_msg.get(language, error_msg['ru'])}: {str(e)}"
+        yield _sse({"type": "chunk", "text": full_reply})
+
+    # Post-processing
+    simple_suggestions = get_follow_up_suggestions(intent, entities)
+    suggestions = [{"text": s, "prompt": s} for s in simple_suggestions]
+
+    _track_and_store(
+        user_id=user_id,
+        message=message,
+        response=full_reply,
+        intent=intent,
+        entities=entities,
+    )
+
+    yield _sse({
+        "type": "meta",
+        "intent": intent.value,
+        "suggested_questions": suggestions,
+        "entities": {k: (v.value if hasattr(v, "value") else v) for k, v in entities.items()},
+    })
+    yield "data: [DONE]\n\n"
 
 
 def get_chat_history(user_id: int, limit: Optional[int] = None) -> List[Dict[str, Any]]:

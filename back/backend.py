@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, HTTPException, Query, Depends, File, UploadFile, Request
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from slowapi import _rate_limit_exceeded_handler
@@ -326,12 +327,25 @@ def chat(request: Request, payload: ChatRequest, user=Depends(get_current_user))
     """AI чат с RAG для анализа спроса"""
     try:
         mt = enforce_chat_model_type(user, payload.model_type)
-        return handle_ai_chat(payload.message, user.id, language=payload.language, model_type=mt)
+        return handle_ai_chat(payload.message, user.id, language=payload.language, model_type=mt, subscription_plan=getattr(user, "subscription_plan", "free") or "free")
     except Exception as e:
         import logging, traceback
         tb = traceback.format_exc()
         logging.error(f"[CHAT ERROR] user={user.id} msg={payload.message[:50]!r}: {e}\n{tb}")
         raise HTTPException(status_code=500, detail=f"Chat error: {type(e).__name__}: {str(e)}")
+
+
+@app.post("/chat/stream")
+@limiter.limit(RateLimits.CHAT)
+async def chat_stream(request: Request, payload: ChatRequest, user=Depends(get_current_user)):
+    """Streaming AI chat via Server-Sent Events"""
+    from services.ai_chat_service import handle_ai_chat_stream
+    mt = enforce_chat_model_type(user, payload.model_type)
+    return StreamingResponse(
+        handle_ai_chat_stream(payload.message, user.id, language=payload.language, model_type=mt, subscription_plan=getattr(user, "subscription_plan", "free") or "free"),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/chat/history")
